@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: tci_cmms_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tci}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tci_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-tci_cmms}
+    ports:
+      - "${POSTGRES_PORT:-5436}:5432"
+    # Postgres 18+ espera el mount en /var/lib/postgresql (no en .../data):
+    # los datos quedan en un subdirectorio por version mayor, lo que permite
+    # pg_upgrade sin cruzar el limite del mount.
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tci} -d ${POSTGRES_DB:-tci_cmms}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Solo se levanta con: docker compose --profile full up
+  # En desarrollo el backend corre local con `npm run start:dev` contra este postgres.
+  backend:
+    profiles: ["full"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tci_cmms_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tci}:${POSTGRES_PASSWORD:-tci_dev_password}@postgres:5432/${POSTGRES_DB:-tci_cmms}?schema=public
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET es obligatorio}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3001}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    ports:
+      - "3001:3001"
+
+volumes:
+  postgres_data:

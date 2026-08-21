@@ -1,0 +1,324 @@
+// CMMS TCI — Esquema de base de datos
+// Modelo de Orden de Trabajo definido en TCI-22; estados y flujo en TCI-78.
+//
+// Alcance de este archivo: lo necesario para el modulo 2 (Ordenes de Trabajo),
+// el modulo 3 (Auth) y las entidades del modulo 4 (Clientes y Equipos) de las
+// que la orden depende. Quedan pendientes para su propio modulo:
+//   - Repuesto / OrdenRepuesto / MovimientoInventario  -> modulo 6 (TCI-45/46/48)
+//   - PlanMantenimiento                                -> modulo 7 (TCI-49/50)
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Autenticacion (Better Auth) — TCI-31, TCI-32, TCI-35
+// Los modelos User, Session, Account y Verification son el esquema base que
+// Better Auth espera. Los campos rol, activo y telefono son propios del CMMS y
+// se declaran como additionalFields en src/auth/auth.config.ts.
+// ---------------------------------------------------------------------------
+
+enum Rol {
+  ADMIN
+  TECNICO
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false) @map("email_verified")
+  image         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Campos propios del CMMS
+  rol      Rol     @default(TECNICO)
+  activo   Boolean @default(true)
+  telefono String?
+
+  sessions Session[]
+  accounts Account[]
+
+  ordenesAsignadas OrdenTrabajo[]   @relation("TecnicoAsignado")
+  ordenesCreadas   OrdenTrabajo[]   @relation("CreadoPor")
+  historial        OrdenHistorial[]
+  adjuntos         OrdenAdjunto[]
+
+  @@index([rol, activo])
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime @map("expires_at")
+  token     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id String @id @default(cuid())
+  // Better Auth 1.7 identifica la cuenta por (issuer, accountId), no solo por
+  // accountId. Es obligatorio.
+  issuer                String
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([issuer, accountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+// ---------------------------------------------------------------------------
+// Clientes y equipos — TCI-36, TCI-37
+// ---------------------------------------------------------------------------
+
+model Cliente {
+  id        String    @id @default(cuid())
+  nombre    String
+  rtn       String?   @unique
+  contacto  String?
+  telefono  String?
+  email     String?
+  activo    Boolean   @default(true)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  sedes   Sede[]
+  equipos Equipo[]
+  ordenes OrdenTrabajo[]
+
+  @@index([activo])
+  @@map("clientes")
+}
+
+model Sede {
+  id            String    @id @default(cuid())
+  clienteId     String    @map("cliente_id")
+  nombre        String
+  direccion     String?
+  ciudad        String?
+  referenciaGeo String?   @map("referencia_geo")
+  activo        Boolean   @default(true)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  cliente Cliente        @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  equipos Equipo[]
+  ordenes OrdenTrabajo[]
+
+  @@index([clienteId])
+  @@map("sedes")
+}
+
+model Equipo {
+  id              String    @id @default(cuid())
+  codigo          String    @unique
+  nombre          String
+  tipo            String?
+  marca           String?
+  modelo          String?
+  numeroSerie     String?   @map("numero_serie")
+  ubicacionFisica String?   @map("ubicacion_fisica")
+  clienteId       String    @map("cliente_id")
+  sedeId          String?   @map("sede_id")
+  activo          Boolean   @default(true)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  cliente Cliente        @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  sede    Sede?          @relation(fields: [sedeId], references: [id], onDelete: SetNull)
+  ordenes OrdenTrabajo[]
+
+  @@index([clienteId])
+  @@index([sedeId])
+  @@map("equipos")
+}
+
+// ---------------------------------------------------------------------------
+// Ordenes de trabajo — TCI-22, TCI-78
+// ---------------------------------------------------------------------------
+
+enum OrdenEstado {
+  PENDIENTE
+  ASIGNADA
+  EN_PROCESO
+  EN_ESPERA
+  COMPLETADA
+  CANCELADA
+}
+
+enum Prioridad {
+  BAJA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum OrigenOrden {
+  MANUAL
+  PREVENTIVO_AUTOMATICO
+}
+
+// TCI-30: catalogo editable en base de datos, no un enum en codigo.
+model TipoMantenimiento {
+  id             String   @id @default(cuid())
+  codigo         String   @unique
+  nombre         String
+  color          String?
+  requiereEquipo Boolean  @default(false) @map("requiere_equipo")
+  activo         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  ordenes OrdenTrabajo[]
+
+  @@map("tipos_mantenimiento")
+}
+
+model OrdenTrabajo {
+  id                  String      @id @default(cuid())
+  numero              String      @unique
+  titulo              String      @db.VarChar(120)
+  descripcionProblema String      @map("descripcion_problema")
+  trabajoRealizado    String?     @map("trabajo_realizado")
+  estado              OrdenEstado @default(PENDIENTE)
+  prioridad           Prioridad   @default(MEDIA)
+  origen              OrigenOrden @default(MANUAL)
+
+  clienteId           String  @map("cliente_id")
+  sedeId              String? @map("sede_id")
+  equipoId            String? @map("equipo_id")
+  tipoMantenimientoId String  @map("tipo_mantenimiento_id")
+  tecnicoId           String? @map("tecnico_id")
+  creadoPorId         String  @map("creado_por_id")
+
+  fechaProgramada DateTime? @map("fecha_programada")
+  fechaLimite     DateTime? @map("fecha_limite")
+  fechaAsignacion DateTime? @map("fecha_asignacion")
+  fechaInicio     DateTime? @map("fecha_inicio")
+  fechaFin        DateTime? @map("fecha_fin")
+
+  horasTrabajadas Decimal? @map("horas_trabajadas") @db.Decimal(6, 2)
+  costoManoObra   Decimal  @default(0) @map("costo_mano_obra") @db.Decimal(12, 2)
+  costoRepuestos  Decimal  @default(0) @map("costo_repuestos") @db.Decimal(12, 2)
+  costoTotal      Decimal  @default(0) @map("costo_total") @db.Decimal(12, 2)
+  moneda          String   @default("HNL") @db.Char(3)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  cliente           Cliente           @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  sede              Sede?             @relation(fields: [sedeId], references: [id], onDelete: SetNull)
+  equipo            Equipo?           @relation(fields: [equipoId], references: [id], onDelete: Restrict)
+  tipoMantenimiento TipoMantenimiento @relation(fields: [tipoMantenimientoId], references: [id], onDelete: Restrict)
+  tecnico           User?             @relation("TecnicoAsignado", fields: [tecnicoId], references: [id], onDelete: Restrict)
+  creadoPor         User              @relation("CreadoPor", fields: [creadoPorId], references: [id], onDelete: Restrict)
+
+  historial OrdenHistorial[]
+  adjuntos  OrdenAdjunto[]
+
+  @@index([estado])
+  @@index([tecnicoId, estado])
+  @@index([clienteId])
+  @@index([equipoId])
+  @@index([fechaProgramada])
+  @@index([deletedAt])
+  @@map("ordenes_trabajo")
+}
+
+// TCI-29: auditoria solo-append. Nunca se edita ni se borra.
+enum TipoHistorial {
+  CAMBIO_ESTADO
+  ASIGNACION
+  COMENTARIO
+  EDICION
+}
+
+model OrdenHistorial {
+  id             String        @id @default(cuid())
+  ordenId        String        @map("orden_id")
+  usuarioId      String        @map("usuario_id")
+  tipo           TipoHistorial
+  estadoAnterior OrdenEstado?  @map("estado_anterior")
+  estadoNuevo    OrdenEstado?  @map("estado_nuevo")
+  campo          String?
+  valorAnterior  String?       @map("valor_anterior")
+  valorNuevo     String?       @map("valor_nuevo")
+  comentario     String?
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  orden   OrdenTrabajo @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+  usuario User         @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([ordenId, createdAt])
+  @@map("orden_historial")
+}
+
+// TCI-43: evidencia adjunta al cierre.
+enum TipoAdjunto {
+  EVIDENCIA_ANTES
+  EVIDENCIA_DESPUES
+  DOCUMENTO
+}
+
+model OrdenAdjunto {
+  id            String      @id @default(cuid())
+  ordenId       String      @map("orden_id")
+  usuarioId     String      @map("usuario_id")
+  url           String
+  nombreArchivo String      @map("nombre_archivo")
+  mimeType      String      @map("mime_type")
+  tamanoBytes   Int         @map("tamano_bytes")
+  tipo          TipoAdjunto @default(DOCUMENTO)
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  orden   OrdenTrabajo @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+  usuario User         @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([ordenId])
+  @@map("orden_adjuntos")
+}

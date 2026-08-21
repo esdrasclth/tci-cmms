@@ -1,0 +1,27 @@
+# Dependencias
+node_modules/
+
+# Build
+dist/
+build/
+
+# Cliente de Prisma generado (se regenera con `npx prisma generate`)
+/src/generated/
+
+# Variables de entorno — nunca versionar. El ejemplo si va: .env.example
+.env
+.env.*
+!.env.example
+
+# Logs y coverage
+logs/
+*.log
+npm-debug.log*
+coverage/
+.nyc_output/
+
+# Editores / SO
+.DS_Store
+Thumbs.db
+.idea/
+*.swp

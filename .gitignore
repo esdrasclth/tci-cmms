@@ -1,0 +1,31 @@
+# Dependencias
+node_modules/
+
+# Build
+dist/
+build/
+.next/
+
+# Variables de entorno — nunca versionar
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Editores / SO
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+# Herramientas de agentes (cada quien las suyas)
+.windsurf/
+.agents/
+
+# Skills de agentes que instala 'prisma init' — ruido, no codigo del proyecto
+.claude/skills/
+skills-lock.json

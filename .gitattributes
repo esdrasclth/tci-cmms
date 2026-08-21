@@ -1,0 +1,12 @@
+# El equipo trabaja en Windows: normalizar finales de linea para que los diffs
+# no se llenen de cambios fantasma.
+* text=auto eol=lf
+
+# Binarios
+*.png binary
+*.jpg binary
+*.pdf binary
+*.ico binary
+
+# Los lockfiles no se revisan a mano en los PR
+package-lock.json linguist-generated=true -diff
