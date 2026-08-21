@@ -7,11 +7,11 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-COPY prisma ./prisma
-COPY prisma.config.ts ./
-RUN npx prisma generate
-
 COPY . .
+
+# Despues del COPY: prisma generate necesita ver el tsconfig.json para emitir
+# los imports del cliente con la extension correcta.
+RUN npx prisma generate
 RUN npm run build
 
 # Deja solo dependencias de produccion para copiarlas a la imagen final

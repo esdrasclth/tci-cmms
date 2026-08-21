@@ -11,6 +11,10 @@ generator client {
   provider     = "prisma-client"
   output       = "../src/generated/prisma"
   moduleFormat = "cjs"
+  // Explicito a proposito: si Prisma no encuentra un tsconfig.json (por ejemplo
+  // dentro del build de Docker) emite los imports con extension .ts y el
+  // contenedor revienta con "Cannot find module './internal/class.ts'".
+  importFileExtension = "js"
 }
 
 datasource db {
