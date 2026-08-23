@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+/**
+ * Identidad visual de TCI (TCI-17).
+ * Fuente: variables de https://www.tcihn.com/estilo.css, verificadas contra el logo.
+ *
+ * Nota de contraste: el rojo sobre blanco da 5.8:1 (WCAG AA para texto normal) y
+ * sobre negro solo 3.6:1. Por eso en el panel oscuro el texto va en blanco y el
+ * rojo se usa unicamente como acento grafico, nunca como color de texto.
+ */
+@theme {
+  --color-tci-rojo: #c61d1a;
+  --color-tci-rojo-hover: #a81714;
+  --color-tci-negro: #000000;
+  --color-tci-grafito: #333333;
+  --color-tci-gris: #6b7280;
+  --color-tci-humo: #f8f9fa;
+  --color-tci-borde: #e0e0e0;
+
+  --font-sans: Arial, Helvetica, sans-serif;
+}
+
+/*
+ * La app es deliberadamente de tema claro: es una herramienta de escritorio que
+ * se usa junto a documentos impresos. Sin este bloque, el prefers-color-scheme
+ * del sistema dejaria los formularios a medio pintar.
+ */
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: #ffffff;
+  color: var(--color-tci-grafito);
+  font-family: var(--font-sans);
+}
+
+/* Foco visible y consistente en toda la app, en el rojo institucional. */
+:focus-visible {
+  outline: 2px solid var(--color-tci-rojo);
+  outline-offset: 2px;
+}
