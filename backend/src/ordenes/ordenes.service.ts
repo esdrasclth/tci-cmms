@@ -465,6 +465,38 @@ export class OrdenesService {
     });
   }
 
+  /**
+   * TCI-42 — comentario sin cambio de estado.
+   *
+   * Va al mismo historial que las transiciones (TCI-29), que es solo-append: un
+   * comentario no se edita ni se borra. Asi el hilo de la orden queda en orden
+   * cronologico junto con lo que le fue pasando.
+   */
+  async comentar(id: string, comentario: string, usuario: UsuarioActual) {
+    const orden = await this.prisma.ordenTrabajo.findFirst({
+      where: { id, deletedAt: null },
+      select: { id: true, tecnicoId: true },
+    });
+    if (!orden) {
+      throw new NotFoundException(`No existe la orden ${id}.`);
+    }
+    // Misma regla que para ver el detalle: el admin, o el tecnico asignado.
+    if (usuario.rol !== Rol.ADMIN && orden.tecnicoId !== usuario.id) {
+      throw new ForbiddenException('Esta orden no esta asignada a usted.');
+    }
+
+    await this.prisma.ordenHistorial.create({
+      data: {
+        ordenId: id,
+        usuarioId: usuario.id,
+        tipo: TipoHistorial.COMENTARIO,
+        comentario: comentario.trim(),
+      },
+    });
+
+    return this.obtener(id, usuario);
+  }
+
   // -------------------------------------------------------------------------
   // TCI-78 — transiciones de estado (incluye TCI-27: completar y cancelar)
   // -------------------------------------------------------------------------

@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsString,
   Max,
+  MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
@@ -20,6 +21,14 @@ export class MotivoDto {
   @IsString()
   @MinLength(3)
   motivo!: string;
+}
+
+/** TCI-42 — comentario suelto, sin cambio de estado. */
+export class ComentarioDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(1000)
+  comentario!: string;
 }
 
 /** Acciones sin motivo obligatorio: iniciar, reanudar, desasignar. */

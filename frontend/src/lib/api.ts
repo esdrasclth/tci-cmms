@@ -42,6 +42,51 @@ export async function apiGet<T>(
   return (await respuesta.json()) as T;
 }
 
+/**
+ * POST contra la API.
+ *
+ * A diferencia del GET, aqui si interesa el mensaje que manda el backend: las
+ * reglas de la maquina de estados (422) y de permisos (403) explican al usuario
+ * por que no se pudo hacer la accion, y traducirlas de nuevo aqui las duplicaria.
+ */
+export async function apiPost<T>(ruta: string, cuerpo: unknown): Promise<T> {
+  let respuesta: Response;
+  try {
+    respuesta = await fetch(`${API}/api${ruta}`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(cuerpo),
+    });
+  } catch {
+    throw new ApiError(
+      0,
+      "No se pudo conectar con el servidor. Verifique que la API este arriba.",
+    );
+  }
+
+  if (!respuesta.ok) {
+    const detalle = await respuesta.json().catch(() => null);
+    throw new ApiError(
+      respuesta.status,
+      mensajeDelBackend(detalle) ?? mensajeDeError(respuesta.status),
+    );
+  }
+
+  return (await respuesta.json()) as T;
+}
+
+/** Nest devuelve `message` como texto o como lista (errores de validacion). */
+function mensajeDelBackend(detalle: unknown): string | null {
+  if (typeof detalle !== "object" || detalle === null) return null;
+  const mensaje = (detalle as { message?: unknown }).message;
+  if (typeof mensaje === "string") return mensaje;
+  if (Array.isArray(mensaje) && typeof mensaje[0] === "string") {
+    return mensaje.join(". ");
+  }
+  return null;
+}
+
 function mensajeDeError(status: number): string {
   switch (status) {
     case 401:

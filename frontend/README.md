@@ -30,6 +30,7 @@ La app queda en `http://localhost:3000`.
 | `/login` | Inicio de sesión (TCI-40) |
 | `/recuperar-contrasena` | Aviso de que `TCI-34` aún no está disponible |
 | `/panel` | Listado de órdenes de trabajo (TCI-41) |
+| `/panel/ordenes/[id]` | Detalle, transiciones de estado e historial (TCI-42) |
 
 **No hay pantalla de registro.** El backend tiene el registro público cerrado
 (`disableSignUp`) y las cuentas las da de alta un administrador con
@@ -44,6 +45,27 @@ se usa para decidir qué datos ocultar.
 
 Tabla en escritorio y tarjetas en móvil, porque el técnico consulta esto en campo
 (`TCI-44`). Filtros por estado, paginación, y estados de carga, error y vacío.
+
+## Detalle de una orden (TCI-42)
+
+Los botones de acción salen de `accionesDisponibles`, que **calcula el backend**
+según el estado y el rol (`TCI-78` regla 2). El frontend solo los pinta: no
+decide qué transición es válida, ni duplica la máquina de estados. Lo que cada
+acción pide (motivo, técnico, datos de cierre) sí está en `CONFIG_ACCION`, pero
+solo para armar el formulario — el backend vuelve a validarlo todo.
+
+Tras cada acción se relee la orden completa, así que la vista refleja el estado
+real del servidor y no una suposición local.
+
+El historial mezcla en un solo hilo cronológico los cambios de estado, las
+asignaciones, las ediciones y los comentarios sueltos
+(`POST /api/ordenes/:id/comentarios`).
+
+> **Sobre "en tiempo real" del work item:** la vista se actualiza al instante
+> para quien ejecuta la acción, pero **no hay envío desde el servidor**. Si dos
+> personas miran la misma orden, una no ve lo que hace la otra hasta recargar.
+> Eso necesita WebSocket o SSE y encaja con el módulo de notificaciones
+> (`TCI-53`).
 
 ## Diseño
 
@@ -88,10 +110,10 @@ un middleware.
 
 - No hay tests. Falta decidir herramienta (Vitest + Testing Library encajaría con
   lo que ya usa el backend).
-- El listado **no navega al detalle de una orden**: no hay `/panel/ordenes/[id]`
-  todavía, así que desde aquí no se puede iniciar, pausar ni cerrar una orden
-  (`TCI-42`).
-- Los filtros no se reflejan en la URL: al recargar se pierden.
+- **No hay actualización en vivo entre usuarios** (ver el aviso de TCI-42).
+- **No se puede crear ni editar una orden desde la interfaz**: el backend tiene
+  `POST` y `PATCH /api/ordenes`, pero no hay pantalla para ellos.
+- Los filtros del listado no se reflejan en la URL: al recargar se pierden.
 - Los tipos de la API están escritos a mano en `src/lib/ordenes.ts`. Si el backend
   cambia el `include` del listado, hay que actualizarlos aquí.
 - Sin manejo de sesión expirada: si la cookie caduca con la app abierta, la

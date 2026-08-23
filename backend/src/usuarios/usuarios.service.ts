@@ -87,9 +87,7 @@ export class UsuariosService {
 
   private exigirAdmin(usuario: UsuarioActual, accion: string) {
     if (usuario.rol !== Rol.ADMIN) {
-      throw new ForbiddenException(
-        `Solo un administrador puede ${accion}.`,
-      );
+      throw new ForbiddenException(`Solo un administrador puede ${accion}.`);
     }
   }
 }

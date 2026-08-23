@@ -9,7 +9,9 @@ export class FiltrarUsuariosDto {
   rol?: Rol;
 
   @IsOptional()
-  @Transform(({ value }: { value: unknown }) => value === 'true' || value === true)
+  @Transform(
+    ({ value }: { value: unknown }) => value === 'true' || value === true,
+  )
   @IsBoolean()
   activo?: boolean;
 

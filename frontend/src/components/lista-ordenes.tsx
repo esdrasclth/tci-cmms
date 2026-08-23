@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { ApiError } from "@/lib/api";
@@ -183,9 +184,12 @@ export function ListaOrdenes({ esAdmin }: { esAdmin: boolean }) {
                         {orden.numero}
                       </td>
                       <td className="px-4 py-3">
-                        <p className="font-bold text-tci-negro">
+                        <Link
+                          href={`/panel/ordenes/${orden.id}`}
+                          className="font-bold text-tci-negro underline-offset-2 hover:text-tci-rojo hover:underline"
+                        >
                           {orden.titulo}
-                        </p>
+                        </Link>
                         <p className="text-xs text-tci-gris">
                           {orden.tipoMantenimiento.nombre}
                           {orden.equipo && ` · ${orden.equipo.codigo}`}
@@ -226,10 +230,11 @@ export function ListaOrdenes({ esAdmin }: { esAdmin: boolean }) {
             {/* Movil: tarjetas. El tecnico consulta esto en campo (TCI-44). */}
             <ul className="space-y-3 md:hidden">
               {pagina.data.map((orden) => (
-                <li
-                  key={orden.id}
-                  className="rounded-xl border border-tci-borde bg-white p-4"
-                >
+                <li key={orden.id}>
+                  <Link
+                    href={`/panel/ordenes/${orden.id}`}
+                    className="block rounded-xl border border-tci-borde bg-white p-4 hover:border-tci-gris"
+                  >
                   <div className="flex items-start justify-between gap-3">
                     <span className="font-mono text-xs text-tci-gris">
                       {orden.numero}
@@ -248,7 +253,8 @@ export function ListaOrdenes({ esAdmin }: { esAdmin: boolean }) {
                     {esAdmin && (
                       <span>{orden.tecnico?.name ?? "Sin asignar"}</span>
                     )}
-                  </div>
+                    </div>
+                  </Link>
                 </li>
               ))}
             </ul>

@@ -101,6 +101,10 @@ prisma/
 | cancelar | `POST /api/ordenes/:id/cancelar` | cualquiera no final | Admin | `{motivo}` |
 | reabrir | `POST /api/ordenes/:id/reabrir` | `COMPLETADA` | Admin | `{motivo}` |
 
+Además, `POST /api/ordenes/:id/comentarios` con `{comentario}` agrega una entrada
+al historial **sin** cambiar el estado (`TCI-42`). Lo puede usar el admin o el
+técnico asignado.
+
 Una transición fuera de la tabla responde **422**; sin permiso, **403**.
 El detalle de una orden incluye `accionesDisponibles`: la lista de acciones que
 *este* usuario puede ejecutar ahora. El frontend pinta botones a partir de eso y

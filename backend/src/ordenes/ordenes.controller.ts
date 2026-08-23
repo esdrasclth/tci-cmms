@@ -15,6 +15,7 @@ import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { usuarioActual } from '../auth/usuario-actual';
 import {
   AsignarOrdenDto,
+  ComentarioDto,
   ComentarioOpcionalDto,
   CompletarOrdenDto,
   MotivoDto,
@@ -66,6 +67,16 @@ export class OrdenesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   eliminar(@Param('id') id: string, @Session() session: UserSession) {
     return this.ordenes.eliminar(id, usuarioActual(session));
+  }
+
+  /** TCI-42 — comentario sin cambio de estado. */
+  @Post(':id/comentarios')
+  comentar(
+    @Param('id') id: string,
+    @Body() dto: ComentarioDto,
+    @Session() session: UserSession,
+  ) {
+    return this.ordenes.comentar(id, dto.comentario, usuarioActual(session));
   }
 
   // --- Transiciones de estado (TCI-78) -------------------------------------
