@@ -7,20 +7,24 @@
  *
  * Es idempotente: se puede correr las veces que haga falta.
  *
- * Los usuarios NO se siembran aqui. Better Auth es ESM-only y este script corre
- * en CommonJS (la misma razon por la que el proyecto usa Vitest y no Jest), asi
- * que importarlo reventaria. El admin se crea con:
+ * Tambien crea el administrador inicial. Tiene que hacerlo el seed: el registro
+ * publico esta cerrado (`disableSignUp` en auth.config.ts), asi que sin esto una
+ * instalacion nueva se queda sin forma de entrar.
  *
- *   curl -X POST http://localhost:3001/api/auth/sign-up/email \
- *     -H "Content-Type: application/json" \
- *     -d '{"name":"Admin","email":"admin@tci.hn","password":"cambiame123"}'
+ *   SEED_ADMIN_EMAIL=admin@tci.hn SEED_ADMIN_PASSWORD=... npm run db:seed
  *
- * y luego se promueve corriendo este seed con SEED_ADMIN_EMAIL=admin@tci.hn.
+ * Corre con tsx y no con ts-node, y por eso puede importar Better Auth, que es
+ * ESM-only (la misma razon por la que el proyecto usa Vitest y no Jest).
  */
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 
+import { auth } from '../src/auth/auth.instance';
 import { PrismaClient } from '../src/generated/prisma/client';
+import {
+  UsuarioYaExisteError,
+  crearUsuarioConCredenciales,
+} from '../src/usuarios/crear-usuario-credenciales';
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -122,18 +126,62 @@ async function main(): Promise<void> {
   }
   console.log(`Clientes: ${CLIENTES.length}`);
 
-  const adminEmail = process.env.SEED_ADMIN_EMAIL;
-  if (adminEmail) {
-    const usuario = await prisma.user.findUnique({ where: { email: adminEmail } });
-    if (usuario) {
-      await prisma.user.update({ where: { id: usuario.id }, data: { rol: 'ADMIN' } });
-      console.log(`Promovido a ADMIN: ${adminEmail}`);
-    } else {
-      console.warn(
-        `SEED_ADMIN_EMAIL=${adminEmail} no existe todavia. Registralo con ` +
-          `POST /api/auth/sign-up/email y vuelve a correr el seed.`,
-      );
+  await sembrarAdmin();
+}
+
+/**
+ * Crea o promueve al administrador inicial.
+ *
+ * Si la cuenta ya existe solo se le asegura el rol: no se toca la contrasena,
+ * para que volver a correr el seed no deje a nadie fuera.
+ */
+async function sembrarAdmin(): Promise<void> {
+  const email = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
+  if (!email) {
+    console.warn(
+      'SEED_ADMIN_EMAIL no esta definido: no se creo ningun administrador. ' +
+        'Sin registro publico, el sistema queda sin forma de entrar.',
+    );
+    return;
+  }
+
+  const existente = await prisma.user.findUnique({ where: { email } });
+  if (existente) {
+    if (existente.rol === 'ADMIN') {
+      console.log(`El administrador ${email} ya existe.`);
+      return;
     }
+    await prisma.user.update({
+      where: { id: existente.id },
+      data: { rol: 'ADMIN' },
+    });
+    console.log(`Promovido a ADMIN: ${email}`);
+    return;
+  }
+
+  const password = process.env.SEED_ADMIN_PASSWORD;
+  if (!password) {
+    console.error(
+      `Falta SEED_ADMIN_PASSWORD para crear ${email} (minimo 8 caracteres).`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  try {
+    await crearUsuarioConCredenciales(auth, {
+      name: process.env.SEED_ADMIN_NAME ?? 'Administrador TCI',
+      email,
+      password,
+      rol: 'ADMIN',
+    });
+    console.log(`Administrador creado: ${email}`);
+  } catch (error) {
+    if (error instanceof UsuarioYaExisteError) {
+      console.log(`El administrador ${email} ya existe.`);
+      return;
+    }
+    throw error;
   }
 }
 

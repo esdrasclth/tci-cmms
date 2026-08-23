@@ -28,9 +28,22 @@ La app queda en `http://localhost:3000`.
 | Ruta | Qué es |
 |---|---|
 | `/login` | Inicio de sesión (TCI-40) |
-| `/registro` | Alta de cuenta — siempre con rol `TECNICO` |
 | `/recuperar-contrasena` | Aviso de que `TCI-34` aún no está disponible |
-| `/panel` | Marcador de posición tras iniciar sesión (lo reemplaza `TCI-41`) |
+| `/panel` | Listado de órdenes de trabajo (TCI-41) |
+
+**No hay pantalla de registro.** El backend tiene el registro público cerrado
+(`disableSignUp`) y las cuentas las da de alta un administrador con
+`POST /api/usuarios`. Falta la pantalla para hacerlo: es `TCI-35`.
+
+## Listado de órdenes (TCI-41)
+
+Es la misma vista para los dos roles y **el filtrado por rol lo hace el backend**:
+un técnico recibe solo sus órdenes aunque manipule la petición. En el frontend el
+rol solo cambia el título y si se muestra la columna de técnico asignado — nunca
+se usa para decidir qué datos ocultar.
+
+Tabla en escritorio y tarjetas en móvil, porque el técnico consulta esto en campo
+(`TCI-44`). Filtros por estado, paginación, y estados de carga, error y vacío.
 
 ## Diseño
 
@@ -75,6 +88,11 @@ un middleware.
 
 - No hay tests. Falta decidir herramienta (Vitest + Testing Library encajaría con
   lo que ya usa el backend).
-- `/panel` es un marcador de posición: no consume todavía `GET /api/ordenes`.
+- El listado **no navega al detalle de una orden**: no hay `/panel/ordenes/[id]`
+  todavía, así que desde aquí no se puede iniciar, pausar ni cerrar una orden
+  (`TCI-42`).
+- Los filtros no se reflejan en la URL: al recargar se pierden.
+- Los tipos de la API están escritos a mano en `src/lib/ordenes.ts`. Si el backend
+  cambia el `include` del listado, hay que actualizarlos aquí.
 - Sin manejo de sesión expirada: si la cookie caduca con la app abierta, la
-  siguiente acción falla y hay que recargar.
+  siguiente acción muestra el error pero no lleva al login.

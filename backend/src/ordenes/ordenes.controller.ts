@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 
-import { Rol } from '../generated/prisma/enums';
+import { usuarioActual } from '../auth/usuario-actual';
 import {
   AsignarOrdenDto,
   ComentarioOpcionalDto,
@@ -22,7 +22,7 @@ import {
 import { ActualizarOrdenDto } from './dto/actualizar-orden.dto';
 import { CrearOrdenDto } from './dto/crear-orden.dto';
 import { FiltrarOrdenesDto } from './dto/filtrar-ordenes.dto';
-import { OrdenesService, UsuarioActual } from './ordenes.service';
+import { OrdenesService } from './ordenes.service';
 
 /**
  * TCI-23 — CRUD de ordenes de trabajo.
@@ -40,17 +40,17 @@ export class OrdenesController {
 
   @Post()
   crear(@Body() dto: CrearOrdenDto, @Session() session: UserSession) {
-    return this.ordenes.crear(dto, actual(session));
+    return this.ordenes.crear(dto, usuarioActual(session));
   }
 
   @Get()
   listar(@Query() filtros: FiltrarOrdenesDto, @Session() session: UserSession) {
-    return this.ordenes.listar(filtros, actual(session));
+    return this.ordenes.listar(filtros, usuarioActual(session));
   }
 
   @Get(':id')
   obtener(@Param('id') id: string, @Session() session: UserSession) {
-    return this.ordenes.obtener(id, actual(session));
+    return this.ordenes.obtener(id, usuarioActual(session));
   }
 
   @Patch(':id')
@@ -59,13 +59,13 @@ export class OrdenesController {
     @Body() dto: ActualizarOrdenDto,
     @Session() session: UserSession,
   ) {
-    return this.ordenes.actualizar(id, dto, actual(session));
+    return this.ordenes.actualizar(id, dto, usuarioActual(session));
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   eliminar(@Param('id') id: string, @Session() session: UserSession) {
-    return this.ordenes.eliminar(id, actual(session));
+    return this.ordenes.eliminar(id, usuarioActual(session));
   }
 
   // --- Transiciones de estado (TCI-78) -------------------------------------
@@ -77,7 +77,7 @@ export class OrdenesController {
     @Body() dto: AsignarOrdenDto,
     @Session() session: UserSession,
   ) {
-    return this.ordenes.transicionar(id, 'asignar', actual(session), {
+    return this.ordenes.transicionar(id, 'asignar', usuarioActual(session), {
       tecnicoId: dto.tecnicoId,
     });
   }
@@ -89,7 +89,7 @@ export class OrdenesController {
     @Body() dto: AsignarOrdenDto,
     @Session() session: UserSession,
   ) {
-    return this.ordenes.transicionar(id, 'reasignar', actual(session), {
+    return this.ordenes.transicionar(id, 'reasignar', usuarioActual(session), {
       tecnicoId: dto.tecnicoId,
     });
   }
@@ -101,7 +101,7 @@ export class OrdenesController {
     @Body() dto: ComentarioOpcionalDto,
     @Session() session: UserSession,
   ) {
-    return this.ordenes.transicionar(id, 'desasignar', actual(session), {
+    return this.ordenes.transicionar(id, 'desasignar', usuarioActual(session), {
       comentario: dto.comentario,
     });
   }
@@ -112,7 +112,7 @@ export class OrdenesController {
     @Body() dto: ComentarioOpcionalDto,
     @Session() session: UserSession,
   ) {
-    return this.ordenes.transicionar(id, 'iniciar', actual(session), {
+    return this.ordenes.transicionar(id, 'iniciar', usuarioActual(session), {
       comentario: dto.comentario,
     });
   }
@@ -123,7 +123,7 @@ export class OrdenesController {
     @Body() dto: MotivoDto,
     @Session() session: UserSession,
   ) {
-    return this.ordenes.transicionar(id, 'pausar', actual(session), {
+    return this.ordenes.transicionar(id, 'pausar', usuarioActual(session), {
       motivo: dto.motivo,
     });
   }
@@ -134,7 +134,7 @@ export class OrdenesController {
     @Body() dto: ComentarioOpcionalDto,
     @Session() session: UserSession,
   ) {
-    return this.ordenes.transicionar(id, 'reanudar', actual(session), {
+    return this.ordenes.transicionar(id, 'reanudar', usuarioActual(session), {
       comentario: dto.comentario,
     });
   }
@@ -146,7 +146,7 @@ export class OrdenesController {
     @Body() dto: CompletarOrdenDto,
     @Session() session: UserSession,
   ) {
-    return this.ordenes.transicionar(id, 'completar', actual(session), {
+    return this.ordenes.transicionar(id, 'completar', usuarioActual(session), {
       cierre: dto,
     });
   }
@@ -158,7 +158,7 @@ export class OrdenesController {
     @Body() dto: MotivoDto,
     @Session() session: UserSession,
   ) {
-    return this.ordenes.transicionar(id, 'cancelar', actual(session), {
+    return this.ordenes.transicionar(id, 'cancelar', usuarioActual(session), {
       motivo: dto.motivo,
     });
   }
@@ -169,17 +169,8 @@ export class OrdenesController {
     @Body() dto: MotivoDto,
     @Session() session: UserSession,
   ) {
-    return this.ordenes.transicionar(id, 'reabrir', actual(session), {
+    return this.ordenes.transicionar(id, 'reabrir', usuarioActual(session), {
       motivo: dto.motivo,
     });
   }
-}
-
-/**
- * `rol` es un additionalField de Better Auth (ver auth.config.ts): existe en la
- * fila y viaja en la sesion, pero no esta en el tipo base de UserSession.
- */
-function actual(session: UserSession): UsuarioActual {
-  const user = session.user as UserSession['user'] & { rol?: Rol };
-  return { id: user.id, rol: user.rol ?? Rol.TECNICO };
 }

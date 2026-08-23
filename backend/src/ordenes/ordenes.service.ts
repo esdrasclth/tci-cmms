@@ -12,6 +12,7 @@ import {
   TipoAdjunto,
   TipoHistorial,
 } from '../generated/prisma/enums';
+import type { UsuarioActual } from '../auth/usuario-actual';
 import { PrismaService } from '../prisma/prisma.service';
 import { CompletarOrdenDto } from './dto/acciones.dto';
 import { ActualizarOrdenDto } from './dto/actualizar-orden.dto';
@@ -19,10 +20,7 @@ import { CrearOrdenDto } from './dto/crear-orden.dto';
 import { FiltrarOrdenesDto } from './dto/filtrar-ordenes.dto';
 import { AccionOrden, OrdenEstadoService } from './orden-estado.service';
 
-export interface UsuarioActual {
-  id: string;
-  rol: Rol;
-}
+export type { UsuarioActual } from '../auth/usuario-actual';
 
 /**
  * Regla 4 de docs/flujo-ordenes.md: la evidencia para cerrar es configurable.

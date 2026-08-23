@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { createAuth } from './auth/auth.config';
 import { OrdenesModule } from './ordenes/ordenes.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { UsuariosModule } from './usuarios/usuarios.module';
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
@@ -26,6 +27,7 @@ import { PrismaService } from './prisma/prisma.service';
       }),
     }),
     OrdenesModule,
+    UsuariosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

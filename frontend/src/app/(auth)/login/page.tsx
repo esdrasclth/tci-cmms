@@ -97,14 +97,11 @@ export default function LoginPage() {
           {cargando ? "Ingresando..." : "Ingresar"}
         </BotonPrimario>
 
+        {/* No hay registro publico: el backend tiene `disableSignUp` y las
+            cuentas las da de alta un administrador (TCI-35). */}
         <p className="pt-1 text-center text-sm text-tci-gris">
-          No tiene cuenta?{" "}
-          <Link
-            href="/registro"
-            className="font-bold text-tci-negro underline-offset-2 hover:text-tci-rojo hover:underline"
-          >
-            Registrese aqui
-          </Link>
+          Las cuentas las crea un administrador. Si necesita acceso,
+          solicitelo a su supervisor.
         </p>
       </form>
     </AuthShell>

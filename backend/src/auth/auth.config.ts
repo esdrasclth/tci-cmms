@@ -23,6 +23,11 @@ export function createAuth(prisma: PrismaClient) {
     emailAndPassword: {
       enabled: true,
       minPasswordLength: 8,
+      // Registro publico cerrado: las cuentas las da de alta un administrador
+      // (POST /api/usuarios). Esto apaga POST /api/auth/sign-up/email; el alta
+      // interna usa el adaptador de Better Auth, ver
+      // src/usuarios/crear-usuario-credenciales.ts.
+      disableSignUp: true,
       // TCI-34 (recuperacion de contrasena) necesita un servicio de correo.
       // Se conecta en el modulo 8 (Notificaciones); por ahora queda apagado
       // para no dejar un flujo a medias que parezca funcional.

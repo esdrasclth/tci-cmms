@@ -120,6 +120,21 @@ curl -b cookies.txt -X POST http://localhost:3001/api/ordenes   -H "Content-Type
 curl -b cookies.txt "http://localhost:3001/api/ordenes?estado=EN_PROCESO&perPage=10"
 ```
 
+## Usuarios (TCI-35, parcial)
+
+| Método | Ruta | Quién |
+|---|---|---|
+| `POST` | `/api/usuarios` | Admin — alta con rol, correo y contraseña |
+| `GET` | `/api/usuarios` | Admin — filtros `rol`, `activo`, `q` |
+
+El alta reutiliza las piezas internas de Better Auth (`password.hash`,
+`internalAdapter.createUser`, `internalAdapter.linkAccount`) en lugar de escribir
+las filas a mano: ver `src/usuarios/crear-usuario-credenciales.ts`. Hacerlo con
+Prisma directamente funcionaría hoy y se rompería en cuanto Better Auth cambiara
+el formato del hash o la forma de la cuenta.
+
+Todavía **no hay pantalla** para esto en el frontend: eso es el resto de `TCI-35`.
+
 ### Correlativo
 
 `numero` es `OT-{año}-{NNNN}`, único y con secuencia por año. Se genera dentro de
@@ -169,8 +184,11 @@ asignar al registrarse — solo lo cambia un Admin (TCI-35).
 
 - `TCI-34` recuperación de contraseña: necesita servicio de correo (módulo 8).
 - **No hay guard de roles** (`TCI-33`): la autorización admin/técnico se resuelve
-  en `OrdenesService` y `OrdenEstadoService`, que conocen la orden concreta. Falta
-  el `@Roles()` a nivel de ruta.
+  en los servicios, que conocen la orden concreta. Falta el `@Roles()` a nivel de
+  ruta. El `@Roles()` que trae `@thallesp/nestjs-better-auth` no sirve tal cual:
+  espera un campo `role` y el nuestro se llama `rol`.
+- **No se puede cambiar el rol ni desactivar a un usuario por API** todavía: solo
+  alta y listado. El resto de `TCI-35` incluye editar y dar de baja.
 - **No hay tests e2e de órdenes**: la máquina de estados está cubierta por tests
   unitarios (`orden-estado.service.spec.ts`), pero el controller solo se verificó
   a mano contra la base real.

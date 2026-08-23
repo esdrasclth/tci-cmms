@@ -4,14 +4,14 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { ListaOrdenes } from "@/components/lista-ordenes";
 import { signOut, useSession } from "@/lib/auth-client";
 
 /**
- * Marcador de posicion del panel (TCI-41 / TCI-60 lo reemplazan).
+ * Panel principal (TCI-41).
  *
- * Existe para que el login desemboque en algo real y para verificar de punta a
- * punta que la cookie de sesion viaja entre el frontend (:3000) y la API
- * (:3001).
+ * Muestra el listado de ordenes: todas para un administrador, solo las
+ * asignadas para un tecnico. El filtrado por rol lo hace el backend.
  *
  * La guarda es del lado del cliente a proposito: el backend vive en otro origen
  * y dar por hecho que su cookie llega al servidor de Next solo funciona en
@@ -80,15 +80,8 @@ export default function PanelPage() {
         </div>
         <p className="mt-1 text-sm text-tci-gris">{sesion.user.email}</p>
 
-        <div className="mt-8 rounded-xl border border-dashed border-tci-borde bg-white p-8 text-center">
-          <p className="text-sm text-tci-grafito">
-            Aqui va el listado de ordenes de trabajo.
-          </p>
-          <p className="mt-1 text-xs text-tci-gris">
-            {esAdmin
-              ? "Vista de administrador — pendiente (TCI-41, TCI-60)."
-              : "Vista de ordenes asignadas — pendiente (TCI-41)."}
-          </p>
+        <div className="mt-8">
+          <ListaOrdenes esAdmin={esAdmin} />
         </div>
       </main>
     </div>
