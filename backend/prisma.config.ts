@@ -7,6 +7,9 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    // Datos minimos para trabajar ordenes (TCI-23). Corre solo en
+    // `prisma migrate reset`; a mano es `npm run db:seed`.
+    seed: "tsx prisma/seed.ts",
   },
   datasource: {
     url: process.env["DATABASE_URL"],

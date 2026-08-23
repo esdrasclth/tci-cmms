@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { createAuth } from './auth/auth.config';
+import { OrdenesModule } from './ordenes/ordenes.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PrismaService } from './prisma/prisma.service';
 
@@ -24,6 +25,7 @@ import { PrismaService } from './prisma/prisma.service';
         auth: createAuth(prisma),
       }),
     }),
+    OrdenesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

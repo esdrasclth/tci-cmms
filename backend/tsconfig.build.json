@@ -13,6 +13,8 @@
     "dist",
     "**/*spec.ts",
     "prisma.config.ts",
+    // El seed vive fuera de src y corre con tsx, no con el build de Nest.
+    "prisma/seed.ts",
     "vitest.config.mts",
     "vitest.config.e2e.mts"
   ]
