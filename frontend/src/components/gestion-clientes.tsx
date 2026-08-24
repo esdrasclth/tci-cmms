@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Alerta, Campo } from "@/components/form";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 import { ApiError } from "@/lib/api";
+import { useDebounce } from "@/lib/hooks";
 import {
   actualizarCliente,
   actualizarSede,
@@ -37,14 +38,21 @@ type Dialogo =
 export function GestionClientes() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [busqueda, setBusqueda] = useState("");
+  const [filtroActivo, setFiltroActivo] = useState<"" | "true" | "false">("");
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
   const [dialogo, setDialogo] = useState<Dialogo>(null);
 
+  // Sin diferir, cada tecla dispararia una peticion (TCI-39).
+  const busquedaDiferida = useDebounce(busqueda);
+
   useEffect(() => {
     let cancelado = false;
-    listarClientesAdmin(busqueda)
+    listarClientesAdmin({
+      q: busquedaDiferida,
+      activo: filtroActivo === "" ? undefined : filtroActivo === "true",
+    })
       .then((lista) => {
         if (cancelado) return;
         setClientes(lista);
@@ -63,7 +71,7 @@ export function GestionClientes() {
     return () => {
       cancelado = true;
     };
-  }, [intento, busqueda]);
+  }, [intento, busquedaDiferida, filtroActivo]);
 
   const recargar = useCallback(() => {
     setCargando(true);
@@ -99,7 +107,7 @@ export function GestionClientes() {
         </button>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <label htmlFor="buscar-cliente" className="sr-only">
           Buscar cliente
         </label>
@@ -107,13 +115,30 @@ export function GestionClientes() {
           id="buscar-cliente"
           type="search"
           value={busqueda}
-          onChange={(e) => {
-            setCargando(true);
-            setBusqueda(e.target.value);
-          }}
+          onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Buscar por nombre, RTN o contacto..."
           className="w-full max-w-sm rounded-lg border border-tci-borde px-4 py-2.5 text-sm text-tci-negro placeholder:text-tci-gris/70 focus:border-tci-rojo focus:outline-none"
         />
+        <label htmlFor="filtro-activo" className="sr-only">
+          Filtrar por estado
+        </label>
+        <select
+          id="filtro-activo"
+          value={filtroActivo}
+          onChange={(e) =>
+            setFiltroActivo(e.target.value as "" | "true" | "false")
+          }
+          className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro"
+        >
+          <option value="">Activos y desactivados</option>
+          <option value="true">Solo activos</option>
+          <option value="false">Solo desactivados</option>
+        </select>
+        {!cargando && (
+          <p className="text-sm text-tci-gris">
+            {clientes.length} {clientes.length === 1 ? "cliente" : "clientes"}
+          </p>
+        )}
       </div>
 
       {error && (
@@ -123,14 +148,18 @@ export function GestionClientes() {
       )}
 
       <div className="mt-5">
-        {cargando ? (
+        {cargando && clientes.length === 0 ? (
           <Esqueleto />
         ) : clientes.length === 0 ? (
           <p className="rounded-xl border border-dashed border-tci-borde bg-white p-8 text-center text-sm text-tci-grafito">
-            {busqueda ? "Ningun cliente coincide." : "No hay clientes."}
+            {busqueda || filtroActivo
+              ? "Ningun cliente coincide."
+              : "No hay clientes."}
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-tci-borde bg-white">
+          <div
+            className={`overflow-x-auto rounded-xl border border-tci-borde bg-white transition-opacity ${cargando ? "opacity-50" : ""}`}
+          >
             <table className="w-full text-left text-sm">
               <thead className="border-b border-tci-borde bg-tci-humo text-xs text-tci-gris uppercase">
                 <tr>

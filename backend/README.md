@@ -272,8 +272,6 @@ asignar al registrarse — solo lo cambia un Admin (TCI-35).
 
 - `TCI-34` recuperación de contraseña: necesita servicio de correo (módulo 8).
 - **El catálogo de tipos de mantenimiento no se puede editar** (`TCI-30`).
-- **Un equipo no expone su historial de órdenes** todavía (`TCI-38`): el dato ya
-  está en `ordenes_trabajo.equipoId`, pero no hay endpoint que lo devuelva.
 - **No hay tests e2e de órdenes**: la máquina de estados está cubierta por tests
   unitarios (`orden-estado.service.spec.ts`), pero el controller solo se verificó
   a mano contra la base real.

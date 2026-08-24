@@ -229,14 +229,22 @@ export function DetalleOrden({ id }: { id: string }) {
           <Tarjeta titulo="Datos">
             <dl className="space-y-3 text-sm">
               <Dato etiqueta="Tipo" valor={orden.tipoMantenimiento.nombre} />
-              <Dato
-                etiqueta="Equipo"
-                valor={
-                  orden.equipo
-                    ? `${orden.equipo.codigo} — ${orden.equipo.nombre}`
-                    : "Sin equipo"
-                }
-              />
+              {/* Enlace a la ficha del equipo y su historial (TCI-38). */}
+              <div className="flex justify-between gap-4">
+                <dt className="text-tci-gris">Equipo</dt>
+                <dd className="text-right font-bold text-tci-grafito">
+                  {orden.equipo ? (
+                    <Link
+                      href={`/panel/equipos/${orden.equipo.id}`}
+                      className="underline-offset-2 hover:text-tci-rojo hover:underline"
+                    >
+                      {orden.equipo.codigo} — {orden.equipo.nombre}
+                    </Link>
+                  ) : (
+                    "Sin equipo"
+                  )}
+                </dd>
+              </div>
               <Dato
                 etiqueta="Tecnico"
                 valor={orden.tecnico?.name ?? "Sin asignar"}

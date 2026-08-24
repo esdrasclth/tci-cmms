@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 import { ApiError } from "@/lib/api";
+import { useDebounce } from "@/lib/hooks";
 import { listarClientesAdmin, type Cliente } from "@/lib/clientes";
 import {
   actualizarEquipo,
@@ -31,6 +33,8 @@ export function GestionEquipos() {
   const [equipos, setEquipos] = useState<Equipo[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [filtroCliente, setFiltroCliente] = useState("");
+  const [filtroSede, setFiltroSede] = useState("");
+  const [filtroActivo, setFiltroActivo] = useState<"" | "true" | "false">("");
   const [busqueda, setBusqueda] = useState("");
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,9 +55,17 @@ export function GestionEquipos() {
     };
   }, [intento]);
 
+  // Sin diferir, cada tecla dispararia una peticion (TCI-39).
+  const busquedaDiferida = useDebounce(busqueda);
+
   useEffect(() => {
     let cancelado = false;
-    listarEquiposAdmin({ clienteId: filtroCliente || undefined, q: busqueda })
+    listarEquiposAdmin({
+      clienteId: filtroCliente || undefined,
+      sedeId: filtroSede || undefined,
+      activo: filtroActivo === "" ? undefined : filtroActivo === "true",
+      q: busquedaDiferida,
+    })
       .then((lista) => {
         if (cancelado) return;
         setEquipos(lista);
@@ -72,7 +84,7 @@ export function GestionEquipos() {
     return () => {
       cancelado = true;
     };
-  }, [intento, filtroCliente, busqueda]);
+  }, [intento, filtroCliente, filtroSede, filtroActivo, busquedaDiferida]);
 
   const recargar = useCallback(() => {
     setCargando(true);
@@ -92,6 +104,8 @@ export function GestionEquipos() {
   }
 
   const clientesActivos = clientes.filter((c) => c.activo);
+  const sedesDelFiltro =
+    clientes.find((c) => c.id === filtroCliente)?.sedes ?? [];
 
   return (
     <section>
@@ -116,44 +130,85 @@ export function GestionEquipos() {
         </button>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-3">
-        <div>
-          <label htmlFor="filtro-cliente" className="sr-only">
-            Filtrar por cliente
-          </label>
-          <select
-            id="filtro-cliente"
-            value={filtroCliente}
-            onChange={(e) => {
-              setCargando(true);
-              setFiltroCliente(e.target.value);
-            }}
-            className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro"
-          >
-            <option value="">Todos los clientes</option>
-            {clientes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex-1">
-          <label htmlFor="buscar-equipo" className="sr-only">
-            Buscar equipo
-          </label>
-          <input
-            id="buscar-equipo"
-            type="search"
-            value={busqueda}
-            onChange={(e) => {
-              setCargando(true);
-              setBusqueda(e.target.value);
-            }}
-            placeholder="Codigo, nombre, marca, modelo o serie..."
-            className="w-full max-w-sm rounded-lg border border-tci-borde px-4 py-2.5 text-sm text-tci-negro placeholder:text-tci-gris/70 focus:border-tci-rojo focus:outline-none"
-          />
-        </div>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <label htmlFor="filtro-cliente" className="sr-only">
+          Filtrar por cliente
+        </label>
+        <select
+          id="filtro-cliente"
+          value={filtroCliente}
+          onChange={(e) => {
+            setFiltroCliente(e.target.value);
+            // La sede elegida es de otro cliente: deja de tener sentido.
+            setFiltroSede("");
+          }}
+          className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro"
+        >
+          <option value="">Todos los clientes</option>
+          {clientes.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
+          ))}
+        </select>
+
+        <label htmlFor="filtro-sede" className="sr-only">
+          Filtrar por sede
+        </label>
+        <select
+          id="filtro-sede"
+          value={filtroSede}
+          onChange={(e) => setFiltroSede(e.target.value)}
+          disabled={!filtroCliente || sedesDelFiltro.length === 0}
+          className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro disabled:bg-tci-humo disabled:text-tci-gris"
+        >
+          <option value="">
+            {!filtroCliente
+              ? "Todas las sedes"
+              : sedesDelFiltro.length === 0
+                ? "Sin sedes"
+                : "Todas las sedes"}
+          </option>
+          {sedesDelFiltro.map((sede) => (
+            <option key={sede.id} value={sede.id}>
+              {sede.nombre}
+            </option>
+          ))}
+        </select>
+
+        <label htmlFor="filtro-activo" className="sr-only">
+          Filtrar por estado
+        </label>
+        <select
+          id="filtro-activo"
+          value={filtroActivo}
+          onChange={(e) =>
+            setFiltroActivo(e.target.value as "" | "true" | "false")
+          }
+          className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro"
+        >
+          <option value="">Activos y desactivados</option>
+          <option value="true">Solo activos</option>
+          <option value="false">Solo desactivados</option>
+        </select>
+
+        <label htmlFor="buscar-equipo" className="sr-only">
+          Buscar equipo
+        </label>
+        <input
+          id="buscar-equipo"
+          type="search"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Codigo, nombre, marca, modelo o serie..."
+          className="w-full max-w-xs rounded-lg border border-tci-borde px-4 py-2.5 text-sm text-tci-negro placeholder:text-tci-gris/70 focus:border-tci-rojo focus:outline-none"
+        />
+
+        {!cargando && (
+          <p className="text-sm text-tci-gris">
+            {equipos.length} {equipos.length === 1 ? "equipo" : "equipos"}
+          </p>
+        )}
       </div>
 
       {error && (
@@ -163,7 +218,7 @@ export function GestionEquipos() {
       )}
 
       <div className="mt-5">
-        {cargando ? (
+        {cargando && equipos.length === 0 ? (
           <div className="space-y-2" aria-busy>
             {[0, 1, 2].map((i) => (
               <div
@@ -174,12 +229,14 @@ export function GestionEquipos() {
           </div>
         ) : equipos.length === 0 ? (
           <p className="rounded-xl border border-dashed border-tci-borde bg-white p-8 text-center text-sm text-tci-grafito">
-            {busqueda || filtroCliente
+            {busqueda || filtroCliente || filtroSede || filtroActivo
               ? "Ningun equipo coincide."
               : "No hay equipos registrados."}
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-tci-borde bg-white">
+          <div
+            className={`overflow-x-auto rounded-xl border border-tci-borde bg-white transition-opacity ${cargando ? "opacity-50" : ""}`}
+          >
             <table className="w-full text-left text-sm">
               <thead className="border-b border-tci-borde bg-tci-humo text-xs text-tci-gris uppercase">
                 <tr>
@@ -196,8 +253,13 @@ export function GestionEquipos() {
                     key={equipo.id}
                     className="border-b border-tci-borde last:border-0"
                   >
-                    <td className="px-4 py-3 font-mono text-xs whitespace-nowrap text-tci-gris">
-                      {equipo.codigo}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <Link
+                        href={`/panel/equipos/${equipo.id}`}
+                        className="font-mono text-xs text-tci-gris underline-offset-2 hover:text-tci-rojo hover:underline"
+                      >
+                        {equipo.codigo}
+                      </Link>
                     </td>
                     <td className="px-4 py-3">
                       <p className="font-bold text-tci-negro">

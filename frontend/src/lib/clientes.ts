@@ -30,9 +30,12 @@ export type DatosCliente = {
   email?: string;
 };
 
-export function listarClientesAdmin(q?: string) {
+export function listarClientesAdmin(
+  filtros: { q?: string; activo?: boolean } = {},
+) {
   const params = new URLSearchParams();
-  if (q?.trim()) params.set("q", q.trim());
+  if (filtros.q?.trim()) params.set("q", filtros.q.trim());
+  if (filtros.activo !== undefined) params.set("activo", String(filtros.activo));
   return apiGet<Cliente[]>("/clientes", params);
 }
 

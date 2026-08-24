@@ -35,6 +35,7 @@ La app queda en `http://localhost:3000`.
 | `/panel/ordenes/[id]/editar` | Edición de la orden — solo admin (TCI-26) |
 | `/panel/clientes` | Clientes y sedes — solo admin (TCI-36) |
 | `/panel/equipos` | Equipos por cliente — solo admin (TCI-37) |
+| `/panel/equipos/[id]` | Ficha del equipo y su historial de órdenes (TCI-38) |
 | `/panel/usuarios` | Gestión de usuarios — solo admin (TCI-35) |
 
 **No hay pantalla de registro.** El backend tiene el registro público cerrado
@@ -71,6 +72,31 @@ asignaciones, las ediciones y los comentarios sueltos
 > personas miran la misma orden, una no ve lo que hace la otra hasta recargar.
 > Eso necesita WebSocket o SSE y encaja con el módulo de notificaciones
 > (`TCI-53`).
+
+## Historial por equipo (TCI-38)
+
+`/panel/equipos/[id]` no necesitó endpoint nuevo: `GET /api/ordenes?equipoId=`
+ya filtraba y, de paso, aplica el aislamiento por rol.
+
+Eso tiene una consecuencia que conviene tener presente: **un técnico ve ahí solo
+sus propias órdenes sobre el equipo**, no todas. Es consistente con el resto del
+sistema, pero discutible para trabajo de campo — el historial completo de una
+máquina es justo lo que ayuda a diagnosticarla. Si TCI quiere abrirlo, es quitar
+el filtro por técnico solo para esa consulta, y encaja mejor con `TCI-57`.
+
+A diferencia de `/panel/equipos`, esta pantalla **no exige rol**: a un técnico le
+sirve, y se llega a ella desde el campo "Equipo" del detalle de una orden.
+
+## Búsqueda y filtrado (TCI-39)
+
+Clientes filtra por texto (nombre, RTN, contacto) y por estado. Equipos añade
+cliente y sede — la sede se limpia al cambiar de cliente, porque dejaría de
+pertenecerle.
+
+La búsqueda va **diferida 300 ms** (`useDebounce` en `src/lib/hooks.ts`): sin
+eso, cada tecla dispara una petición. Mientras se recarga, la tabla se atenúa en
+vez de sustituirse por el esqueleto; el esqueleto queda solo para la primera
+carga, cuando aún no hay nada que atenuar.
 
 ## Diseño
 
@@ -119,6 +145,9 @@ un middleware.
 - **El catálogo de tipos de mantenimiento no tiene pantalla** (`TCI-30`).
 - Las listas de clientes y equipos **no paginan**. Con el volumen actual de TCI
   no hace falta; si crece, la API ya acepta filtros y solo faltaría el `page`.
+- El historial de un equipo muestra **las 25 más recientes**, sin paginar. Para
+  más, se remite al listado general.
+- Los filtros no se reflejan en la URL: al recargar se pierden.
 - La lista de usuarios no pagina ni filtra desde la interfaz, aunque la API sí
   acepta `rol`, `activo` y `q`. Con el tamaño de equipo de TCI no hace falta
   todavía.

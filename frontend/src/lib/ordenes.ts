@@ -49,6 +49,9 @@ export interface PaginaOrdenes {
 
 export interface FiltrosOrdenes {
   estado?: Estado[];
+  /** Historial de un equipo (TCI-38). */
+  equipoId?: string;
+  clienteId?: string;
   page?: number;
   perPage?: number;
 }
@@ -57,6 +60,8 @@ export function listarOrdenes(filtros: FiltrosOrdenes = {}) {
   const params = new URLSearchParams();
   // El backend acepta la lista separada por comas.
   if (filtros.estado?.length) params.set("estado", filtros.estado.join(","));
+  if (filtros.equipoId) params.set("equipoId", filtros.equipoId);
+  if (filtros.clienteId) params.set("clienteId", filtros.clienteId);
   if (filtros.page) params.set("page", String(filtros.page));
   if (filtros.perPage) params.set("perPage", String(filtros.perPage));
 

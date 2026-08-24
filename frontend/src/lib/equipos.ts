@@ -18,7 +18,9 @@ export interface Equipo {
 
 export interface FiltrosEquipos {
   clienteId?: string;
+  sedeId?: string;
   q?: string;
+  activo?: boolean;
 }
 
 export type DatosEquipo = {
@@ -36,8 +38,14 @@ export type DatosEquipo = {
 export function listarEquiposAdmin(filtros: FiltrosEquipos = {}) {
   const params = new URLSearchParams();
   if (filtros.clienteId) params.set("clienteId", filtros.clienteId);
+  if (filtros.sedeId) params.set("sedeId", filtros.sedeId);
   if (filtros.q?.trim()) params.set("q", filtros.q.trim());
+  if (filtros.activo !== undefined) params.set("activo", String(filtros.activo));
   return apiGet<Equipo[]>("/equipos", params);
+}
+
+export function obtenerEquipo(id: string) {
+  return apiGet<Equipo>(`/equipos/${id}`);
 }
 
 export function crearEquipo(datos: DatosEquipo) {
