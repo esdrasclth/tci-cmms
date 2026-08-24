@@ -1,10 +1,13 @@
 import { AuthModule } from '@thallesp/nestjs-better-auth';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { createAuth } from './auth/auth.config';
+import { RolesGuard } from './auth/roles.guard';
+import { CatalogosModule } from './catalogos/catalogos.module';
 import { OrdenesModule } from './ordenes/ordenes.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
@@ -26,10 +29,16 @@ import { PrismaService } from './prisma/prisma.service';
         auth: createAuth(prisma),
       }),
     }),
+    CatalogosModule,
     OrdenesModule,
     UsuariosModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Corre despues del AuthGuard de la libreria: corta usuarios desactivados
+    // y aplica @Roles() (TCI-33).
+    { provide: APP_GUARD, useClass: RolesGuard },
+  ],
 })
 export class AppModule {}

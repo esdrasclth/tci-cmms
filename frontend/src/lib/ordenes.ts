@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "./api";
+import { apiGet, apiPatch, apiPost } from "./api";
 
 /**
  * Espejo de lo que devuelve `GET /api/ordenes` (INCLUDE_LISTA en
@@ -226,4 +226,77 @@ export function formatearDinero(valor: string | number, moneda = "HNL"): string 
     style: "currency",
     currency: moneda,
   }).format(Number(valor));
+}
+
+// ---------------------------------------------------------------------------
+// Catalogos y alta/edicion de ordenes
+// ---------------------------------------------------------------------------
+
+export interface TipoMantenimiento {
+  id: string;
+  codigo: string;
+  nombre: string;
+  color: string | null;
+  /** Si es true, el formulario exige equipo (regla 3 de TCI-22). */
+  requiereEquipo: boolean;
+}
+
+export interface ClienteConSedes {
+  id: string;
+  nombre: string;
+  sedes: { id: string; nombre: string; ciudad: string | null }[];
+}
+
+export interface EquipoDeCliente {
+  id: string;
+  codigo: string;
+  nombre: string;
+  sedeId: string | null;
+}
+
+export function listarTiposMantenimiento() {
+  return apiGet<TipoMantenimiento[]>("/tipos-mantenimiento");
+}
+
+export function listarClientes() {
+  return apiGet<ClienteConSedes[]>("/clientes");
+}
+
+export function listarEquipos(clienteId: string) {
+  return apiGet<EquipoDeCliente[]>(`/clientes/${clienteId}/equipos`);
+}
+
+export interface DatosOrden {
+  titulo: string;
+  descripcionProblema: string;
+  clienteId?: string;
+  sedeId?: string;
+  equipoId?: string;
+  tipoMantenimientoId: string;
+  prioridad: Prioridad;
+  fechaProgramada?: string;
+  fechaLimite?: string;
+}
+
+export function crearOrden(datos: DatosOrden) {
+  return apiPost<OrdenDetalle>("/ordenes", datos);
+}
+
+/** El cliente no se puede cambiar: mover una orden invalidaria su historial. */
+export function actualizarOrden(id: string, datos: Omit<DatosOrden, "clienteId">) {
+  return apiPatch<OrdenDetalle>(`/ordenes/${id}`, datos);
+}
+
+/** `datetime-local` da "2026-08-23T14:30"; la API espera ISO 8601. */
+export function aIso(valor: string): string | undefined {
+  if (!valor) return undefined;
+  return new Date(valor).toISOString();
+}
+
+/** Y al reves, para rellenar el formulario al editar. */
+export function aDatetimeLocal(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }

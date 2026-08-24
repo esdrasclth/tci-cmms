@@ -11,7 +11,7 @@ import {
   Campo,
   CampoContrasena,
 } from "@/components/form";
-import { authClient, signIn, signOut } from "@/lib/auth-client";
+import { signIn } from "@/lib/auth-client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,16 +32,6 @@ export default function LoginPage() {
 
     if (error) {
       setError(mensajeDeError(error.status));
-      setCargando(false);
-      return;
-    }
-
-    // Un usuario dado de baja (TCI-35) conserva su contrasena: Better Auth lo
-    // deja entrar y es aqui donde se corta la sesion.
-    const { data: sesion } = await authClient.getSession();
-    if (sesion && sesion.user.activo === false) {
-      await signOut();
-      setError("Su cuenta esta desactivada. Contacte al administrador.");
       setCargando(false);
       return;
     }
@@ -112,9 +102,17 @@ export default function LoginPage() {
  * Better Auth devuelve el detalle en ingles. Se traduce por codigo y, a
  * proposito, no se distingue "correo no existe" de "contrasena incorrecta":
  * eso permitiria enumerar usuarios.
+ *
+ * El 403 tiene un unico origen posible en el login: el hook de auth.config.ts
+ * que rechaza a un usuario dado de baja (TCI-33). Por eso se puede dar un
+ * mensaje concreto sin filtrar si el correo existe o no: quien lo recibe ya
+ * acerto la contrasena.
  */
 function mensajeDeError(status?: number): string {
-  if (status === 401 || status === 403) {
+  if (status === 403) {
+    return "Su cuenta esta desactivada. Contacte al administrador.";
+  }
+  if (status === 401) {
     return "Correo o contrasena incorrectos.";
   }
   if (status === 429) {

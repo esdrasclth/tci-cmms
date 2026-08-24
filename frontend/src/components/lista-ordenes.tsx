@@ -95,12 +95,20 @@ export function ListaOrdenes({ esAdmin }: { esAdmin: boolean }) {
         <h2 className="text-lg font-bold text-tci-negro">
           {esAdmin ? "Ordenes de trabajo" : "Mis ordenes asignadas"}
         </h2>
-        {pagina && !cargando && (
-          <p className="text-sm text-tci-gris">
-            {pagina.meta.total}{" "}
-            {pagina.meta.total === 1 ? "orden" : "ordenes"}
-          </p>
-        )}
+        <div className="flex items-center gap-4">
+          {pagina && !cargando && (
+            <p className="text-sm text-tci-gris">
+              {pagina.meta.total}{" "}
+              {pagina.meta.total === 1 ? "orden" : "ordenes"}
+            </p>
+          )}
+          <Link
+            href="/panel/ordenes/nueva"
+            className="rounded-lg bg-tci-rojo px-4 py-2.5 text-sm font-bold text-white hover:bg-tci-rojo-hover"
+          >
+            Nueva orden
+          </Link>
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">

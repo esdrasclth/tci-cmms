@@ -158,8 +158,22 @@ export function DetalleOrden({ id }: { id: string }) {
         </div>
       </header>
 
+      <div className="mt-5 flex flex-wrap gap-2">
+        {/* Editar es solo-admin y el backend lo rechaza en estado final. */}
+        {esAdmin &&
+          orden.estado !== "COMPLETADA" &&
+          orden.estado !== "CANCELADA" && (
+            <Link
+              href={`/panel/ordenes/${orden.id}/editar`}
+              className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm font-bold text-tci-negro hover:bg-tci-humo"
+            >
+              Editar datos
+            </Link>
+          )}
+      </div>
+
       {orden.accionesDisponibles.length > 0 ? (
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {orden.accionesDisponibles.map((accion) => {
             const config = CONFIG_ACCION[accion];
             return (

@@ -1,5 +1,7 @@
 import { prismaAdapter } from '@better-auth/prisma-adapter';
 import { betterAuth } from 'better-auth';
+import { APIError } from 'better-auth/api';
+
 import type { PrismaClient } from '../generated/prisma/client';
 
 /**
@@ -78,6 +80,34 @@ export function createAuth(prisma: PrismaClient) {
       defaultCookieAttributes: {
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
+      },
+    },
+
+    databaseHooks: {
+      session: {
+        /**
+         * TCI-33 — un usuario dado de baja no puede iniciar sesion.
+         *
+         * `activo` es un campo del CMMS que Better Auth no conoce, asi que no
+         * lo comprueba por su cuenta. Cortar aqui, en la creacion de la sesion,
+         * es lo unico que impide que alguien desactivado siga entrando con su
+         * contrasena de siempre.
+         */
+        create: {
+          before: async (session) => {
+            const usuario = await prisma.user.findUnique({
+              where: { id: session.userId },
+              select: { activo: true },
+            });
+            if (usuario && !usuario.activo) {
+              throw new APIError('FORBIDDEN', {
+                message:
+                  'Su cuenta esta desactivada. Contacte al administrador.',
+                code: 'USUARIO_DESACTIVADO',
+              });
+            }
+          },
+        },
       },
     },
 

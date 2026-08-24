@@ -124,7 +124,19 @@ curl -b cookies.txt -X POST http://localhost:3001/api/ordenes   -H "Content-Type
 curl -b cookies.txt "http://localhost:3001/api/ordenes?estado=EN_PROCESO&perPage=10"
 ```
 
-## Usuarios (TCI-35, parcial)
+## Catálogos (TCI-30/36/37, solo lectura)
+
+| Método | Ruta | Quién |
+|---|---|---|
+| `GET` | `/api/tipos-mantenimiento` | Con sesión |
+| `GET` | `/api/clientes` | Con sesión — incluye sus sedes |
+| `GET` | `/api/clientes/:id/equipos` | Con sesión |
+
+Es el mínimo para que el formulario de alta de órdenes funcione. **No hay
+escritura**: el CRUD completo de estas entidades es `TCI-30`, `TCI-36` y
+`TCI-37`, y hoy los datos salen del seed.
+
+## Usuarios (TCI-35)
 
 | Método | Ruta | Quién |
 |---|---|---|
@@ -161,6 +173,26 @@ Todavía **no hay pantalla** para esto en el frontend: eso es el resto de `TCI-3
 `numero` es `OT-{año}-{NNNN}`, único y con secuencia por año. Se genera dentro de
 la transacción del alta, protegido con `pg_advisory_xact_lock`, y **no se
 reutiliza** aunque la orden se borre lógicamente.
+
+## Autorización (TCI-33)
+
+Dos capas, cada una donde puede decidir:
+
+- **`RolesGuard` global** (`src/auth/roles.guard.ts`) — corta a los usuarios
+  desactivados y aplica `@Roles(...)` a nivel de ruta.
+- **Los servicios** — todo lo que depende del recurso concreto, como "solo el
+  técnico asignado a *esta* orden". Un guard no conoce la orden, así que esto no
+  puede subir.
+
+`@Roles()` es propio (`src/auth/roles.decorator.ts`): el de
+`@thallesp/nestjs-better-auth` lee un campo `role` y el nuestro se llama `rol`.
+
+**Usuarios dados de baja.** `activo` es un campo del CMMS que Better Auth no
+conoce, así que hay dos cortes: un hook `databaseHooks.session.create.before`
+impide que obtengan una sesión nueva (el login responde **403
+`USUARIO_DESACTIVADO`**), y el guard rechaza las peticiones de una sesión que ya
+estuviera abierta. Lo segundo tarda hasta 60 s por la caché en cookie —
+verificado.
 
 ## Autenticación
 
@@ -204,13 +236,8 @@ asignar al registrarse — solo lo cambia un Admin (TCI-35).
 ## Pendientes conocidos
 
 - `TCI-34` recuperación de contraseña: necesita servicio de correo (módulo 8).
-- **No hay guard de roles** (`TCI-33`): la autorización admin/técnico se resuelve
-  en los servicios, que conocen la orden concreta. Falta el `@Roles()` a nivel de
-  ruta. El `@Roles()` que trae `@thallesp/nestjs-better-auth` no sirve tal cual:
-  espera un campo `role` y el nuestro se llama `rol`.
-- **Un usuario desactivado sigue pudiendo autenticarse**: el corte lo hace el
-  frontend al iniciar sesión (ver `login/page.tsx`). Better Auth no conoce el
-  campo `activo`; para cortarlo en la API haría falta un hook de sesión.
+- **Sin escritura de clientes, sedes ni equipos** (`TCI-36`, `TCI-37`): los datos
+  salen del seed y solo se pueden leer.
 - **No hay tests e2e de órdenes**: la máquina de estados está cubierta por tests
   unitarios (`orden-estado.service.spec.ts`), pero el controller solo se verificó
   a mano contra la base real.

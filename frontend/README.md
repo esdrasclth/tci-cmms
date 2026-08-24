@@ -30,7 +30,9 @@ La app queda en `http://localhost:3000`.
 | `/login` | Inicio de sesión (TCI-40) |
 | `/recuperar-contrasena` | Aviso de que `TCI-34` aún no está disponible |
 | `/panel` | Listado de órdenes de trabajo (TCI-41) |
+| `/panel/ordenes/nueva` | Alta de orden (TCI-24) |
 | `/panel/ordenes/[id]` | Detalle, transiciones de estado e historial (TCI-42) |
+| `/panel/ordenes/[id]/editar` | Edición de la orden — solo admin (TCI-26) |
 | `/panel/usuarios` | Gestión de usuarios — solo admin (TCI-35) |
 
 **No hay pantalla de registro.** El backend tiene el registro público cerrado
@@ -112,8 +114,9 @@ un middleware.
 - No hay tests. Falta decidir herramienta (Vitest + Testing Library encajaría con
   lo que ya usa el backend).
 - **No hay actualización en vivo entre usuarios** (ver el aviso de TCI-42).
-- **No se puede crear ni editar una orden desde la interfaz**: el backend tiene
-  `POST` y `PATCH /api/ordenes`, pero no hay pantalla para ellos.
+- **No hay pantallas para clientes, sedes ni equipos**: se eligen en el
+  formulario de la orden, pero solo se pueden crear desde el seed (`TCI-36`,
+  `TCI-37`).
 - La lista de usuarios no pagina ni filtra desde la interfaz, aunque la API sí
   acepta `rol`, `activo` y `q`. Con el tamaño de equipo de TCI no hace falta
   todavía.
