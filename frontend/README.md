@@ -31,10 +31,11 @@ La app queda en `http://localhost:3000`.
 | `/recuperar-contrasena` | Aviso de que `TCI-34` aún no está disponible |
 | `/panel` | Listado de órdenes de trabajo (TCI-41) |
 | `/panel/ordenes/[id]` | Detalle, transiciones de estado e historial (TCI-42) |
+| `/panel/usuarios` | Gestión de usuarios — solo admin (TCI-35) |
 
 **No hay pantalla de registro.** El backend tiene el registro público cerrado
-(`disableSignUp`) y las cuentas las da de alta un administrador con
-`POST /api/usuarios`. Falta la pantalla para hacerlo: es `TCI-35`.
+(`disableSignUp`): las cuentas se dan de alta desde `/panel/usuarios`, que solo
+ven los administradores.
 
 ## Listado de órdenes (TCI-41)
 
@@ -113,6 +114,9 @@ un middleware.
 - **No hay actualización en vivo entre usuarios** (ver el aviso de TCI-42).
 - **No se puede crear ni editar una orden desde la interfaz**: el backend tiene
   `POST` y `PATCH /api/ordenes`, pero no hay pantalla para ellos.
+- La lista de usuarios no pagina ni filtra desde la interfaz, aunque la API sí
+  acepta `rol`, `activo` y `q`. Con el tamaño de equipo de TCI no hace falta
+  todavía.
 - Los filtros del listado no se reflejan en la URL: al recargar se pierden.
 - Los tipos de la API están escritos a mano en `src/lib/ordenes.ts`. Si el backend
   cambia el `include` del listado, hay que actualizarlos aquí.

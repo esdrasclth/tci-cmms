@@ -1,7 +1,19 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 
 import { usuarioActual } from '../auth/usuario-actual';
+import {
+  ActualizarUsuarioDto,
+  ReiniciarContrasenaDto,
+} from './dto/actualizar-usuario.dto';
 import { CrearUsuarioDto } from './dto/crear-usuario.dto';
 import { FiltrarUsuariosDto } from './dto/filtrar-usuarios.dto';
 import { UsuariosService } from './usuarios.service';
@@ -28,5 +40,28 @@ export class UsuariosController {
     @Session() session: UserSession,
   ) {
     return this.usuarios.listar(filtros, usuarioActual(session));
+  }
+
+  @Patch(':id')
+  actualizar(
+    @Param('id') id: string,
+    @Body() dto: ActualizarUsuarioDto,
+    @Session() session: UserSession,
+  ) {
+    return this.usuarios.actualizar(id, dto, usuarioActual(session));
+  }
+
+  /** Provisional mientras TCI-34 no exista. Cierra las sesiones del usuario. */
+  @Post(':id/contrasena')
+  reiniciarContrasena(
+    @Param('id') id: string,
+    @Body() dto: ReiniciarContrasenaDto,
+    @Session() session: UserSession,
+  ) {
+    return this.usuarios.reiniciarContrasena(
+      id,
+      dto.password,
+      usuarioActual(session),
+    );
   }
 }

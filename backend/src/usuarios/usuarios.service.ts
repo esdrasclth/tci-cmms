@@ -1,6 +1,7 @@
 import {
   ForbiddenException,
   Injectable,
+  NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { AuthService } from '@thallesp/nestjs-better-auth';
@@ -13,7 +14,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   UsuarioYaExisteError,
   crearUsuarioConCredenciales,
+  reiniciarContrasena,
 } from './crear-usuario-credenciales';
+import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
 import { CrearUsuarioDto } from './dto/crear-usuario.dto';
 import { FiltrarUsuariosDto } from './dto/filtrar-usuarios.dto';
 
@@ -83,6 +86,80 @@ export class UsuariosService {
       select: CAMPOS_PUBLICOS,
       orderBy: { name: 'asc' },
     });
+  }
+
+  /** TCI-35 — editar nombre, rol, telefono o dar de baja. */
+  async actualizar(
+    id: string,
+    dto: ActualizarUsuarioDto,
+    usuario: UsuarioActual,
+  ) {
+    this.exigirAdmin(usuario, 'editar usuarios');
+
+    const objetivo = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, rol: true, activo: true },
+    });
+    if (!objetivo) {
+      throw new NotFoundException(`No existe el usuario ${id}.`);
+    }
+
+    const sePierdeElAdmin =
+      (dto.rol !== undefined && dto.rol !== Rol.ADMIN) || dto.activo === false;
+
+    // Sin estas dos guardas el sistema se puede quedar sin nadie que administre,
+    // y no hay forma de arreglarlo desde la propia aplicacion.
+    if (sePierdeElAdmin && objetivo.id === usuario.id) {
+      throw new UnprocessableEntityException(
+        'No puede quitarse a si mismo el rol de administrador ni desactivarse.',
+      );
+    }
+    if (sePierdeElAdmin && objetivo.rol === Rol.ADMIN && objetivo.activo) {
+      const otrosAdmins = await this.prisma.user.count({
+        where: { rol: Rol.ADMIN, activo: true, id: { not: id } },
+      });
+      if (otrosAdmins === 0) {
+        throw new UnprocessableEntityException(
+          'Es el unico administrador activo: el sistema no puede quedarse sin administradores.',
+        );
+      }
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        name: dto.name,
+        rol: dto.rol,
+        activo: dto.activo,
+        telefono: dto.telefono,
+      },
+      select: CAMPOS_PUBLICOS,
+    });
+  }
+
+  /**
+   * TCI-35 — reinicio de contrasena por un administrador.
+   *
+   * Via provisional mientras TCI-34 (recuperacion por correo) no exista. Cierra
+   * las sesiones abiertas del usuario.
+   */
+  async reiniciarContrasena(
+    id: string,
+    password: string,
+    usuario: UsuarioActual,
+  ): Promise<{ ok: true }> {
+    this.exigirAdmin(usuario, 'reiniciar contrasenas');
+
+    const objetivo = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!objetivo) {
+      throw new NotFoundException(`No existe el usuario ${id}.`);
+    }
+
+    await reiniciarContrasena(this.auth.instance, id, password);
+    return { ok: true };
   }
 
   private exigirAdmin(usuario: UsuarioActual, accion: string) {

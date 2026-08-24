@@ -50,10 +50,18 @@ export async function apiGet<T>(
  * por que no se pudo hacer la accion, y traducirlas de nuevo aqui las duplicaria.
  */
 export async function apiPost<T>(ruta: string, cuerpo: unknown): Promise<T> {
+  return enviar<T>("POST", ruta, cuerpo);
+}
+
+async function enviar<T>(
+  metodo: "POST" | "PATCH",
+  ruta: string,
+  cuerpo: unknown,
+): Promise<T> {
   let respuesta: Response;
   try {
     respuesta = await fetch(`${API}/api${ruta}`, {
-      method: "POST",
+      method: metodo,
       credentials: "include",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(cuerpo),
@@ -74,6 +82,11 @@ export async function apiPost<T>(ruta: string, cuerpo: unknown): Promise<T> {
   }
 
   return (await respuesta.json()) as T;
+}
+
+/** PATCH. Mismo tratamiento de errores que el POST. */
+export async function apiPatch<T>(ruta: string, cuerpo: unknown): Promise<T> {
+  return enviar<T>("PATCH", ruta, cuerpo);
 }
 
 /** Nest devuelve `message` como texto o como lista (errores de validacion). */

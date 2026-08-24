@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { signOut, useSession } from "@/lib/auth-client";
@@ -17,6 +17,7 @@ import { signOut, useSession } from "@/lib/auth-client";
  */
 export default function PanelLayout({ children }: LayoutProps<"/panel">) {
   const router = useRouter();
+  const ruta = usePathname();
   const { data: sesion, isPending } = useSession();
 
   useEffect(() => {
@@ -48,19 +49,56 @@ export default function PanelLayout({ children }: LayoutProps<"/panel">) {
               className="h-10 w-auto"
             />
           </Link>
-          <button
-            onClick={async () => {
-              await signOut();
-              router.replace("/login");
-            }}
-            className="rounded-lg border border-white/25 px-4 py-2 text-sm text-white transition-colors hover:bg-white/10"
-          >
-            Cerrar sesion
-          </button>
+          <div className="flex items-center gap-2">
+            {sesion.user.rol === "ADMIN" && (
+              <nav className="flex items-center gap-1">
+                <Enlace href="/panel" activo={ruta === "/panel"}>
+                  Ordenes
+                </Enlace>
+                <Enlace
+                  href="/panel/usuarios"
+                  activo={ruta.startsWith("/panel/usuarios")}
+                >
+                  Usuarios
+                </Enlace>
+              </nav>
+            )}
+            <button
+              onClick={async () => {
+                await signOut();
+                router.replace("/login");
+              }}
+              className="ml-2 rounded-lg border border-white/25 px-4 py-2 text-sm text-white transition-colors hover:bg-white/10"
+            >
+              Cerrar sesion
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-10">{children}</main>
     </div>
+  );
+}
+
+function Enlace({
+  href,
+  activo,
+  children,
+}: {
+  href: string;
+  activo: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={activo ? "page" : undefined}
+      className={`rounded-lg px-3 py-2 text-sm transition-colors ${
+        activo ? "bg-white/15 font-bold text-white" : "text-white/70 hover:text-white"
+      }`}
+    >
+      {children}
+    </Link>
   );
 }

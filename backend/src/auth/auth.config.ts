@@ -61,9 +61,15 @@ export function createAuth(prisma: PrismaClient) {
     session: {
       expiresIn: 60 * 60 * 24 * 7, // 7 dias
       updateAge: 60 * 60 * 24, // refresca la sesion una vez al dia
+      // La cache en cookie evita ir a la base en cada peticion, pero mientras
+      // dura, Better Auth confia en la cookie firmada y NO ve que la sesion se
+      // haya revocado. Eso acota cuanto tarda en surtir efecto un reinicio de
+      // contrasena por parte de un administrador (TCI-35), que es justo lo que
+      // se hace cuando se sospecha que una cuenta esta comprometida.
+      // 60 s es el compromiso: una consulta por minuto y por usuario.
       cookieCache: {
         enabled: true,
-        maxAge: 60 * 5,
+        maxAge: 60,
       },
     },
 

@@ -130,6 +130,23 @@ curl -b cookies.txt "http://localhost:3001/api/ordenes?estado=EN_PROCESO&perPage
 |---|---|---|
 | `POST` | `/api/usuarios` | Admin — alta con rol, correo y contraseña |
 | `GET` | `/api/usuarios` | Admin — filtros `rol`, `activo`, `q` |
+| `PATCH` | `/api/usuarios/:id` | Admin — nombre, rol, teléfono y baja lógica (`activo`) |
+| `POST` | `/api/usuarios/:id/contrasena` | Admin — reinicio de contraseña |
+
+Dos guardas impiden que el sistema se quede sin quien lo administre, porque no
+habría forma de arreglarlo desde la propia aplicación: un administrador **no
+puede quitarse su propio rol ni desactivarse**, y **no se puede degradar ni dar
+de baja al último administrador activo**.
+
+El correo no se puede cambiar: identifica la cuenta en Better Auth y tocarlo por
+fuera dejaría la fila de `accounts` desalineada.
+
+**Sobre el reinicio de contraseña:** revoca las sesiones del usuario, pero la
+revocación **no es instantánea**. Mientras dure la caché en cookie, Better Auth
+valida contra la cookie firmada sin consultar la base. Por eso
+`session.cookieCache.maxAge` está en **60 s**: acota esa ventana a un minuto,
+medido y verificado. Subirlo vuelve a alargar el tiempo que una sesión revocada
+sigue sirviendo.
 
 El alta reutiliza las piezas internas de Better Auth (`password.hash`,
 `internalAdapter.createUser`, `internalAdapter.linkAccount`) en lugar de escribir
@@ -191,8 +208,9 @@ asignar al registrarse — solo lo cambia un Admin (TCI-35).
   en los servicios, que conocen la orden concreta. Falta el `@Roles()` a nivel de
   ruta. El `@Roles()` que trae `@thallesp/nestjs-better-auth` no sirve tal cual:
   espera un campo `role` y el nuestro se llama `rol`.
-- **No se puede cambiar el rol ni desactivar a un usuario por API** todavía: solo
-  alta y listado. El resto de `TCI-35` incluye editar y dar de baja.
+- **Un usuario desactivado sigue pudiendo autenticarse**: el corte lo hace el
+  frontend al iniciar sesión (ver `login/page.tsx`). Better Auth no conoce el
+  campo `activo`; para cortarlo en la API haría falta un hook de sesión.
 - **No hay tests e2e de órdenes**: la máquina de estados está cubierta por tests
   unitarios (`orden-estado.service.spec.ts`), pero el controller solo se verificó
   a mano contra la base real.

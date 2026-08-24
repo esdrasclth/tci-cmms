@@ -76,3 +76,28 @@ export async function crearUsuarioConCredenciales(
 
   return usuario;
 }
+
+/**
+ * Reinicio de contrasena por un administrador.
+ *
+ * Es la via provisional mientras TCI-34 (recuperacion por correo) no exista.
+ *
+ * Revoca todas las sesiones del usuario: si la contrasena se cambia porque se
+ * sospecha que la cuenta estaba comprometida, dejar las sesiones vivas anularia
+ * el proposito.
+ *
+ * **La revocacion no es instantanea.** Mientras dure la cache en cookie, Better
+ * Auth valida contra la cookie firmada y no consulta la base, asi que la sesion
+ * vieja sigue sirviendo hasta que esa cache expira. Por eso `cookieCache.maxAge`
+ * esta en 60 s en auth.config.ts: acota esa ventana a un minuto.
+ */
+export async function reiniciarContrasena(
+  auth: Auth,
+  usuarioId: string,
+  contrasenaNueva: string,
+): Promise<void> {
+  const ctx = await auth.$context;
+  const hash = await ctx.password.hash(contrasenaNueva);
+  await ctx.internalAdapter.updatePassword(usuarioId, hash);
+  await ctx.internalAdapter.deleteUserSessions(usuarioId);
+}
