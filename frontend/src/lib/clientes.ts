@@ -1,0 +1,74 @@
+import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
+
+/** Espejo de lo que devuelve backend/src/clientes/clientes.service.ts. */
+export interface Sede {
+  id: string;
+  nombre: string;
+  direccion: string | null;
+  ciudad: string | null;
+  referenciaGeo: string | null;
+  activo: boolean;
+}
+
+export interface Cliente {
+  id: string;
+  nombre: string;
+  rtn: string | null;
+  contacto: string | null;
+  telefono: string | null;
+  email: string | null;
+  activo: boolean;
+  sedes: Sede[];
+  _count: { ordenes: number; equipos: number };
+}
+
+export type DatosCliente = {
+  nombre: string;
+  rtn?: string;
+  contacto?: string;
+  telefono?: string;
+  email?: string;
+};
+
+export function listarClientesAdmin(q?: string) {
+  const params = new URLSearchParams();
+  if (q?.trim()) params.set("q", q.trim());
+  return apiGet<Cliente[]>("/clientes", params);
+}
+
+export function crearCliente(datos: DatosCliente) {
+  return apiPost<Cliente>("/clientes", datos);
+}
+
+export function actualizarCliente(
+  id: string,
+  datos: Partial<DatosCliente & { activo: boolean }>,
+) {
+  return apiPatch<Cliente>(`/clientes/${id}`, datos);
+}
+
+export function eliminarCliente(id: string) {
+  return apiDelete(`/clientes/${id}`);
+}
+
+export type DatosSede = {
+  nombre: string;
+  direccion?: string;
+  ciudad?: string;
+  referenciaGeo?: string;
+};
+
+export function crearSede(clienteId: string, datos: DatosSede) {
+  return apiPost<Sede>(`/clientes/${clienteId}/sedes`, datos);
+}
+
+export function actualizarSede(
+  id: string,
+  datos: Partial<DatosSede & { activo: boolean }>,
+) {
+  return apiPatch<Sede>(`/sedes/${id}`, datos);
+}
+
+export function eliminarSede(id: string) {
+  return apiDelete(`/sedes/${id}`);
+}

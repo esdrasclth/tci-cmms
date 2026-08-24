@@ -33,6 +33,8 @@ La app queda en `http://localhost:3000`.
 | `/panel/ordenes/nueva` | Alta de orden (TCI-24) |
 | `/panel/ordenes/[id]` | Detalle, transiciones de estado e historial (TCI-42) |
 | `/panel/ordenes/[id]/editar` | Edición de la orden — solo admin (TCI-26) |
+| `/panel/clientes` | Clientes y sedes — solo admin (TCI-36) |
+| `/panel/equipos` | Equipos por cliente — solo admin (TCI-37) |
 | `/panel/usuarios` | Gestión de usuarios — solo admin (TCI-35) |
 
 **No hay pantalla de registro.** El backend tiene el registro público cerrado
@@ -114,9 +116,9 @@ un middleware.
 - No hay tests. Falta decidir herramienta (Vitest + Testing Library encajaría con
   lo que ya usa el backend).
 - **No hay actualización en vivo entre usuarios** (ver el aviso de TCI-42).
-- **No hay pantallas para clientes, sedes ni equipos**: se eligen en el
-  formulario de la orden, pero solo se pueden crear desde el seed (`TCI-36`,
-  `TCI-37`).
+- **El catálogo de tipos de mantenimiento no tiene pantalla** (`TCI-30`).
+- Las listas de clientes y equipos **no paginan**. Con el volumen actual de TCI
+  no hace falta; si crece, la API ya acepta filtros y solo faltaría el `page`.
 - La lista de usuarios no pagina ni filtra desde la interfaz, aunque la API sí
   acepta `rol`, `activo` y `q`. Con el tamaño de equipo de TCI no hace falta
   todavía.

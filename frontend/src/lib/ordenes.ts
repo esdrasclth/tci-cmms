@@ -259,11 +259,15 @@ export function listarTiposMantenimiento() {
 }
 
 export function listarClientes() {
-  return apiGet<ClienteConSedes[]>("/clientes");
+  const params = new URLSearchParams({ activo: "true" });
+  return apiGet<ClienteConSedes[]>("/clientes", params);
 }
 
 export function listarEquipos(clienteId: string) {
-  return apiGet<EquipoDeCliente[]>(`/clientes/${clienteId}/equipos`);
+  // Solo los activos: un equipo dado de baja no debe poder recibir ordenes
+  // nuevas, aunque siga apareciendo en su historial (TCI-37).
+  const params = new URLSearchParams({ clienteId, activo: "true" });
+  return apiGet<EquipoDeCliente[]>("/equipos", params);
 }
 
 export interface DatosOrden {

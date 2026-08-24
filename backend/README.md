@@ -124,17 +124,52 @@ curl -b cookies.txt -X POST http://localhost:3001/api/ordenes   -H "Content-Type
 curl -b cookies.txt "http://localhost:3001/api/ordenes?estado=EN_PROCESO&perPage=10"
 ```
 
-## Catálogos (TCI-30/36/37, solo lectura)
+## Clientes, sedes y equipos (TCI-36, TCI-37)
 
 | Método | Ruta | Quién |
 |---|---|---|
-| `GET` | `/api/tipos-mantenimiento` | Con sesión |
-| `GET` | `/api/clientes` | Con sesión — incluye sus sedes |
-| `GET` | `/api/clientes/:id/equipos` | Con sesión |
+| `GET` | `/api/clientes` | Con sesión — filtros `q`, `activo`; incluye sedes |
+| `GET` | `/api/clientes/:id` | Con sesión |
+| `POST` | `/api/clientes` | Admin |
+| `PATCH` | `/api/clientes/:id` | Admin — incluye `activo` |
+| `DELETE` | `/api/clientes/:id` | Admin |
+| `POST` | `/api/clientes/:id/sedes` | Admin |
+| `PATCH` `DELETE` | `/api/sedes/:id` | Admin |
+| `GET` | `/api/equipos` | Con sesión — filtros `clienteId`, `sedeId`, `q`, `activo` |
+| `GET` | `/api/equipos/:id` | Con sesión |
+| `POST` | `/api/equipos` | Admin |
+| `PATCH` | `/api/equipos/:id` | Admin — incluye `activo` |
+| `DELETE` | `/api/equipos/:id` | Admin |
 
-Es el mínimo para que el formulario de alta de órdenes funcione. **No hay
-escritura**: el CRUD completo de estas entidades es `TCI-30`, `TCI-36` y
-`TCI-37`, y hoy los datos salen del seed.
+La **lectura queda abierta a cualquier sesión** a propósito: el formulario de
+alta de una orden necesita elegir cliente, sede y equipo, y también lo usa un
+técnico. La escritura es solo de administradores.
+
+### Desactivar no es borrar
+
+Son dos cosas distintas, y confundirlas destruye historial:
+
+- **`activo = false`** saca al cliente o equipo de los formularios de alta, pero
+  conserva todo lo demás. Es lo normal cuando se deja de trabajar con alguien.
+- **`DELETE`** es borrado lógico (`deletedAt`) y **se rechaza con 422 si la
+  entidad tiene órdenes** — regla 2 de `docs/modelo-datos-orden.md`. Lo mismo
+  para una sede con órdenes o equipos asociados.
+
+Al borrar un cliente se marcan también sus sedes: sin cliente no tienen sentido.
+
+### Otras reglas
+
+- El **RTN** es opcional pero único, y se valida a 14 dígitos. El chequeo previo
+  existe para dar un mensaje útil en vez del `P2002` opaco de Prisma.
+- El **código de equipo** es único en todo el sistema, no por cliente, y se
+  normaliza a mayúsculas.
+- El **cliente de un equipo no se puede cambiar**: desligaría su historial de
+  órdenes. La sede sí, pero debe pertenecer al mismo cliente.
+
+## Catálogo de tipos de mantenimiento (TCI-30, parcial)
+
+`GET /api/tipos-mantenimiento`, solo lectura y sin exigir rol. La escritura y su
+pantalla siguen pendientes; hoy los tipos salen del seed.
 
 ## Usuarios (TCI-35)
 
@@ -236,8 +271,9 @@ asignar al registrarse — solo lo cambia un Admin (TCI-35).
 ## Pendientes conocidos
 
 - `TCI-34` recuperación de contraseña: necesita servicio de correo (módulo 8).
-- **Sin escritura de clientes, sedes ni equipos** (`TCI-36`, `TCI-37`): los datos
-  salen del seed y solo se pueden leer.
+- **El catálogo de tipos de mantenimiento no se puede editar** (`TCI-30`).
+- **Un equipo no expone su historial de órdenes** todavía (`TCI-38`): el dato ya
+  está en `ordenes_trabajo.equipoId`, pero no hay endpoint que lo devuelva.
 - **No hay tests e2e de órdenes**: la máquina de estados está cubierta por tests
   unitarios (`orden-estado.service.spec.ts`), pero el controller solo se verificó
   a mano contra la base real.

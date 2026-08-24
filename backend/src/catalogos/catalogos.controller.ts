@@ -1,10 +1,15 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 
 import { CatalogosService } from './catalogos.service';
 
 /**
- * Catalogos de solo lectura para los formularios (TCI-30/36/37, parcial).
- * El AuthGuard global ya exige sesion.
+ * Catalogo de tipos de mantenimiento, de solo lectura (TCI-30, parcial).
+ *
+ * Clientes y equipos tenian aqui su lectura provisional; desde TCI-36 y TCI-37
+ * viven en sus propios modulos, con escritura.
+ *
+ * El AuthGuard global ya exige sesion. No pide rol: cualquiera que pueda crear
+ * una orden necesita leer el catalogo.
  */
 @Controller()
 export class CatalogosController {
@@ -13,15 +18,5 @@ export class CatalogosController {
   @Get('tipos-mantenimiento')
   tiposMantenimiento() {
     return this.catalogos.tiposMantenimiento();
-  }
-
-  @Get('clientes')
-  clientes() {
-    return this.catalogos.clientes();
-  }
-
-  @Get('clientes/:id/equipos')
-  equipos(@Param('id') id: string) {
-    return this.catalogos.equiposDeCliente(id);
   }
 }

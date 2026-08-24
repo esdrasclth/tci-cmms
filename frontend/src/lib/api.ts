@@ -89,6 +89,30 @@ export async function apiPatch<T>(ruta: string, cuerpo: unknown): Promise<T> {
   return enviar<T>("PATCH", ruta, cuerpo);
 }
 
+/** DELETE. El backend responde 204 sin cuerpo. */
+export async function apiDelete(ruta: string): Promise<void> {
+  let respuesta: Response;
+  try {
+    respuesta = await fetch(`${API}/api${ruta}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { Accept: "application/json" },
+    });
+  } catch {
+    throw new ApiError(
+      0,
+      "No se pudo conectar con el servidor. Verifique que la API este arriba.",
+    );
+  }
+  if (!respuesta.ok) {
+    const detalle = await respuesta.json().catch(() => null);
+    throw new ApiError(
+      respuesta.status,
+      mensajeDelBackend(detalle) ?? mensajeDeError(respuesta.status),
+    );
+  }
+}
+
 /** Nest devuelve `message` como texto o como lista (errores de validacion). */
 function mensajeDelBackend(detalle: unknown): string | null {
   if (typeof detalle !== "object" || detalle === null) return null;

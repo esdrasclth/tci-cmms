@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
-import { Alerta, BotonPrimario, Campo, CampoContrasena } from "@/components/form";
+import { Alerta, Campo, CampoContrasena } from "@/components/form";
+import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 import { ApiError } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
 import {
@@ -246,65 +247,7 @@ export function GestionUsuarios() {
   );
 }
 
-function BotonFila({
-  children,
-  onClick,
-  disabled,
-  titulo,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
-  titulo?: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      title={titulo}
-      className="rounded-lg border border-tci-borde px-3 py-1.5 text-xs font-bold text-tci-negro hover:bg-tci-humo disabled:cursor-not-allowed disabled:opacity-40"
-    >
-      {children}
-    </button>
-  );
-}
 
-function Marco({
-  titulo,
-  onCerrar,
-  children,
-}: {
-  titulo: string;
-  onCerrar: () => void;
-  children: React.ReactNode;
-}) {
-  useEffect(() => {
-    const alPulsar = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCerrar();
-    };
-    document.addEventListener("keydown", alPulsar);
-    return () => document.removeEventListener("keydown", alPulsar);
-  }, [onCerrar]);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onCerrar();
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={titulo}
-        className="max-h-full w-full overflow-y-auto rounded-t-2xl bg-white p-6 sm:max-w-lg sm:rounded-2xl"
-      >
-        <h2 className="text-xl font-bold text-tci-negro">{titulo}</h2>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 function DialogoUsuario({
   titulo,
@@ -354,7 +297,7 @@ function DialogoUsuario({
   }
 
   return (
-    <Marco titulo={titulo} onCerrar={onCerrar}>
+    <Modal titulo={titulo} onCerrar={onCerrar}>
       <form onSubmit={alEnviar} className="mt-5 space-y-4" noValidate>
         {error && <Alerta>{error}</Alerta>}
 
@@ -430,7 +373,7 @@ function DialogoUsuario({
           texto={editando ? "Guardar cambios" : "Crear usuario"}
         />
       </form>
-    </Marco>
+    </Modal>
   );
 }
 
@@ -471,7 +414,7 @@ function DialogoContrasena({
   }
 
   return (
-    <Marco titulo="Reiniciar contrasena" onCerrar={onCerrar}>
+    <Modal titulo="Reiniciar contrasena" onCerrar={onCerrar}>
       {listo ? (
         <div className="mt-5 space-y-4">
           <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
@@ -515,34 +458,7 @@ function DialogoContrasena({
           />
         </form>
       )}
-    </Marco>
+    </Modal>
   );
 }
 
-function BotonesDialogo({
-  onCerrar,
-  guardando,
-  texto,
-}: {
-  onCerrar: () => void;
-  guardando: boolean;
-  texto: string;
-}) {
-  return (
-    <div className="flex gap-3 pt-2">
-      <button
-        type="button"
-        onClick={onCerrar}
-        disabled={guardando}
-        className="flex-1 rounded-lg border border-tci-borde px-4 py-3 text-sm font-bold text-tci-negro hover:bg-tci-humo disabled:opacity-50"
-      >
-        Cancelar
-      </button>
-      <div className="flex-1">
-        <BotonPrimario type="submit" cargando={guardando}>
-          {guardando ? "Guardando..." : texto}
-        </BotonPrimario>
-      </div>
-    </div>
-  );
-}

@@ -56,6 +56,18 @@ export default function PanelLayout({ children }: LayoutProps<"/panel">) {
                   Ordenes
                 </Enlace>
                 <Enlace
+                  href="/panel/clientes"
+                  activo={ruta.startsWith("/panel/clientes")}
+                >
+                  Clientes
+                </Enlace>
+                <Enlace
+                  href="/panel/equipos"
+                  activo={ruta.startsWith("/panel/equipos")}
+                >
+                  Equipos
+                </Enlace>
+                <Enlace
                   href="/panel/usuarios"
                   activo={ruta.startsWith("/panel/usuarios")}
                 >
