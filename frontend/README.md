@@ -38,6 +38,7 @@ La app queda en `http://localhost:3000`.
 | `/panel/equipos/[id]` | Ficha del equipo y su historial de órdenes (TCI-38) |
 | `/panel/repuestos` | Catálogo de repuestos y almacén — solo admin (TCI-45) |
 | `/panel/preventivo` | Planes de mantenimiento preventivo — solo admin (TCI-49) |
+| `/panel/preventivo/calendario` | Calendario de mantenimientos — solo admin (TCI-51) |
 | `/panel/reportes` | Tablero, desempeño por técnico y exportación — solo admin (TCI-58, TCI-60) |
 | `/panel/tipos-mantenimiento` | Catálogo de tipos de mantenimiento — solo admin (TCI-30) |
 | `/panel/usuarios` | Gestión de usuarios — solo admin (TCI-35) |
@@ -91,7 +92,7 @@ siempre.
 Esta pantalla **no exige rol**: a un técnico le sirve, y se llega a ella desde el
 campo "Equipo" del detalle de una orden.
 
-## Mantenimiento preventivo (TCI-49, TCI-50)
+## Mantenimiento preventivo (TCI-49, TCI-50, TCI-51)
 
 Un plan es abstracto hasta que se ve a quién alcanza, así que cada fila dice a
 cuántos equipos aplica y se abre para ver cuáles y cuándo le toca a cada uno.
@@ -106,6 +107,23 @@ equipo y no con la lista, porque solo hace falta ahí.
 Sin tipos de equipo no hay plan posible, así que el camino para crear el primero
 vive en esta pantalla —con el botón de alta deshabilitado y explicado— y no
 escondido en otra.
+
+### Calendario (TCI-51)
+
+Rejilla de mes y no lista, porque la pregunta que se hace aquí es "qué semana
+viene cargada" y eso solo se ve con los días en su sitio. En móvil no cabe sin
+encoger los días hasta lo ilegible, así que ahí va la misma información en lista
+cronológica (`TCI-44`).
+
+Un día puede tener más eventos de los que caben en su celda. En vez de
+encogerlos, la celda muestra los dos primeros y cuántos quedan, y al pulsarla se
+despliega el día entero debajo: la rejilla conserva la forma del mes y el
+detalle vive fuera de ella.
+
+La **proyección va hueca y la orden maciza**. Es la diferencia entre lo que puede
+pasar y lo que ya existe, y así se distingue también en blanco y negro; el color
+nunca es el único portador, porque cada entrada lleva su etiqueta en el detalle
+y la leyenda está siempre presente.
 
 **"Generar órdenes ahora"** (`TCI-50`) dispara una pasada del generador sin
 esperar al horario diario, que es lo que hace verificable una tarea de fondo. El

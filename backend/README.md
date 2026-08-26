@@ -232,7 +232,7 @@ permiso es el de la orden, y así no hay camino que se salte la comprobación. U
 forma de decir que ese repuesto no se controla. El aviso por correo o push necesita el
 módulo 8 y va con `TCI-54`.
 
-## Mantenimiento preventivo (TCI-49, TCI-50)
+## Mantenimiento preventivo (TCI-49, TCI-50, TCI-51)
 
 | Método | Ruta | Quién |
 |---|---|---|
@@ -293,6 +293,27 @@ Las órdenes automáticas se atribuyen a un **usuario de sistema**
 falta y **sin fila en `accounts`**: no tiene contraseña que verificar, así que no hay forma de
 iniciar sesión con él. Además va con `activo: false`, de modo que el guard de `TCI-33` lo
 rechazaría aunque alguien le fabricara credenciales.
+
+### Calendario (TCI-51)
+
+`GET /api/planes-mantenimiento/calendario?desde&hasta` (admin). Los dos límites son
+obligatorios: sin `hasta`, la proyección de un plan diario no terminaría nunca.
+
+Mezcla dos cosas que en la pantalla se parecen pero no lo son:
+
+- **`ORDEN`** — ya generada por un plan (`TCI-50`). Es un hecho: tiene número y se puede
+  abrir.
+- **`PROYECCION`** — cuándo le tocará a un equipo según su plan, todavía sin orden. Es una
+  previsión y cambia si el mantenimiento se adelanta o se atrasa, porque el vencimiento se
+  cuenta desde el último cierre real.
+
+Un calendario que solo mostrara órdenes estaría casi vacío —solo se generan al vencer— y no
+serviría para planificar, que es justo para lo que se mira. La ocurrencia que ya tiene orden
+abierta se omite de las proyecciones para que no salga dos veces.
+
+Un plan mensual marca **todos los meses del rango**, no solo el primero; el tope es
+`MAX_OCURRENCIAS` (24) por equipo y plan. `vencido` se decide **por día y no por instante**:
+una orden generada esta mañana para hoy no está vencida aunque su hora ya haya pasado.
 
 ## Reportes e historial (TCI-57, TCI-58, TCI-59, TCI-60)
 
