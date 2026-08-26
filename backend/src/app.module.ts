@@ -11,6 +11,8 @@ import { createAuth } from './auth/auth.config';
 import { RolesGuard } from './auth/roles.guard';
 import { CatalogosModule } from './catalogos/catalogos.module';
 import { ClientesModule } from './clientes/clientes.module';
+import { CorreoModule } from './correo/correo.module';
+import { CorreoService } from './correo/correo.service';
 import { EquiposModule } from './equipos/equipos.module';
 import { InventarioModule } from './inventario/inventario.module';
 import { OrdenesModule } from './ordenes/ordenes.module';
@@ -32,10 +34,13 @@ import { PrismaService } from './prisma/prisma.service';
     // Monta Better Auth en /api/auth/* y registra un AuthGuard global:
     // toda ruta exige sesion salvo que se marque con @Public() (TCI-33).
     AuthModule.forRootAsync({
-      imports: [PrismaModule],
-      inject: [PrismaService],
-      useFactory: (prisma: PrismaService) => ({
-        auth: createAuth(prisma),
+      // CorreoModule entra aqui explicitamente aunque sea @Global: los modulos
+      // globales no estan disponibles para un `useFactory` que se resuelve
+      // durante el arranque del propio AuthModule.
+      imports: [PrismaModule, CorreoModule],
+      inject: [PrismaService, CorreoService],
+      useFactory: (prisma: PrismaService, correo: CorreoService) => ({
+        auth: createAuth(prisma, correo),
         // El CORS lo monta main.ts: el que trae el modulo fija los metodos en
         // GET, POST, PUT y DELETE, y deja fuera PATCH.
         disableTrustedOriginsCors: true,
@@ -44,6 +49,7 @@ import { PrismaService } from './prisma/prisma.service';
     AdjuntosModule,
     CatalogosModule,
     ClientesModule,
+    CorreoModule,
     EquiposModule,
     InventarioModule,
     OrdenesModule,
