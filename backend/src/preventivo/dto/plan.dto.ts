@@ -1,6 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsDateString,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -151,4 +152,18 @@ export class FiltrarPlanesDto {
   @IsString()
   @IsNotEmpty()
   tipoEquipoId?: string;
+}
+
+/**
+ * TCI-51 — rango del calendario.
+ *
+ * Los dos limites son obligatorios: sin ellos la proyeccion no sabe hasta
+ * cuando repetir, y "todo el futuro" de un plan diario no termina nunca.
+ */
+export class PeriodoCalendarioDto {
+  @IsDateString()
+  desde!: string;
+
+  @IsDateString()
+  hasta!: string;
 }

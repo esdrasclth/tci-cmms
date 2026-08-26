@@ -55,6 +55,20 @@ interface EquipoDelPlan {
   porVencer: boolean;
 }
 
+interface EventoCalendario {
+  fecha: string;
+  tipo: 'ORDEN' | 'PROYECCION';
+  plan: { id: string; nombre: string };
+  equipo: { id: string; codigo: string };
+  orden: { id: string; numero: string; estado: string } | null;
+  vencido: boolean;
+}
+
+interface Calendario {
+  periodo: { desde: string; hasta: string };
+  eventos: EventoCalendario[];
+}
+
 interface Generacion {
   ejecutado: boolean;
   planes: number;
@@ -453,6 +467,106 @@ describe('Mantenimiento preventivo (e2e)', () => {
     it('un tecnico no puede dispararla', async () => {
       await api()
         .post('/api/planes-mantenimiento/generar')
+        .set('Cookie', esc.tecnico.cookie)
+        .expect(403);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // TCI-51 — calendario
+  // -------------------------------------------------------------------------
+
+  describe('Calendario de mantenimientos', () => {
+    /** Rango de N dias a partir de hoy, en formato YYYY-MM-DD. */
+    const rango = (dias: number) => {
+      const iso = (d: Date) => d.toISOString().slice(0, 10);
+      const hoy = new Date();
+      const fin = new Date();
+      fin.setDate(fin.getDate() + dias);
+      return { desde: iso(hoy), hasta: iso(fin) };
+    };
+
+    const verCalendario = async (dias = 90) => {
+      const respuesta = await api()
+        .get('/api/planes-mantenimiento/calendario')
+        .query(rango(dias))
+        .set('Cookie', esc.admin.cookie)
+        .expect(200);
+      return cuerpo<Calendario>(respuesta);
+    };
+
+    it('proyecta las fechas futuras aunque no exista todavia la orden', async () => {
+      const tipo = await crearTipoEquipo();
+      await asignarTipo(tipo.id);
+      const plan = await crearPlan(tipo.id, {
+        frecuenciaValor: 1,
+        frecuenciaUnidad: 'MESES',
+      });
+
+      const { eventos } = await verCalendario(90);
+      const mios = eventos.filter((e) => e.plan.id === plan.id);
+
+      // Un plan mensual sobre 90 dias marca varias veces, no solo la primera:
+      // un calendario que solo mostrara la proxima no serviria para planificar.
+      expect(mios.length).toBeGreaterThan(1);
+      expect(mios.every((e) => e.tipo === 'PROYECCION')).toBe(true);
+      expect(mios[0].equipo.id).toBe(esc.equipoId);
+      expect(mios[0].orden).toBeNull();
+    });
+
+    it('la orden ya generada sale como ORDEN y no se duplica con su proyeccion', async () => {
+      const tipo = await crearTipoEquipo();
+      await asignarTipo(tipo.id);
+      const plan = await crearPlan(tipo.id, {
+        frecuenciaValor: 6,
+        frecuenciaUnidad: 'MESES',
+      });
+
+      const generacion = await api()
+        .post(`/api/planes-mantenimiento/${plan.id}/generar`)
+        .set('Cookie', esc.admin.cookie)
+        .expect(200);
+      const numero = cuerpo<Generacion>(generacion).creadas[0].numero;
+      await registrarPorNumero(numero);
+
+      const { eventos } = await verCalendario(30);
+      const mios = eventos.filter((e) => e.plan.id === plan.id);
+
+      // Con frecuencia semestral y 30 dias de rango solo cabe una ocurrencia:
+      // la que ya se materializo en orden.
+      expect(mios).toHaveLength(1);
+      expect(mios[0].tipo).toBe('ORDEN');
+      expect(mios[0].orden?.numero).toBe(numero);
+    });
+
+    it('un plan desactivado no proyecta nada', async () => {
+      const tipo = await crearTipoEquipo();
+      await asignarTipo(tipo.id);
+      const plan = await crearPlan(tipo.id);
+
+      await api()
+        .patch(`/api/planes-mantenimiento/${plan.id}`)
+        .set('Cookie', esc.admin.cookie)
+        .send({ activo: false })
+        .expect(200);
+
+      const { eventos } = await verCalendario(90);
+      expect(eventos.filter((e) => e.plan.id === plan.id)).toEqual([]);
+    });
+
+    it('exige las dos fechas del rango', async () => {
+      // Sin `hasta`, la proyeccion de un plan diario no terminaria nunca.
+      await api()
+        .get('/api/planes-mantenimiento/calendario')
+        .query({ desde: '2026-09-01' })
+        .set('Cookie', esc.admin.cookie)
+        .expect(400);
+    });
+
+    it('un tecnico no accede al calendario de planificacion', async () => {
+      await api()
+        .get('/api/planes-mantenimiento/calendario')
+        .query(rango(30))
         .set('Cookie', esc.tecnico.cookie)
         .expect(403);
     });

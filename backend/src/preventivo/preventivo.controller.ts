@@ -13,10 +13,12 @@ import {
 
 import { Roles } from '../auth/roles.decorator';
 import { Rol } from '../generated/prisma/enums';
+import { CalendarioService } from './calendario.service';
 import {
   ActualizarPlanDto,
   CrearPlanDto,
   FiltrarPlanesDto,
+  PeriodoCalendarioDto,
 } from './dto/plan.dto';
 import { GeneradorPreventivoService } from './generador.service';
 import { PreventivoService } from './preventivo.service';
@@ -34,7 +36,19 @@ export class PreventivoController {
   constructor(
     private readonly preventivo: PreventivoService,
     private readonly generador: GeneradorPreventivoService,
+    private readonly calendario: CalendarioService,
   ) {}
+
+  /**
+   * TCI-51 — que mantenimientos preventivos caen en un rango.
+   *
+   * Cuelga de `/calendario` y va antes que `:id` para que Nest no interprete
+   * "calendario" como el id de un plan.
+   */
+  @Get('calendario')
+  verCalendario(@Query() periodo: PeriodoCalendarioDto) {
+    return this.calendario.calendario(periodo);
+  }
 
   /**
    * TCI-50 — dispara una pasada del generador a mano.
