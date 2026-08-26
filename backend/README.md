@@ -166,10 +166,29 @@ Al borrar un cliente se marcan también sus sedes: sin cliente no tienen sentido
 - El **cliente de un equipo no se puede cambiar**: desligaría su historial de
   órdenes. La sede sí, pero debe pertenecer al mismo cliente.
 
-## Catálogo de tipos de mantenimiento (TCI-30, parcial)
+## Catálogo de tipos de mantenimiento (TCI-30)
 
-`GET /api/tipos-mantenimiento`, solo lectura y sin exigir rol. La escritura y su
-pantalla siguen pendientes; hoy los tipos salen del seed.
+| Método | Ruta | Quién |
+|---|---|---|
+| `GET` | `/api/tipos-mantenimiento` | Con sesión — **solo los activos** |
+| `GET` | `/api/tipos-mantenimiento/admin` | Admin — todos, con el conteo de órdenes |
+| `POST` | `/api/tipos-mantenimiento` | Admin |
+| `PATCH` | `/api/tipos-mantenimiento/:id` | Admin — incluye `activo` |
+| `DELETE` | `/api/tipos-mantenimiento/:id` | Admin — 422 si alguna orden lo usa |
+
+**Las dos lecturas no son intercambiables.** La primera solo devuelve los activos porque
+es la que alimenta el formulario de alta de órdenes: si ofreciera un tipo desactivado, el
+alta fallaría con un 422 que el usuario no sabría interpretar. La segunda cuelga de una
+subruta fija, y no de un query param, para que no haya forma de pedir los inactivos sin
+ser admin.
+
+**Desactivar no es borrar**, igual que en clientes y equipos. `DELETE` es borrado real
+(la tabla no tiene `deletedAt`) y se rechaza si alguna orden usa el tipo: forma parte de
+su historial y la FK es `Restrict`. Para retirar uno que ya se usó está `activo: false`.
+
+El `codigo` se normaliza a mayúsculas y solo admite letras, números y guion: es la
+etiqueta corta que se ve en la tabla de órdenes y también entra en las claves de los
+adjuntos, donde un espacio o una tilde estorban.
 
 ## Usuarios (TCI-35)
 
@@ -313,11 +332,8 @@ devolvería la API en producción.
 ## Pendientes conocidos
 
 - `TCI-34` recuperación de contraseña: necesita servicio de correo (módulo 8).
-- **El catálogo de tipos de mantenimiento no se puede editar** (`TCI-30`).
 - `EVIDENCIA_OBLIGATORIA` está en `false` por decisión del 2026-08-25, no por falta de
   soporte: la carga de evidencia (`TCI-43`) ya funciona, pero todavía no bloquea el cierre.
   Encenderla es cambiar la variable.
 - `Repuesto` / `OrdenRepuesto` (módulo 6) y `PlanMantenimiento` (módulo 7) todavía no
   están en el schema; se agregan en su módulo.
-- El catálogo de tipos de mantenimiento vive en el seed; falta su CRUD real (`TCI-30`).
-- Los clientes, sedes y equipos también salen del seed: sus CRUD son `TCI-36` y `TCI-37`.

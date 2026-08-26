@@ -1,22 +1,77 @@
-import { Controller, Get } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 
+import { Roles } from '../auth/roles.decorator';
+import { Rol } from '../generated/prisma/enums';
 import { CatalogosService } from './catalogos.service';
+import {
+  ActualizarTipoMantenimientoDto,
+  CrearTipoMantenimientoDto,
+  FiltrarTiposDto,
+} from './dto/tipo-mantenimiento.dto';
 
 /**
- * Catalogo de tipos de mantenimiento, de solo lectura (TCI-30, parcial).
+ * Catalogo de tipos de mantenimiento — TCI-30.
  *
  * Clientes y equipos tenian aqui su lectura provisional; desde TCI-36 y TCI-37
- * viven en sus propios modulos, con escritura.
+ * viven en sus propios modulos.
  *
- * El AuthGuard global ya exige sesion. No pide rol: cualquiera que pueda crear
- * una orden necesita leer el catalogo.
+ * El AuthGuard global ya exige sesion. La lectura no pide rol: cualquiera que
+ * pueda crear una orden necesita leer el catalogo. La escritura es de admin.
+ *
+ * Hay dos lecturas distintas a proposito:
+ *  - `GET /tipos-mantenimiento` — solo los activos, para el formulario de alta.
+ *  - `GET /tipos-mantenimiento/admin` — todos, para la pantalla de gestion.
  */
-@Controller()
+@Controller('tipos-mantenimiento')
 export class CatalogosController {
   constructor(private readonly catalogos: CatalogosService) {}
 
-  @Get('tipos-mantenimiento')
+  @Get()
   tiposMantenimiento() {
     return this.catalogos.tiposMantenimiento();
+  }
+
+  /**
+   * Cuelga de una subruta fija en vez de distinguirse por un query param para
+   * que no haya forma de pedir los inactivos sin ser admin.
+   */
+  @Roles(Rol.ADMIN)
+  @Get('admin')
+  listar(@Query() filtros: FiltrarTiposDto) {
+    return this.catalogos.listar(filtros);
+  }
+
+  @Roles(Rol.ADMIN)
+  @Post()
+  crear(@Body() dto: CrearTipoMantenimientoDto) {
+    return this.catalogos.crear(dto);
+  }
+
+  @Roles(Rol.ADMIN)
+  @Patch(':id')
+  actualizar(
+    @Param('id') id: string,
+    @Body() dto: ActualizarTipoMantenimientoDto,
+  ) {
+    return this.catalogos.actualizar(id, dto);
+  }
+
+  /** Borrado real. Se rechaza con 422 si alguna orden usa el tipo. */
+  @Roles(Rol.ADMIN)
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  eliminar(@Param('id') id: string) {
+    return this.catalogos.eliminar(id);
   }
 }

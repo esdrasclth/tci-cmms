@@ -242,14 +242,12 @@ export function formatearDinero(valor: string | number, moneda = "HNL"): string 
 // Catalogos y alta/edicion de ordenes
 // ---------------------------------------------------------------------------
 
-export interface TipoMantenimiento {
-  id: string;
-  codigo: string;
-  nombre: string;
-  color: string | null;
-  /** Si es true, el formulario exige equipo (regla 3 de TCI-22). */
-  requiereEquipo: boolean;
-}
+/**
+ * El catalogo vive en `lib/tipos-mantenimiento.ts` desde TCI-30, que le anadio
+ * la escritura. Se reexporta aqui para no romper lo que ya lo importaba.
+ */
+export type { TipoActivo as TipoMantenimiento } from "./tipos-mantenimiento";
+export { listarTiposActivos as listarTiposMantenimiento } from "./tipos-mantenimiento";
 
 export interface ClienteConSedes {
   id: string;
@@ -262,10 +260,6 @@ export interface EquipoDeCliente {
   codigo: string;
   nombre: string;
   sedeId: string | null;
-}
-
-export function listarTiposMantenimiento() {
-  return apiGet<TipoMantenimiento[]>("/tipos-mantenimiento");
 }
 
 export function listarClientes() {
