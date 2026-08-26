@@ -4,54 +4,44 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { ApiError } from "@/lib/api";
-import { useSession } from "@/lib/auth-client";
-import { obtenerEquipo, type Equipo } from "@/lib/equipos";
 import {
   COLOR_ESTADO,
   COLOR_PRIORIDAD,
   ETIQUETA_ESTADO,
   ETIQUETA_PRIORIDAD,
   formatearFecha,
-  listarOrdenes,
-  type OrdenListada,
 } from "@/lib/ordenes";
-
-const POR_PAGINA = 25;
+import {
+  formatearDuracion,
+  formatearNumero,
+  obtenerHistorialEquipo,
+  type HistorialEquipo,
+} from "@/lib/reportes";
 
 /**
- * TCI-38 — historial de ordenes de un equipo.
+ * TCI-57 — historial de mantenimiento de un equipo.
  *
- * No hace falta endpoint nuevo: `GET /api/ordenes?equipoId=` ya filtra y, de
- * paso, aplica el aislamiento por rol. Eso significa que **un tecnico ve aqui
- * solo sus propias ordenes sobre el equipo**, no todas.
+ * Hasta TCI-38 esto reutilizaba `GET /api/ordenes?equipoId=`, que aplica el
+ * aislamiento por rol: **un tecnico veia aqui solo sus propias ordenes**. Desde
+ * TCI-57 usa `GET /api/equipos/:id/historial`, que devuelve las de todos.
  *
- * Es lo consistente con el resto del sistema, pero discutible para trabajo de
- * campo: el historial completo de una maquina es justo lo que ayuda a
- * diagnosticarla. Si TCI quiere abrirlo, el cambio es quitar el filtro por
- * tecnico solo para esta consulta, y encaja mejor con TCI-57 (historial de
- * mantenimiento por activo), que es la vista de reportes.
+ * El motivo es el diagnostico: media maquina no se arregla con medio historial,
+ * y saber que "esto ya fallo en marzo y lo atendio otro" es justo lo que evita
+ * repetir el trabajo. Decision del cliente del 2026-08-26. La contrapartida es
+ * que la proyeccion se acota —sin costos— y para el detalle de una orden ajena
+ * sigue mandando el permiso de siempre.
  */
 export function DetalleEquipo({ id }: { id: string }) {
-  const { data: sesion } = useSession();
-  const esAdmin = sesion?.user.rol === "ADMIN";
-
-  const [equipo, setEquipo] = useState<Equipo | null>(null);
-  const [ordenes, setOrdenes] = useState<OrdenListada[]>([]);
-  const [total, setTotal] = useState(0);
+  const [historial, setHistorial] = useState<HistorialEquipo | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelado = false;
-    Promise.all([
-      obtenerEquipo(id),
-      listarOrdenes({ equipoId: id, perPage: POR_PAGINA }),
-    ])
-      .then(([equipoApi, pagina]) => {
+    obtenerHistorialEquipo(id)
+      .then((datos) => {
         if (cancelado) return;
-        setEquipo(equipoApi);
-        setOrdenes(pagina.data);
-        setTotal(pagina.meta.total);
+        setHistorial(datos);
         setError(null);
       })
       .catch((e: unknown) => {
@@ -73,7 +63,7 @@ export function DetalleEquipo({ id }: { id: string }) {
     return <p className="text-sm text-tci-gris">Cargando equipo...</p>;
   }
 
-  if (error || !equipo) {
+  if (error || !historial) {
     return (
       <div className="rounded-xl border border-dashed border-tci-borde bg-white p-8 text-center">
         <p className="text-tci-rojo">{error ?? "No se encontro el equipo."}</p>
@@ -87,12 +77,18 @@ export function DetalleEquipo({ id }: { id: string }) {
     );
   }
 
-  // Ultimo mantenimiento efectivo: la orden completada mas reciente. Se calcula
-  // aqui porque la lista ya viene ordenada por fecha descendente.
+  const { equipo, resumen, ordenes } = historial;
+
+  // Ultimo mantenimiento efectivo: la orden completada mas reciente. La lista
+  // ya viene ordenada por fecha descendente, asi que la primera que aparezca
+  // es la buena.
   const ultimaCompletada = ordenes.find((o) => o.estado === "COMPLETADA");
-  const abiertas = ordenes.filter(
-    (o) => o.estado !== "COMPLETADA" && o.estado !== "CANCELADA",
-  ).length;
+
+  // Del resumen, que cuenta sobre TODO el historial y no solo sobre las que
+  // caben en la lista.
+  const abiertas = (["PENDIENTE", "ASIGNADA", "EN_PROCESO", "EN_ESPERA"] as const)
+    .map((estado) => resumen.porEstado[estado] ?? 0)
+    .reduce((suma, n) => suma + n, 0);
 
   return (
     <div>
@@ -128,15 +124,9 @@ export function DetalleEquipo({ id }: { id: string }) {
               Historial de ordenes
             </h2>
             <p className="text-sm text-tci-gris">
-              {total} {total === 1 ? "orden" : "ordenes"}
+              {resumen.total} {resumen.total === 1 ? "orden" : "ordenes"}
             </p>
           </div>
-
-          {!esAdmin && (
-            <p className="mt-3 rounded-lg bg-tci-humo px-4 py-2.5 text-xs text-tci-gris">
-              Se muestran unicamente las ordenes asignadas a usted.
-            </p>
-          )}
 
           {ordenes.length === 0 ? (
             <p className="mt-4 text-sm text-tci-grafito">
@@ -178,7 +168,7 @@ export function DetalleEquipo({ id }: { id: string }) {
                 ))}
               </ul>
 
-              {total > ordenes.length && (
+              {historial.truncado && (
                 <p className="mt-3 text-xs text-tci-gris">
                   Se muestran las {ordenes.length} mas recientes.{" "}
                   <Link
@@ -210,9 +200,14 @@ export function DetalleEquipo({ id }: { id: string }) {
                 }
               />
               <Dato etiqueta="Ordenes abiertas" valor={String(abiertas)} />
+              <Dato etiqueta="Total historico" valor={String(resumen.total)} />
               <Dato
-                etiqueta="Total historico"
-                valor={String(equipo._count.ordenes)}
+                etiqueta="Horas acumuladas"
+                valor={formatearNumero(resumen.horasTotales, 1)}
+              />
+              <Dato
+                etiqueta="Tiempo promedio de cierre"
+                valor={formatearDuracion(resumen.diasPromedioResolucion)}
               />
             </dl>
           </section>
