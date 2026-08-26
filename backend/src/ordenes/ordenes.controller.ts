@@ -9,8 +9,11 @@ import {
   Patch,
   Post,
   Query,
+  Sse,
 } from '@nestjs/common';
 import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
+import type { MessageEvent } from '@nestjs/common';
+import type { Observable } from 'rxjs';
 
 import { usuarioActual } from '../auth/usuario-actual';
 import {
@@ -52,6 +55,15 @@ export class OrdenesController {
   @Get(':id')
   obtener(@Param('id') id: string, @Session() session: UserSession) {
     return this.ordenes.obtener(id, usuarioActual(session));
+  }
+
+  /** TCI-42 — avisa a las vistas abiertas que la orden cambio. */
+  @Sse(':id/eventos')
+  eventos(
+    @Param('id') id: string,
+    @Session() session: UserSession,
+  ): Observable<MessageEvent> {
+    return this.ordenes.escuchar(id, usuarioActual(session));
   }
 
   @Patch(':id')

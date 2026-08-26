@@ -19,6 +19,9 @@ import { ActualizarOrdenDto } from './dto/actualizar-orden.dto';
 import { CrearOrdenDto } from './dto/crear-orden.dto';
 import { FiltrarOrdenesDto } from './dto/filtrar-ordenes.dto';
 import { AccionOrden, OrdenEstadoService } from './orden-estado.service';
+import { OrdenesEventosService } from './ordenes-eventos.service';
+import { defer, switchMap, type Observable } from 'rxjs';
+import type { MessageEvent } from '@nestjs/common';
 
 export type { UsuarioActual } from '../auth/usuario-actual';
 
@@ -67,6 +70,7 @@ export class OrdenesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly estados: OrdenEstadoService,
+    private readonly eventos: OrdenesEventosService,
   ) {}
 
   // -------------------------------------------------------------------------
@@ -288,6 +292,16 @@ export class OrdenesService {
     };
   }
 
+  /**
+   * Abre el stream solo despues de aplicar la misma autorizacion del detalle.
+   * `defer` evita consultar la orden hasta que Nest suscribe el SSE.
+   */
+  escuchar(id: string, usuario: UsuarioActual): Observable<MessageEvent> {
+    return defer(() => this.obtener(id, usuario)).pipe(
+      switchMap(() => this.eventos.escuchar(id)),
+    );
+  }
+
   // -------------------------------------------------------------------------
   // TCI-26 — actualizar
   // -------------------------------------------------------------------------
@@ -423,7 +437,7 @@ export class OrdenesService {
       return this.obtener(id, usuario);
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const actualizada = await this.prisma.$transaction(async (tx) => {
       await tx.ordenTrabajo.update({ where: { id }, data });
 
       // Un asiento por campo: el historial debe permitir reconstruir el "antes".
@@ -440,6 +454,9 @@ export class OrdenesService {
 
       return this.releer(tx, id);
     });
+
+    this.eventos.publicar(id);
+    return actualizada;
   }
 
   /**
@@ -507,7 +524,9 @@ export class OrdenesService {
       },
     });
 
-    return this.obtener(id, usuario);
+    const actualizada = await this.obtener(id, usuario);
+    this.eventos.publicar(id);
+    return actualizada;
   }
 
   // -------------------------------------------------------------------------
@@ -617,7 +636,7 @@ export class OrdenesService {
         break;
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const actualizada = await this.prisma.$transaction(async (tx) => {
       await tx.ordenTrabajo.update({ where: { id }, data });
 
       await tx.ordenHistorial.create({
@@ -636,6 +655,9 @@ export class OrdenesService {
 
       return this.releer(tx, id);
     });
+
+    this.eventos.publicar(id);
+    return actualizada;
   }
 
   private async validarTecnico(tecnicoId: string | undefined) {

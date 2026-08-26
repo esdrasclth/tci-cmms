@@ -105,6 +105,11 @@ Además, `POST /api/ordenes/:id/comentarios` con `{comentario}` agrega una entra
 al historial **sin** cambiar el estado (`TCI-42`). Lo puede usar el admin o el
 técnico asignado.
 
+`GET /api/ordenes/:id/eventos` abre un stream **SSE** autenticado para el detalle
+de la OT. Tras un comentario, una edición o una transición, el backend emite
+`orden-actualizada`; el frontend vuelve a pedir el detalle, en vez de confiar en
+datos enviados por el evento.
+
 Una transición fuera de la tabla responde **422**; sin permiso, **403**.
 El detalle de una orden incluye `accionesDisponibles`: la lista de acciones que
 *este* usuario puede ejecutar ahora. El frontend pinta botones a partir de eso y
