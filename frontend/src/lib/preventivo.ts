@@ -180,6 +180,41 @@ export function generarOrdenes(planId?: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Avisos anticipados (TCI-52)
+// ---------------------------------------------------------------------------
+
+/**
+ * Un mantenimiento que entra en la ventana de aviso de su plan, o que ya
+ * venció y sigue sin orden abierta.
+ *
+ * El aviso vive dentro de la aplicación siempre. El correo es un canal más y
+ * está pendiente de que TCI tenga dominio propio (`TCI-70`); mientras tanto,
+ * esto es lo que hay y funciona.
+ */
+export interface AvisoPreventivo {
+  plan: { id: string; nombre: string; diasAnticipacion: number };
+  equipo: { id: string; codigo: string; nombre: string };
+  cliente: { id: string; nombre: string };
+  proximoVencimiento: string | null;
+  vencido: boolean;
+  /** Días que faltan. Negativo si ya pasó, `null` si nunca se le ha hecho. */
+  diasRestantes: number | null;
+}
+
+export function listarAvisos() {
+  return apiGet<AvisoPreventivo[]>("/planes-mantenimiento/avisos");
+}
+
+/** "Vencido", "Vence hoy", "En 5 días". */
+export function describirVencimiento(aviso: AvisoPreventivo): string {
+  if (aviso.vencido) return "Vencido";
+  if (aviso.diasRestantes === null) return "Sin fecha";
+  if (aviso.diasRestantes <= 0) return "Vence hoy";
+  if (aviso.diasRestantes === 1) return "Vence mañana";
+  return `En ${aviso.diasRestantes} días`;
+}
+
+// ---------------------------------------------------------------------------
 // Calendario (TCI-51)
 // ---------------------------------------------------------------------------
 

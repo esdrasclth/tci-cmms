@@ -11,16 +11,19 @@ import { ETIQUETA_PRIORIDAD, type Prioridad } from "@/lib/ordenes";
 import {
   UNIDADES,
   actualizarPlan,
+  describirVencimiento,
   crearPlan,
   crearTipoEquipo,
   describirFrecuencia,
   eliminarPlan,
   formatearFechaCorta,
   generarOrdenes,
+  listarAvisos,
   listarPlanes,
   listarTiposEquipoActivos,
   obtenerAlcanceDelPlan,
   type AlcanceDelPlan,
+  type AvisoPreventivo,
   type PlanListado,
   type ResultadoGeneracion,
   type TipoEquipoActivo,
@@ -57,14 +60,16 @@ export function GestionPreventivo() {
   const [dialogo, setDialogo] = useState<Dialogo>(null);
   const [generando, setGenerando] = useState(false);
   const [generacion, setGeneracion] = useState<ResultadoGeneracion | null>(null);
+  const [avisos, setAvisos] = useState<AvisoPreventivo[]>([]);
 
   useEffect(() => {
     let cancelado = false;
-    Promise.all([listarPlanes(), listarTiposEquipoActivos()])
-      .then(([lista, tipos]) => {
+    Promise.all([listarPlanes(), listarTiposEquipoActivos(), listarAvisos()])
+      .then(([lista, tipos, proximos]) => {
         if (cancelado) return;
         setPlanes(lista);
         setTiposEquipo(tipos);
+        setAvisos(proximos);
         setError(null);
       })
       .catch((e: unknown) => {
@@ -163,6 +168,8 @@ export function GestionPreventivo() {
           </button>
         </div>
       </div>
+
+      {avisos.length > 0 && <AvisoAnticipado avisos={avisos} />}
 
       {generacion && <ResumenGeneracion resultado={generacion} />}
 
@@ -300,6 +307,51 @@ export function GestionPreventivo() {
         />
       )}
     </section>
+  );
+}
+
+/**
+ * TCI-52 — lo que entra en la ventana de aviso de su plan o ya vencio.
+ *
+ * Vive aqui, donde se puede actuar —generar la orden esta a un boton—, y no en
+ * una pantalla aparte que habria que acordarse de visitar. Es el mismo criterio
+ * que el aviso de minimos de TCI-47.
+ *
+ * Los equipos que ya tienen orden abierta no aparecen: avisar de algo que ya
+ * esta en el listado de trabajo es ruido, y a la tercera vez nadie lee los
+ * avisos.
+ */
+function AvisoAnticipado({ avisos }: { avisos: AvisoPreventivo[] }) {
+  const vencidos = avisos.filter((a) => a.vencido).length;
+
+  return (
+    <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+      <p className="font-semibold">
+        {avisos.length}{" "}
+        {avisos.length === 1
+          ? "equipo necesita mantenimiento"
+          : "equipos necesitan mantenimiento"}
+        {vencidos > 0 && `, ${vencidos} ya vencido(s)`}
+      </p>
+      <ul className="mt-2 space-y-1">
+        {avisos.slice(0, 6).map((aviso) => (
+          <li key={`${aviso.plan.id}-${aviso.equipo.id}`}>
+            <span className="font-mono text-xs">{aviso.equipo.codigo}</span>{" "}
+            {aviso.equipo.nombre} · {aviso.cliente.nombre} ·{" "}
+            <strong>{describirVencimiento(aviso)}</strong>
+          </li>
+        ))}
+      </ul>
+      {avisos.length > 6 && (
+        <p className="mt-1 text-amber-800">
+          y {avisos.length - 6} más.
+        </p>
+      )}
+      <p className="mt-2 text-xs text-amber-800">
+        &quot;Generar órdenes ahora&quot; crea las órdenes de los que ya
+        vencieron.
+      </p>
+    </div>
   );
 }
 
