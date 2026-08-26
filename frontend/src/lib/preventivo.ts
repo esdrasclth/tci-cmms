@@ -154,6 +154,32 @@ export function eliminarPlan(id: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Generación automática (TCI-50)
+// ---------------------------------------------------------------------------
+
+export interface ResultadoGeneracion {
+  /** `false` si otra instancia estaba generando y esta pasada se saltó. */
+  ejecutado: boolean;
+  planes: number;
+  creadas: { plan: string; equipo: string; numero: string }[];
+  omitidas: { plan: string; equipo: string; motivo: string }[];
+}
+
+/**
+ * Dispara una pasada del generador. Sin `planId` recorre todos los planes
+ * activos.
+ *
+ * Existe además del horario diario porque un plan recién creado no debería
+ * esperar a mañana para producir sus órdenes.
+ */
+export function generarOrdenes(planId?: string) {
+  const ruta = planId
+    ? `/planes-mantenimiento/${planId}/generar`
+    : "/planes-mantenimiento/generar";
+  return apiPost<ResultadoGeneracion>(ruta, {});
+}
+
+// ---------------------------------------------------------------------------
 // Presentación
 // ---------------------------------------------------------------------------
 

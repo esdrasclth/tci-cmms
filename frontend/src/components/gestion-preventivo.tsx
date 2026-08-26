@@ -15,11 +15,13 @@ import {
   describirFrecuencia,
   eliminarPlan,
   formatearFechaCorta,
+  generarOrdenes,
   listarPlanes,
   listarTiposEquipoActivos,
   obtenerAlcanceDelPlan,
   type AlcanceDelPlan,
   type PlanListado,
+  type ResultadoGeneracion,
   type TipoEquipoActivo,
   type UnidadFrecuencia,
 } from "@/lib/preventivo";
@@ -52,6 +54,8 @@ export function GestionPreventivo() {
   const [error, setError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
   const [dialogo, setDialogo] = useState<Dialogo>(null);
+  const [generando, setGenerando] = useState(false);
+  const [generacion, setGeneracion] = useState<ResultadoGeneracion | null>(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -82,6 +86,30 @@ export function GestionPreventivo() {
     setIntento((n) => n + 1);
   }, []);
 
+  /**
+   * TCI-50 — pasada manual del generador.
+   *
+   * El horario diario ya lo hace solo; esto existe para no esperar a manana
+   * con un plan recien creado, y porque poder ejecutarla bajo demanda es lo
+   * que hace verificable una tarea de fondo.
+   */
+  async function generar() {
+    setGenerando(true);
+    setError(null);
+    setGeneracion(null);
+    try {
+      const resultado = await generarOrdenes();
+      setGeneracion(resultado);
+      recargar();
+    } catch (e) {
+      setError(
+        e instanceof ApiError ? e.message : "No se pudieron generar las ordenes.",
+      );
+    } finally {
+      setGenerando(false);
+    }
+  }
+
   async function alternarActivo(plan: PlanListado) {
     try {
       await actualizarPlan(plan.id, { activo: !plan.activo });
@@ -105,19 +133,31 @@ export function GestionPreventivo() {
             Cada cuánto le toca mantenimiento a cada tipo de equipo.
           </p>
         </div>
-        <button
-          onClick={() => setDialogo({ tipo: "nuevo" })}
-          disabled={tiposEquipo.length === 0}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => void generar()}
+            disabled={generando || planes.length === 0}
+            title="Crea ahora las órdenes de los equipos vencidos, sin esperar al horario diario"
+            className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm font-semibold text-tci-negro hover:bg-tci-humo disabled:opacity-50"
+          >
+            {generando ? "Generando..." : "Generar órdenes ahora"}
+          </button>
+          <button
+            onClick={() => setDialogo({ tipo: "nuevo" })}
+            disabled={tiposEquipo.length === 0}
           title={
             tiposEquipo.length === 0
               ? "Cree primero un tipo de equipo: el plan cuelga de él"
               : undefined
           }
-          className="rounded-lg bg-tci-rojo px-4 py-2.5 text-sm font-semibold text-white hover:bg-tci-rojo-hover disabled:opacity-50"
-        >
-          Nuevo plan
-        </button>
+            className="rounded-lg bg-tci-rojo px-4 py-2.5 text-sm font-semibold text-white hover:bg-tci-rojo-hover disabled:opacity-50"
+          >
+            Nuevo plan
+          </button>
+        </div>
       </div>
+
+      {generacion && <ResumenGeneracion resultado={generacion} />}
 
       {/* Sin tipos de equipo no hay plan posible, asi que el camino para
           crearlos vive aqui y no escondido en la pantalla de equipos. */}
@@ -253,6 +293,72 @@ export function GestionPreventivo() {
         />
       )}
     </section>
+  );
+}
+
+/**
+ * Que hizo la ultima pasada del generador.
+ *
+ * Muestra tambien lo omitido y por que: "0 ordenes creadas" a secas se lee como
+ * un fallo, cuando lo normal es que no haya nada vencido.
+ */
+function ResumenGeneracion({ resultado }: { resultado: ResultadoGeneracion }) {
+  if (!resultado.ejecutado) {
+    return (
+      <div className="mt-4 rounded-xl border border-tci-borde bg-tci-humo px-4 py-3 text-sm text-tci-grafito">
+        Otra instancia estaba generando en este momento. Vuelva a intentarlo en
+        un minuto.
+      </div>
+    );
+  }
+
+  const nada =
+    resultado.creadas.length === 0 && resultado.omitidas.length === 0;
+
+  return (
+    <div className="mt-4 rounded-xl border border-tci-borde bg-white p-4 text-sm">
+      <p className="font-semibold text-tci-negro">
+        {resultado.creadas.length === 0
+          ? "No hizo falta crear ninguna orden"
+          : `${resultado.creadas.length} orden(es) creada(s)`}
+      </p>
+
+      {nada && (
+        <p className="mt-1 text-tci-gris">
+          Ningún equipo tiene el preventivo vencido en{" "}
+          {resultado.planes === 1
+            ? "el plan activo"
+            : `los ${resultado.planes} planes activos`}
+          .
+        </p>
+      )}
+
+      {resultado.creadas.length > 0 && (
+        <ul className="mt-2 space-y-1 text-tci-grafito">
+          {resultado.creadas.map((c) => (
+            <li key={c.numero}>
+              <span className="font-mono text-xs">{c.numero}</span> · {c.equipo}{" "}
+              · {c.plan}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {resultado.omitidas.length > 0 && (
+        <>
+          <p className="mt-3 font-semibold text-tci-negro">
+            {resultado.omitidas.length} omitida(s)
+          </p>
+          <ul className="mt-1 space-y-1 text-tci-gris">
+            {resultado.omitidas.map((o, i) => (
+              <li key={`${o.equipo}-${i}`}>
+                {o.equipo} · {o.motivo}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
   );
 }
 
