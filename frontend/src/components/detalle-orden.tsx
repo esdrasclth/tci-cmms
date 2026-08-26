@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { DialogoAccion, useDialogoAccion } from "@/components/dialogo-accion";
 import { EvidenciaOrden } from "@/components/evidencia-orden";
+import { RepuestosOrden } from "@/components/repuestos-orden";
 import { API, ApiError } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
 import {
@@ -260,6 +261,19 @@ export function DetalleOrden({ id }: { id: string }) {
               }
               usuarioId={sesion?.user.id}
               esAdmin={esAdmin}
+              onCambio={releer}
+            />
+          </Tarjeta>
+
+          {/* TCI-46. Va antes del historial y despues de la evidencia porque es
+              parte del parte de trabajo: lo que se hizo y lo que se gasto. */}
+          <Tarjeta titulo="Repuestos usados">
+            <RepuestosOrden
+              ordenId={id}
+              puedeEditar={
+                orden.estado !== "COMPLETADA" && orden.estado !== "CANCELADA"
+              }
+              moneda={orden.moneda}
               onCambio={releer}
             />
           </Tarjeta>
