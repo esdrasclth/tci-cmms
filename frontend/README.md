@@ -37,6 +37,7 @@ La app queda en `http://localhost:3000`.
 | `/panel/equipos` | Equipos por cliente — solo admin (TCI-37) |
 | `/panel/equipos/[id]` | Ficha del equipo y su historial de órdenes (TCI-38) |
 | `/panel/repuestos` | Catálogo de repuestos y almacén — solo admin (TCI-45) |
+| `/panel/repuestos/movimientos` | Historial de movimientos de almacén — solo admin (TCI-48) |
 | `/panel/preventivo` | Planes de mantenimiento preventivo — solo admin (TCI-49) |
 | `/panel/preventivo/calendario` | Calendario de mantenimientos — solo admin (TCI-51) |
 | `/panel/reportes` | Tablero, desempeño por técnico y exportación — solo admin (TCI-58, TCI-60) |
@@ -173,7 +174,7 @@ destruye historial:
 - **Borrar** solo se ofrece si ninguna orden lo usa. El backend lo rechaza en
   caso contrario, y aquí el botón ya sale deshabilitado con el motivo.
 
-## Repuestos e inventario (TCI-45, TCI-46, TCI-47)
+## Repuestos e inventario (TCI-45, TCI-46, TCI-47, TCI-48)
 
 La existencia **no se edita**: se mueve con entradas y salidas, que dejan asiento
 en el libro del repuesto. Por eso el diálogo de edición no tiene campo de stock y
@@ -189,6 +190,14 @@ un 422.
 Cada cambio avisa al detalle con `onCambio` porque imputar mueve el costo de la
 orden, que se muestra en otra tarjeta; sin eso el total quedaría desfasado hasta
 recargar.
+
+El **historial de movimientos** (`TCI-48`) vive en su propia pantalla además del
+diálogo por repuesto, porque contesta otra pregunta: el diálogo dice cómo llegó
+una pieza a su saldo, y la pantalla dice qué se movió en el almacén esta semana.
+Los asientos no se editan ni se borran, así que no tiene acciones — solo filtros.
+
+La cantidad lleva **signo además de color**: en una impresión en blanco y negro
+una entrada y una salida se leerían igual.
 
 El aviso de mínimos (`TCI-47`) aparece en dos sitios y a propósito: como banda
 sobre el catálogo, donde el administrador puede reponer, y junto a la línea

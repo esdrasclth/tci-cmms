@@ -195,14 +195,15 @@ El `codigo` se normaliza a mayúsculas y solo admite letras, números y guion: e
 etiqueta corta que se ve en la tabla de órdenes y también entra en las claves de los
 adjuntos, donde un espacio o una tilde estorban.
 
-## Inventario y repuestos (TCI-45, TCI-46, TCI-47)
+## Inventario y repuestos (TCI-45, TCI-46, TCI-47, TCI-48)
 
 | Método | Ruta | Quién |
 |---|---|---|
 | `GET` | `/api/repuestos` | Con sesión — **solo activos y con existencia** |
 | `GET` | `/api/repuestos/admin` | Admin — todos, con costo y aviso de mínimos |
 | `GET` | `/api/repuestos/alertas` | Admin — los que están en o bajo el mínimo |
-| `GET` | `/api/repuestos/:id/movimientos` | Admin — el libro del repuesto |
+| `GET` | `/api/repuestos/movimientos` | Admin — el libro de todo el almacén (TCI-48) |
+| `GET` | `/api/repuestos/:id/movimientos` | Admin — el libro de un repuesto |
 | `POST` | `/api/repuestos` | Admin |
 | `POST` | `/api/repuestos/:id/entradas` | Admin — suma existencia, exige motivo |
 | `POST` | `/api/repuestos/:id/salidas` | Admin — resta existencia, exige motivo |
@@ -226,6 +227,18 @@ restando— y `costoTotal` se rehace con la mano de obra ya registrada.
 **Las rutas de consumo cuelgan de la orden**, igual que las de evidencia (`TCI-43`): el
 permiso es el de la orden, y así no hay camino que se salte la comprobación. Una orden
 `COMPLETADA` o `CANCELADA` no admite cambios en su consumo, ni de un admin.
+
+**El libro tiene dos lecturas (`TCI-48`).** La de un repuesto contesta "cómo llegó este a su
+saldo actual"; la global contesta "qué se movió esta semana", y esa no se responde abriendo
+repuesto por repuesto. Las dos aceptan los mismos filtros —periodo, tipo de movimiento, solo
+consumo de órdenes— y van paginadas: a diferencia del catálogo, esta tabla solo crece. El
+periodo se mide sobre `createdAt`, que en una tabla solo-append es también la fecha del
+hecho.
+
+Pedir el libro de un repuesto que no existe da **404 y no una lista vacía**: lo segundo se
+leería como "no hubo movimientos". El orden es por fecha descendente y, a igualdad, por id,
+porque dos asientos del mismo instante —los que deja una corrección de consumo— saldrían en
+orden aleatorio.
 
 **Sobre "alertas de stock bajo" (`TCI-47`):** hoy se consultan, no se envían. Avisan al
 **llegar** al mínimo, no solo al bajar de él, y un mínimo de `0` no avisa nunca — que es la
