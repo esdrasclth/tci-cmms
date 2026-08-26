@@ -11,6 +11,7 @@ import { RolesGuard } from './auth/roles.guard';
 import { CatalogosModule } from './catalogos/catalogos.module';
 import { ClientesModule } from './clientes/clientes.module';
 import { EquiposModule } from './equipos/equipos.module';
+import { InventarioModule } from './inventario/inventario.module';
 import { OrdenesModule } from './ordenes/ordenes.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
@@ -36,6 +37,7 @@ import { PrismaService } from './prisma/prisma.service';
     CatalogosModule,
     ClientesModule,
     EquiposModule,
+    InventarioModule,
     OrdenesModule,
     UsuariosModule,
   ],
