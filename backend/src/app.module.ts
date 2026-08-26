@@ -31,6 +31,9 @@ import { PrismaService } from './prisma/prisma.service';
       inject: [PrismaService],
       useFactory: (prisma: PrismaService) => ({
         auth: createAuth(prisma),
+        // El CORS lo monta main.ts: el que trae el modulo fija los metodos en
+        // GET, POST, PUT y DELETE, y deja fuera PATCH.
+        disableTrustedOriginsCors: true,
       }),
     }),
     AdjuntosModule,

@@ -12,6 +12,20 @@ import type { PrismaClient } from '../generated/prisma/client';
  * propios del CMMS (rol, activo, telefono) se declaran aqui como
  * additionalFields y deben existir en prisma/schema.prisma.
  */
+/**
+ * Origenes a los que se les permite hablar con la API.
+ *
+ * Lo consumen dos sitios y por eso vive aqui: `trustedOrigins` de Better Auth y
+ * el CORS que monta main.ts. Si se separaran, un despliegue podria autenticar
+ * desde un origen al que el navegador no le deja ni hacer la peticion.
+ */
+export function origenesConfiados(): string[] {
+  return (process.env.CORS_ORIGIN ?? 'http://localhost:3000')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
 export function createAuth(prisma: PrismaClient) {
   return betterAuth({
     database: prismaAdapter(prisma, {
@@ -111,10 +125,7 @@ export function createAuth(prisma: PrismaClient) {
       },
     },
 
-    trustedOrigins: (process.env.CORS_ORIGIN ?? 'http://localhost:3000')
-      .split(',')
-      .map((origin) => origin.trim())
-      .filter(Boolean),
+    trustedOrigins: origenesConfiados(),
   });
 }
 
