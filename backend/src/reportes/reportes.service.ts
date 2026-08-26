@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { finDelDia, inicioDelDia } from '../comun/fechas';
 import { promedioDeDias } from '../equipos/historial-equipo.service';
 import { Prisma } from '../generated/prisma/client';
 import { OrdenEstado, Rol } from '../generated/prisma/enums';
@@ -248,45 +249,6 @@ export class ReportesService {
 
     return where;
   }
-}
-
-/**
- * Desfase horario del negocio, en horas respecto a UTC.
- *
- * Honduras es UTC-6 todo el ano: no aplica horario de verano desde 2006. Se
- * deja configurable por si el sistema se despliega para otra operacion, pero no
- * se usa la zona del servidor: en un contenedor suele ser UTC, y entonces
- * "hasta el 31 de agosto" dejaria fuera todo lo que se creo despues de las
- * 18:00 del 31 en Honduras.
- */
-const HORAS_UTC = Number(process.env.REPORTES_UTC_OFFSET ?? -6);
-
-/** 00:00:00.000 del dia indicado, en hora del negocio. */
-function inicioDelDia(fecha: string): Date {
-  return limiteDelDia(fecha, 0, 0, 0, 0);
-}
-
-/**
- * 23:59:59.999 del dia indicado, en hora del negocio. Quien escribe "hasta el
- * 31" espera que el 31 entre entero.
- */
-function finDelDia(fecha: string): Date {
-  return limiteDelDia(fecha, 23, 59, 59, 999);
-}
-
-function limiteDelDia(
-  fecha: string,
-  hora: number,
-  minuto: number,
-  segundo: number,
-  ms: number,
-): Date {
-  const [ano, mes, dia] = fecha.slice(0, 10).split('-').map(Number);
-  // Se compone en UTC y se corrige el desfase, en vez de usar `setHours`, que
-  // aplicaria la zona del servidor y no la del negocio.
-  return new Date(
-    Date.UTC(ano, mes - 1, dia, hora - HORAS_UTC, minuto, segundo, ms),
-  );
 }
 
 /** Suma `Decimal` de Prisma sin pasar por `number`, que perderia centavos. */
