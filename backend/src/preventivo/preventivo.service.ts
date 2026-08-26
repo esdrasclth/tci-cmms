@@ -21,6 +21,13 @@ import {
  * servicio es lo que esa tarea consultara para saber que hay que crear.
  */
 
+/**
+ * El cliente de Prisma o una transaccion abierta. `equipos()` lo acepta porque
+ * la generacion automatica (TCI-50) corre toda la pasada dentro de una sola
+ * transaccion y necesita leer con ella.
+ */
+type ClientePrisma = PrismaService | Prisma.TransactionClient;
+
 const CAMPOS = {
   id: true,
   nombre: true,
@@ -67,8 +74,8 @@ export class PreventivoService {
     );
   }
 
-  async obtener(id: string) {
-    const plan = await this.prisma.planMantenimiento.findUnique({
+  async obtener(id: string, cliente: ClientePrisma = this.prisma) {
+    const plan = await cliente.planMantenimiento.findUnique({
       where: { id },
       select: CAMPOS,
     });
@@ -81,10 +88,10 @@ export class PreventivoService {
    * toca el siguiente. Es lo que hace verificable un plan antes de que exista
    * el generador, y lo que TCI-50 leera para decidir que crear.
    */
-  async equipos(id: string) {
-    const plan = await this.obtener(id);
+  async equipos(id: string, cliente: ClientePrisma = this.prisma) {
+    const plan = await this.obtener(id, cliente);
 
-    const equipos = await this.prisma.equipo.findMany({
+    const equipos = await cliente.equipo.findMany({
       where: this.equiposDelPlan(plan.tipoEquipo.id, plan.cliente?.id),
       select: {
         id: true,

@@ -8,6 +8,8 @@ import {
 import { Prisma } from '../generated/prisma/client';
 import {
   OrdenEstado,
+  OrigenOrden,
+  Prioridad,
   Rol,
   TipoAdjunto,
   TipoHistorial,
@@ -172,6 +174,68 @@ export class OrdenesService {
 
       return this.releer(tx, creada.id);
     });
+  }
+
+  /**
+   * TCI-50 — alta generada por un plan preventivo.
+   *
+   * Vive aqui y no en el generador para que el correlativo, el asiento inicial
+   * del historial y el resto de convenciones del alta se escriban en un solo
+   * sitio. Se salta las validaciones de `crear()` a proposito: el plan ya
+   * comprobo sus referencias al definirse, y este camino no lo dispara un
+   * usuario que pueda equivocarse.
+   *
+   * `creadoPorId` apunta al usuario de sistema: la orden no tiene autor humano,
+   * pero la columna es obligatoria y el historial necesita a quien atribuir el
+   * asiento.
+   */
+  async crearDesdePlan(
+    tx: Prisma.TransactionClient,
+    datos: {
+      titulo: string;
+      descripcionProblema: string;
+      clienteId: string;
+      sedeId: string | null;
+      equipoId: string;
+      tipoMantenimientoId: string;
+      prioridad: Prioridad;
+      planId: string;
+      fechaProgramada: Date;
+      creadoPorId: string;
+    },
+  ): Promise<{ id: string; numero: string }> {
+    const numero = await this.generarNumero(tx);
+
+    const creada = await tx.ordenTrabajo.create({
+      data: {
+        numero,
+        titulo: datos.titulo,
+        descripcionProblema: datos.descripcionProblema,
+        prioridad: datos.prioridad,
+        origen: OrigenOrden.PREVENTIVO_AUTOMATICO,
+        clienteId: datos.clienteId,
+        sedeId: datos.sedeId,
+        equipoId: datos.equipoId,
+        tipoMantenimientoId: datos.tipoMantenimientoId,
+        planId: datos.planId,
+        creadoPorId: datos.creadoPorId,
+        fechaProgramada: datos.fechaProgramada,
+      },
+      select: { id: true, numero: true },
+    });
+
+    await tx.ordenHistorial.create({
+      data: {
+        ordenId: creada.id,
+        usuarioId: datos.creadoPorId,
+        tipo: TipoHistorial.CAMBIO_ESTADO,
+        estadoAnterior: null,
+        estadoNuevo: OrdenEstado.PENDIENTE,
+        comentario: 'Orden generada automaticamente por un plan preventivo',
+      },
+    });
+
+    return creada;
   }
 
   /**

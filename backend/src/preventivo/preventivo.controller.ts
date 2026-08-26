@@ -18,6 +18,7 @@ import {
   CrearPlanDto,
   FiltrarPlanesDto,
 } from './dto/plan.dto';
+import { GeneradorPreventivoService } from './generador.service';
 import { PreventivoService } from './preventivo.service';
 
 /**
@@ -30,7 +31,29 @@ import { PreventivoService } from './preventivo.service';
 @Roles(Rol.ADMIN)
 @Controller('planes-mantenimiento')
 export class PreventivoController {
-  constructor(private readonly preventivo: PreventivoService) {}
+  constructor(
+    private readonly preventivo: PreventivoService,
+    private readonly generador: GeneradorPreventivoService,
+  ) {}
+
+  /**
+   * TCI-50 — dispara una pasada del generador a mano.
+   *
+   * Existe ademas del horario porque un plan recien creado no deberia esperar
+   * a manana para producir sus ordenes, y porque poder ejecutarlo bajo demanda
+   * es lo que hace verificable una tarea de fondo.
+   */
+  @Post('generar')
+  @HttpCode(HttpStatus.OK)
+  generarTodos() {
+    return this.generador.generar();
+  }
+
+  @Post(':id/generar')
+  @HttpCode(HttpStatus.OK)
+  generarDelPlan(@Param('id') id: string) {
+    return this.generador.generar(id);
+  }
 
   @Get()
   listar(@Query() filtros: FiltrarPlanesDto) {

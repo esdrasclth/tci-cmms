@@ -1,6 +1,7 @@
 import { AuthModule } from '@thallesp/nestjs-better-auth';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 
 import { AppController } from './app.controller';
@@ -25,6 +26,8 @@ import { PrismaService } from './prisma/prisma.service';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    // TCI-50: registra los @Cron. La generacion preventiva es el unico que hay.
+    ScheduleModule.forRoot(),
     PrismaModule,
     // Monta Better Auth en /api/auth/* y registra un AuthGuard global:
     // toda ruta exige sesion salvo que se marque con @Public() (TCI-33).

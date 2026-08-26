@@ -55,6 +55,13 @@ interface EquipoDelPlan {
   porVencer: boolean;
 }
 
+interface Generacion {
+  ejecutado: boolean;
+  planes: number;
+  creadas: { plan: string; equipo: string; numero: string }[];
+  omitidas: { plan: string; equipo: string; motivo: string }[];
+}
+
 describe('Mantenimiento preventivo (e2e)', () => {
   let app: INestApplication<App>;
   let esc: Escenario;
@@ -65,6 +72,20 @@ describe('Mantenimiento preventivo (e2e)', () => {
   const planesCreados: string[] = [];
 
   const sufijo = () => Math.random().toString(36).slice(2, 8);
+
+  /**
+   * Las ordenes que crea el generador no pasan por `esc.registrarOrden`, asi
+   * que hay que apuntarlas a mano o quedarian huerfanas al limpiar.
+   */
+  const registrarOrdenGenerada = (id: string) => esc.registrarOrden(id);
+
+  const registrarPorNumero = async (numero: string) => {
+    const orden = await prisma.ordenTrabajo.findFirst({
+      where: { numero },
+      select: { id: true },
+    });
+    if (orden) esc.registrarOrden(orden.id);
+  };
 
   const crearTipoEquipo = async (nombre = `E2E Tipo ${sufijo()}`) => {
     const respuesta = await api()
@@ -322,6 +343,118 @@ describe('Mantenimiento preventivo (e2e)', () => {
           frecuenciaUnidad: 'DIAS',
         })
         .expect(400);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // TCI-50 — generacion automatica
+  // -------------------------------------------------------------------------
+
+  describe('Generacion automatica de ordenes', () => {
+    /** Ejecuta el generador para un plan y devuelve el resultado. */
+    const generar = async (planId: string) => {
+      const respuesta = await api()
+        .post(`/api/planes-mantenimiento/${planId}/generar`)
+        .set('Cookie', esc.admin.cookie)
+        .expect(200);
+      return cuerpo<Generacion>(respuesta);
+    };
+
+    it('crea una orden por cada equipo vencido', async () => {
+      const tipo = await crearTipoEquipo();
+      await asignarTipo(tipo.id);
+      const plan = await crearPlan(tipo.id, {
+        instrucciones: 'Cambio de filtros y revision de correas',
+      });
+
+      const resultado = await generar(plan.id);
+
+      expect(resultado.ejecutado).toBe(true);
+      expect(resultado.creadas).toHaveLength(1);
+      expect(resultado.creadas[0].equipo).toBeTruthy();
+
+      const numero = resultado.creadas[0].numero;
+      const orden = await prisma.ordenTrabajo.findFirst({
+        where: { numero },
+        select: {
+          id: true,
+          origen: true,
+          planId: true,
+          equipoId: true,
+          prioridad: true,
+          descripcionProblema: true,
+          estado: true,
+        },
+      });
+      registrarOrdenGenerada(orden!.id);
+
+      expect(orden!.origen).toBe('PREVENTIVO_AUTOMATICO');
+      expect(orden!.planId).toBe(plan.id);
+      expect(orden!.equipoId).toBe(esc.equipoId);
+      expect(orden!.estado).toBe('PENDIENTE');
+      // Las instrucciones del plan son la descripcion de la orden.
+      expect(orden!.descripcionProblema).toContain('Cambio de filtros');
+    });
+
+    it('no duplica: la segunda pasada omite lo que ya tiene orden abierta', async () => {
+      const tipo = await crearTipoEquipo();
+      await asignarTipo(tipo.id);
+      const plan = await crearPlan(tipo.id);
+
+      const primera = await generar(plan.id);
+      expect(primera.creadas).toHaveLength(1);
+      await registrarPorNumero(primera.creadas[0].numero);
+
+      // Sin esta regla un plan vencido crearia una orden cada dia.
+      const segunda = await generar(plan.id);
+      expect(segunda.creadas).toHaveLength(0);
+      expect(segunda.omitidas).toHaveLength(1);
+      expect(segunda.omitidas[0].motivo).toContain('abierta');
+    });
+
+    it('un plan desactivado no genera nada', async () => {
+      const tipo = await crearTipoEquipo();
+      await asignarTipo(tipo.id);
+      const plan = await crearPlan(tipo.id);
+
+      await api()
+        .patch(`/api/planes-mantenimiento/${plan.id}`)
+        .set('Cookie', esc.admin.cookie)
+        .send({ activo: false })
+        .expect(200);
+
+      const resultado = await generar(plan.id);
+      expect(resultado.planes).toBe(0);
+      expect(resultado.creadas).toHaveLength(0);
+    });
+
+    it('la orden generada la atribuye al usuario de sistema, que no puede entrar', async () => {
+      const tipo = await crearTipoEquipo();
+      await asignarTipo(tipo.id);
+      const plan = await crearPlan(tipo.id);
+
+      const resultado = await generar(plan.id);
+      await registrarPorNumero(resultado.creadas[0].numero);
+
+      const orden = await prisma.ordenTrabajo.findFirst({
+        where: { numero: resultado.creadas[0].numero },
+        select: { creadoPor: { select: { email: true, activo: true } } },
+      });
+
+      expect(orden!.creadoPor.activo).toBe(false);
+      // Sin fila en `accounts` no hay contrasena que verificar: no hay forma
+      // de iniciar sesion con el.
+      const cuentas = await prisma.account.count({
+        where: { user: { email: orden!.creadoPor.email } },
+      });
+      expect(cuentas).toBe(0);
+    });
+
+    it('un tecnico no puede dispararla', async () => {
+      await api()
+        .post('/api/planes-mantenimiento/generar')
+        .set('Cookie', esc.tecnico.cookie)
+        .expect(403);
     });
   });
 
