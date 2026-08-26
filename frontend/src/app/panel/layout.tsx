@@ -67,33 +67,39 @@ export default function PanelLayout({ children }: LayoutProps<"/panel">) {
           </div>
 
           {/* Movil: cinco enlaces mas el logo no caben en 375px, asi que la
-              navegacion se pliega en un panel desplegable. */}
-          <button
-            type="button"
-            onClick={() => setMenuAbierto((abierto) => !abierto)}
-            aria-expanded={menuAbierto}
-            aria-controls="menu-panel"
-            className="rounded-lg border border-white/25 p-2.5 text-white transition-colors hover:bg-white/10 lg:hidden"
-          >
-            <span className="sr-only">
-              {menuAbierto ? "Cerrar menu" : "Abrir menu"}
-            </span>
-            <svg
-              aria-hidden
-              viewBox="0 0 24 24"
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
+              navegacion se pliega en un panel desplegable. El tecnico no tiene
+              enlaces, solo salir: plegarlo seria esconder un unico boton que
+              cabe de sobra al lado del logo. */}
+          {esAdmin ? (
+            <button
+              type="button"
+              onClick={() => setMenuAbierto((abierto) => !abierto)}
+              aria-expanded={menuAbierto}
+              aria-controls="menu-panel"
+              className="rounded-lg border border-white/25 p-2.5 text-white transition-colors hover:bg-white/10 lg:hidden"
             >
-              {menuAbierto ? (
-                <path d="M6 6l12 12M18 6L6 18" />
-              ) : (
-                <path d="M4 7h16M4 12h16M4 17h16" />
-              )}
-            </svg>
-          </button>
+              <span className="sr-only">
+                {menuAbierto ? "Cerrar menu" : "Abrir menu"}
+              </span>
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                {menuAbierto ? (
+                  <path d="M6 6l12 12M18 6L6 18" />
+                ) : (
+                  <path d="M4 7h16M4 12h16M4 17h16" />
+                )}
+              </svg>
+            </button>
+          ) : (
+            <BotonSalir onSalir={salir} className="lg:hidden" />
+          )}
         </div>
 
         {menuAbierto && (
@@ -101,11 +107,9 @@ export default function PanelLayout({ children }: LayoutProps<"/panel">) {
             id="menu-panel"
             className="border-t border-white/10 px-4 pb-4 lg:hidden"
           >
-            {esAdmin && (
-              <div className="flex flex-col gap-1 py-2">
-                <Enlaces ruta={ruta} onNavegar={() => setMenuAbierto(false)} />
-              </div>
-            )}
+            <div className="flex flex-col gap-1 py-2">
+              <Enlaces ruta={ruta} onNavegar={() => setMenuAbierto(false)} />
+            </div>
             <BotonSalir onSalir={salir} className="w-full" />
           </div>
         )}
