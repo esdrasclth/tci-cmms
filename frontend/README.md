@@ -37,6 +37,7 @@ La app queda en `http://localhost:3000`.
 | `/panel/equipos` | Equipos por cliente — solo admin (TCI-37) |
 | `/panel/equipos/[id]` | Ficha del equipo y su historial de órdenes (TCI-38) |
 | `/panel/repuestos` | Catálogo de repuestos y almacén — solo admin (TCI-45) |
+| `/panel/preventivo` | Planes de mantenimiento preventivo — solo admin (TCI-49) |
 | `/panel/reportes` | Tablero, desempeño por técnico y exportación — solo admin (TCI-58, TCI-60) |
 | `/panel/tipos-mantenimiento` | Catálogo de tipos de mantenimiento — solo admin (TCI-30) |
 | `/panel/usuarios` | Gestión de usuarios — solo admin (TCI-35) |
@@ -89,6 +90,22 @@ siempre.
 
 Esta pantalla **no exige rol**: a un técnico le sirve, y se llega a ella desde el
 campo "Equipo" del detalle de una orden.
+
+## Mantenimiento preventivo (TCI-49)
+
+Un plan es abstracto hasta que se ve a quién alcanza, así que cada fila dice a
+cuántos equipos aplica y se abre para ver cuáles y cuándo le toca a cada uno.
+Eso es también lo que hace comprobable un plan antes de que exista el generador
+(`TCI-50`).
+
+El **tipo de equipo** dejó de ser texto libre en el formulario de equipos y pasó
+a ser un desplegable del catálogo: los planes cuelgan de ahí, y con texto libre
+se rompían con un plural o una tilde. El catálogo se pide al abrir el diálogo del
+equipo y no con la lista, porque solo hace falta ahí.
+
+Sin tipos de equipo no hay plan posible, así que el camino para crear el primero
+vive en esta pantalla —con el botón de alta deshabilitado y explicado— y no
+escondido en otra.
 
 ## Reportes (TCI-58, TCI-59, TCI-60)
 

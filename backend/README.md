@@ -232,6 +232,42 @@ permiso es el de la orden, y así no hay camino que se salte la comprobación. U
 forma de decir que ese repuesto no se controla. El aviso por correo o push necesita el
 módulo 8 y va con `TCI-54`.
 
+## Mantenimiento preventivo (TCI-49)
+
+| Método | Ruta | Quién |
+|---|---|---|
+| `GET` | `/api/tipos-equipo` | Con sesión — solo los activos |
+| `GET` | `/api/tipos-equipo/admin` | Admin — todos, con cuántos equipos y planes los usan |
+| `POST` `PATCH` `DELETE` | `/api/tipos-equipo…` | Admin |
+| `GET` | `/api/planes-mantenimiento` | Admin — con a cuántos equipos alcanza cada uno |
+| `GET` | `/api/planes-mantenimiento/:id/equipos` | Admin — a quién alcanza y cuándo le toca |
+| `POST` `PATCH` `DELETE` | `/api/planes-mantenimiento…` | Admin |
+
+**Los tipos de equipo pasan a ser un catálogo.** Hasta `TCI-37` el tipo era texto libre en
+`Equipo.tipo`. Un plan colgado de ese campo se rompe en silencio con un plural o una tilde, y
+los equipos sin tipo no reciben plan sin que nadie se entere. La migración
+`preventivo_planes` crea una fila por cada valor distinto que ya existía —normalizando
+espacios y mayúsculas— y enlaza cada equipo con la suya; los que no tenían tipo se quedan sin
+enlazar a propósito. El campo de texto sigue en la tabla con lo que se escribió antes, pero
+ya no manda.
+
+**El vencimiento se cuenta desde el último cierre real**, no desde un calendario fijo: si el
+preventivo de marzo se hizo el 10 de abril, el siguiente cuenta desde el 10 de abril. Así el
+plan refleja el estado de la máquina y no acumula órdenes atrasadas cuando el equipo se
+retrasa. Decisión del cliente del 2026-08-26. Un equipo **sin preventivo previo cuenta como
+vencido**: es la primera vez que se le aplica.
+
+**La frecuencia se guarda como valor + unidad**, no como número de días: "cada 3 meses" no
+son 90 días, y convertirlo al guardar desplazaría la fecha unos días cada trimestre.
+`sumarFrecuencia` suma meses como meses y recorta al último día válido (31 de enero + 1 mes =
+28 de febrero).
+
+`tipoEquipoId` no está en el DTO de edición del plan: cambiarlo lo convertiría en otro plan y
+dejaría colgadas las órdenes que ya generó.
+
+> **Pendiente:** la generación automática de órdenes es `TCI-50` y todavía no existe.
+> `PreventivoService` ya calcula qué equipos están vencidos, que es lo que esa tarea leerá.
+
 ## Reportes e historial (TCI-57, TCI-58, TCI-59, TCI-60)
 
 | Método | Ruta | Quién |
@@ -408,7 +444,6 @@ devolvería la API en producción.
 - `EVIDENCIA_OBLIGATORIA` está en `false` por decisión del 2026-08-25, no por falta de
   soporte: la carga de evidencia (`TCI-43`) ya funciona, pero todavía no bloquea el cierre.
   Encenderla es cambiar la variable.
-- `PlanMantenimiento` (módulo 7) todavía no está en el schema; se agrega en su módulo.
 - El inventario **no reserva** existencia: se descuenta al imputar, no al planificar. Con el
   volumen de TCI no hace falta, pero la generación automática de órdenes preventivas
   (`TCI-50`) va a querer saber si habrá repuesto el día programado.
