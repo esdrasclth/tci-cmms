@@ -36,6 +36,7 @@ La app queda en `http://localhost:3000`.
 | `/panel/clientes` | Clientes y sedes — solo admin (TCI-36) |
 | `/panel/equipos` | Equipos por cliente — solo admin (TCI-37) |
 | `/panel/equipos/[id]` | Ficha del equipo y su historial de órdenes (TCI-38) |
+| `/panel/tipos-mantenimiento` | Catálogo de tipos de mantenimiento — solo admin (TCI-30) |
 | `/panel/usuarios` | Gestión de usuarios — solo admin (TCI-35) |
 
 **No hay pantalla de registro.** El backend tiene el registro público cerrado
@@ -98,6 +99,38 @@ eso, cada tecla dispara una petición. Mientras se recarga, la tabla se atenúa 
 vez de sustituirse por el esqueleto; el esqueleto queda solo para la primera
 carga, cuando aún no hay nada que atenuar.
 
+## Catálogo de tipos de mantenimiento (TCI-30)
+
+El tipo de una orden **no es un enum**: es una fila editable en
+`/panel/tipos-mantenimiento`, con código, nombre, color y si exige equipo. Por
+eso el formulario de alta de órdenes lee el catálogo de la API
+(`src/lib/tipos-mantenimiento.ts`) en vez de traer la lista escrita en código.
+
+Misma distinción que en clientes y equipos, y por el mismo motivo — confundirla
+destruye historial:
+
+- **Desactivar** saca el tipo del formulario de alta, pero las órdenes que ya lo
+  usan lo conservan.
+- **Borrar** solo se ofrece si ninguna orden lo usa. El backend lo rechaza en
+  caso contrario, y aquí el botón ya sale deshabilitado con el motivo.
+
+## Móvil (TCI-44)
+
+El técnico trabaja desde el teléfono, así que el panel entero se revisa a 360 px.
+Dos decisiones que se repiten en todas las pantallas:
+
+- **Tabla en escritorio, tarjetas en móvil.** No es una tabla con scroll
+  horizontal: son dos vistas del mismo dato. Las celdas se extraen a componentes
+  que ambas comparten (`Identidad`, `EtiquetaRol`, `Acciones`…), para que no se
+  desincronicen al tocar una sola.
+- **La navegación del admin se pliega.** Cinco enlaces más el logotipo no caben
+  en 375 px, y el logotipo no puede encogerse (ver *Diseño*). Al técnico, que no
+  tiene enlaces, no se le pliega nada: se le muestra "Cerrar sesión" al lado del
+  logotipo, porque plegar un único botón sería esconderlo sin ganar espacio.
+
+Los diálogos suben desde abajo como hoja (`rounded-t-2xl`, `items-end`) y solo
+se centran a partir de `sm:`.
+
 ## Diseño
 
 La estructura de las pantallas de autenticación sigue la referencia que aportó el
@@ -113,9 +146,9 @@ Adaptaciones respecto a la referencia, y por qué:
   correo + contraseña (`emailAndPassword` en `auth.config.ts`); un botón social
   sería un callejón sin salida. Cuando se configure un proveedor OAuth, el hueco
   está justo antes del enlace de registro.
-- **Fondo geométrico en vez de fotografía.** No hay banco de imágenes propio y
-  una foto de archivo desentonaría con la marca. Las facetas del SVG evocan el
-  trazo del logotipo.
+- **Fotografía de la marca** (`public/background.jpg`) bajo una capa negra al
+  55 %. La capa no es decorativa: sin ella el texto blanco pierde contraste
+  sobre las zonas claras de la foto.
 - **El logotipo nunca baja de ~40px de alto.** Es blanco y rojo sobre
   transparente, con trazos muy finos: más pequeño se empasta, y sobre fondo claro
   directamente no se ve. Por eso el fondo oscuro se conserva también en móvil.
@@ -142,16 +175,15 @@ un middleware.
 - No hay tests. Falta decidir herramienta (Vitest + Testing Library encajaría con
   lo que ya usa el backend).
 - **No hay actualización en vivo entre usuarios** (ver el aviso de TCI-42).
-- **El catálogo de tipos de mantenimiento no tiene pantalla** (`TCI-30`).
-- Las listas de clientes y equipos **no paginan**. Con el volumen actual de TCI
-  no hace falta; si crece, la API ya acepta filtros y solo faltaría el `page`.
+- Las listas de clientes, equipos y tipos **no paginan**. Con el volumen actual
+  de TCI no hace falta; si crece, la API ya acepta filtros y solo faltaría el
+  `page`.
 - El historial de un equipo muestra **las 25 más recientes**, sin paginar. Para
   más, se remite al listado general.
-- Los filtros no se reflejan en la URL: al recargar se pierden.
 - La lista de usuarios no pagina ni filtra desde la interfaz, aunque la API sí
   acepta `rol`, `activo` y `q`. Con el tamaño de equipo de TCI no hace falta
   todavía.
-- Los filtros del listado no se reflejan en la URL: al recargar se pierden.
+- Los filtros no se reflejan en la URL: al recargar se pierden.
 - Los tipos de la API están escritos a mano en `src/lib/ordenes.ts`. Si el backend
   cambia el `include` del listado, hay que actualizarlos aquí.
 - Sin manejo de sesión expirada: si la cookie caduca con la app abierta, la
