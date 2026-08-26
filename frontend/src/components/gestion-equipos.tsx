@@ -234,87 +234,77 @@ export function GestionEquipos() {
               : "No hay equipos registrados."}
           </p>
         ) : (
-          <div
-            className={`overflow-x-auto rounded-xl border border-tci-borde bg-white transition-opacity ${cargando ? "opacity-50" : ""}`}
-          >
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-tci-borde bg-tci-humo text-xs text-tci-gris uppercase">
-                <tr>
-                  <th className="px-4 py-3 font-bold">Codigo</th>
-                  <th className="px-4 py-3 font-bold">Equipo</th>
-                  <th className="px-4 py-3 font-bold">Cliente</th>
-                  <th className="px-4 py-3 font-bold">Ordenes</th>
-                  <th className="px-4 py-3 font-bold">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {equipos.map((equipo) => (
-                  <tr
-                    key={equipo.id}
-                    className="border-b border-tci-borde last:border-0"
-                  >
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <Link
-                        href={`/panel/equipos/${equipo.id}`}
-                        className="font-mono text-xs text-tci-gris underline-offset-2 hover:text-tci-rojo hover:underline"
-                      >
-                        {equipo.codigo}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="font-bold text-tci-negro">
-                        {equipo.nombre}
-                        {!equipo.activo && (
-                          <span className="ml-2 rounded-full bg-tci-humo px-2 py-0.5 text-xs font-normal text-tci-gris">
-                            Desactivado
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-xs text-tci-gris">
-                        {[equipo.marca, equipo.modelo].filter(Boolean).join(" ") ||
-                          equipo.tipo ||
-                          "Sin detalle"}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3 text-tci-grafito">
-                      {equipo.cliente.nombre}
-                      {equipo.sede && (
-                        <span className="block text-xs text-tci-gris">
-                          {equipo.sede.nombre}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-tci-grafito">
-                      {equipo._count.ordenes}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        <BotonFila
-                          onClick={() => setDialogo({ tipo: "editar", equipo })}
-                        >
-                          Editar
-                        </BotonFila>
-                        <BotonFila onClick={() => void alternarActivo(equipo)}>
-                          {equipo.activo ? "Desactivar" : "Activar"}
-                        </BotonFila>
-                        <BotonFila
-                          peligro
-                          onClick={() => setDialogo({ tipo: "borrar", equipo })}
-                          disabled={equipo._count.ordenes > 0}
-                          titulo={
-                            equipo._count.ordenes > 0
-                              ? "Tiene ordenes en su historial: desactivelo en lugar de borrarlo"
-                              : undefined
-                          }
-                        >
-                          Borrar
-                        </BotonFila>
-                      </div>
-                    </td>
+          <div className={cargando ? "opacity-50" : ""}>
+            {/* Tabla en escritorio, tarjetas en movil (TCI-44). */}
+            <div className="hidden overflow-x-auto rounded-xl border border-tci-borde bg-white md:block">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-tci-borde bg-tci-humo text-xs text-tci-gris uppercase">
+                  <tr>
+                    <th className="px-4 py-3 font-bold">Codigo</th>
+                    <th className="px-4 py-3 font-bold">Equipo</th>
+                    <th className="px-4 py-3 font-bold">Cliente</th>
+                    <th className="px-4 py-3 font-bold">Ordenes</th>
+                    <th className="px-4 py-3 font-bold">Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {equipos.map((equipo) => (
+                    <tr
+                      key={equipo.id}
+                      className="border-b border-tci-borde last:border-0"
+                    >
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <CodigoEquipo equipo={equipo} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <Identidad equipo={equipo} />
+                      </td>
+                      <td className="px-4 py-3 text-tci-grafito">
+                        <Ubicacion equipo={equipo} />
+                      </td>
+                      <td className="px-4 py-3 text-tci-grafito">
+                        {equipo._count.ordenes}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Acciones
+                          equipo={equipo}
+                          setDialogo={setDialogo}
+                          onAlternar={() => void alternarActivo(equipo)}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <ul className="space-y-3 md:hidden">
+              {equipos.map((equipo) => (
+                <li
+                  key={equipo.id}
+                  className="rounded-xl border border-tci-borde bg-white p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <Identidad equipo={equipo} />
+                    <CodigoEquipo equipo={equipo} />
+                  </div>
+                  <p className="mt-2 text-sm text-tci-grafito">
+                    <Ubicacion equipo={equipo} />
+                  </p>
+                  <p className="mt-2 text-sm text-tci-gris">
+                    {equipo._count.ordenes}{" "}
+                    {equipo._count.ordenes === 1 ? "orden" : "ordenes"}
+                  </p>
+                  <div className="mt-3">
+                    <Acciones
+                      equipo={equipo}
+                      setDialogo={setDialogo}
+                      onAlternar={() => void alternarActivo(equipo)}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
@@ -353,6 +343,85 @@ export function GestionEquipos() {
         />
       )}
     </section>
+  );
+}
+
+/**
+ * Piezas de una fila de equipo, compartidas por la tabla de escritorio y las
+ * tarjetas de movil (TCI-44).
+ */
+function CodigoEquipo({ equipo }: { equipo: Equipo }) {
+  return (
+    <Link
+      href={`/panel/equipos/${equipo.id}`}
+      className="shrink-0 font-mono text-xs text-tci-gris underline-offset-2 hover:text-tci-rojo hover:underline"
+    >
+      {equipo.codigo}
+    </Link>
+  );
+}
+
+function Identidad({ equipo }: { equipo: Equipo }) {
+  return (
+    <div className="min-w-0">
+      <p className="font-bold text-tci-negro">
+        {equipo.nombre}
+        {!equipo.activo && (
+          <span className="ml-2 rounded-full bg-tci-humo px-2 py-0.5 text-xs font-normal text-tci-gris">
+            Desactivado
+          </span>
+        )}
+      </p>
+      <p className="text-xs text-tci-gris">
+        {[equipo.marca, equipo.modelo].filter(Boolean).join(" ") ||
+          equipo.tipo ||
+          "Sin detalle"}
+      </p>
+    </div>
+  );
+}
+
+function Ubicacion({ equipo }: { equipo: Equipo }) {
+  return (
+    <>
+      {equipo.cliente.nombre}
+      {equipo.sede && (
+        <span className="block text-xs text-tci-gris">{equipo.sede.nombre}</span>
+      )}
+    </>
+  );
+}
+
+function Acciones({
+  equipo,
+  setDialogo,
+  onAlternar,
+}: {
+  equipo: Equipo;
+  setDialogo: (dialogo: Dialogo) => void;
+  onAlternar: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <BotonFila onClick={() => setDialogo({ tipo: "editar", equipo })}>
+        Editar
+      </BotonFila>
+      <BotonFila onClick={onAlternar}>
+        {equipo.activo ? "Desactivar" : "Activar"}
+      </BotonFila>
+      <BotonFila
+        peligro
+        onClick={() => setDialogo({ tipo: "borrar", equipo })}
+        disabled={equipo._count.ordenes > 0}
+        titulo={
+          equipo._count.ordenes > 0
+            ? "Tiene ordenes en su historial: desactivelo en lugar de borrarlo"
+            : undefined
+        }
+      >
+        Borrar
+      </BotonFila>
+    </div>
   );
 }
 

@@ -157,85 +157,78 @@ export function GestionClientes() {
               : "No hay clientes."}
           </p>
         ) : (
-          <div
-            className={`overflow-x-auto rounded-xl border border-tci-borde bg-white transition-opacity ${cargando ? "opacity-50" : ""}`}
-          >
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-tci-borde bg-tci-humo text-xs text-tci-gris uppercase">
-                <tr>
-                  <th className="px-4 py-3 font-bold">Cliente</th>
-                  <th className="px-4 py-3 font-bold">Contacto</th>
-                  <th className="px-4 py-3 font-bold">Sedes</th>
-                  <th className="px-4 py-3 font-bold">Ordenes</th>
-                  <th className="px-4 py-3 font-bold">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {clientes.map((cliente) => (
-                  <tr
-                    key={cliente.id}
-                    className="border-b border-tci-borde last:border-0"
-                  >
-                    <td className="px-4 py-3">
-                      <p className="font-bold text-tci-negro">
-                        {cliente.nombre}
-                        {!cliente.activo && (
-                          <span className="ml-2 rounded-full bg-tci-humo px-2 py-0.5 text-xs font-normal text-tci-gris">
-                            Desactivado
-                          </span>
-                        )}
-                      </p>
-                      {cliente.rtn && (
-                        <p className="text-xs text-tci-gris">RTN {cliente.rtn}</p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-tci-grafito">
-                      {cliente.contacto ?? <span className="text-tci-gris">—</span>}
-                      {cliente.telefono && (
-                        <span className="block text-xs text-tci-gris">
-                          {cliente.telefono}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-tci-grafito">
-                      {cliente.sedes.length}
-                    </td>
-                    <td className="px-4 py-3 text-tci-grafito">
-                      {cliente._count.ordenes}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        <BotonFila
-                          onClick={() => setDialogo({ tipo: "editar", cliente })}
-                        >
-                          Editar
-                        </BotonFila>
-                        <BotonFila
-                          onClick={() => setDialogo({ tipo: "sedes", cliente })}
-                        >
-                          Sedes ({cliente.sedes.length})
-                        </BotonFila>
-                        <BotonFila onClick={() => void alternarActivo(cliente)}>
-                          {cliente.activo ? "Desactivar" : "Activar"}
-                        </BotonFila>
-                        <BotonFila
-                          peligro
-                          onClick={() => setDialogo({ tipo: "borrar", cliente })}
-                          disabled={cliente._count.ordenes > 0}
-                          titulo={
-                            cliente._count.ordenes > 0
-                              ? "Tiene ordenes registradas: desactivelo en lugar de borrarlo"
-                              : undefined
-                          }
-                        >
-                          Borrar
-                        </BotonFila>
-                      </div>
-                    </td>
+          <div className={cargando ? "opacity-50" : ""}>
+            {/* Tabla en escritorio, tarjetas en movil (TCI-44): con scroll
+                horizontal habia que arrastrar la fila para llegar a los
+                botones, que es justo lo que no funciona en campo. */}
+            <div className="hidden overflow-x-auto rounded-xl border border-tci-borde bg-white md:block">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-tci-borde bg-tci-humo text-xs text-tci-gris uppercase">
+                  <tr>
+                    <th className="px-4 py-3 font-bold">Cliente</th>
+                    <th className="px-4 py-3 font-bold">Contacto</th>
+                    <th className="px-4 py-3 font-bold">Sedes</th>
+                    <th className="px-4 py-3 font-bold">Ordenes</th>
+                    <th className="px-4 py-3 font-bold">Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {clientes.map((cliente) => (
+                    <tr
+                      key={cliente.id}
+                      className="border-b border-tci-borde last:border-0"
+                    >
+                      <td className="px-4 py-3">
+                        <Identidad cliente={cliente} />
+                      </td>
+                      <td className="px-4 py-3 text-tci-grafito">
+                        <Contacto cliente={cliente} />
+                      </td>
+                      <td className="px-4 py-3 text-tci-grafito">
+                        {cliente.sedes.length}
+                      </td>
+                      <td className="px-4 py-3 text-tci-grafito">
+                        {cliente._count.ordenes}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Acciones
+                          cliente={cliente}
+                          setDialogo={setDialogo}
+                          onAlternar={() => void alternarActivo(cliente)}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <ul className="space-y-3 md:hidden">
+              {clientes.map((cliente) => (
+                <li
+                  key={cliente.id}
+                  className="rounded-xl border border-tci-borde bg-white p-4"
+                >
+                  <Identidad cliente={cliente} />
+                  <div className="mt-2 text-sm text-tci-grafito">
+                    <Contacto cliente={cliente} />
+                  </div>
+                  <p className="mt-2 text-sm text-tci-gris">
+                    {cliente.sedes.length}{" "}
+                    {cliente.sedes.length === 1 ? "sede" : "sedes"} ·{" "}
+                    {cliente._count.ordenes}{" "}
+                    {cliente._count.ordenes === 1 ? "orden" : "ordenes"}
+                  </p>
+                  <div className="mt-3">
+                    <Acciones
+                      cliente={cliente}
+                      setDialogo={setDialogo}
+                      onAlternar={() => void alternarActivo(cliente)}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
@@ -281,6 +274,78 @@ export function GestionClientes() {
         />
       )}
     </section>
+  );
+}
+
+/**
+ * Piezas de una fila de cliente, compartidas por la tabla de escritorio y las
+ * tarjetas de movil (TCI-44), para que las dos vistas no se desincronicen.
+ */
+function Identidad({ cliente }: { cliente: Cliente }) {
+  return (
+    <div className="min-w-0">
+      <p className="font-bold text-tci-negro">
+        {cliente.nombre}
+        {!cliente.activo && (
+          <span className="ml-2 rounded-full bg-tci-humo px-2 py-0.5 text-xs font-normal text-tci-gris">
+            Desactivado
+          </span>
+        )}
+      </p>
+      {cliente.rtn && (
+        <p className="text-xs text-tci-gris">RTN {cliente.rtn}</p>
+      )}
+    </div>
+  );
+}
+
+function Contacto({ cliente }: { cliente: Cliente }) {
+  if (!cliente.contacto && !cliente.telefono) {
+    return <span className="text-tci-gris">—</span>;
+  }
+  return (
+    <>
+      {cliente.contacto}
+      {cliente.telefono && (
+        <span className="block text-xs text-tci-gris">{cliente.telefono}</span>
+      )}
+    </>
+  );
+}
+
+function Acciones({
+  cliente,
+  setDialogo,
+  onAlternar,
+}: {
+  cliente: Cliente;
+  setDialogo: (dialogo: Dialogo) => void;
+  onAlternar: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <BotonFila onClick={() => setDialogo({ tipo: "editar", cliente })}>
+        Editar
+      </BotonFila>
+      <BotonFila onClick={() => setDialogo({ tipo: "sedes", cliente })}>
+        Sedes ({cliente.sedes.length})
+      </BotonFila>
+      <BotonFila onClick={onAlternar}>
+        {cliente.activo ? "Desactivar" : "Activar"}
+      </BotonFila>
+      <BotonFila
+        peligro
+        onClick={() => setDialogo({ tipo: "borrar", cliente })}
+        disabled={cliente._count.ordenes > 0}
+        titulo={
+          cliente._count.ordenes > 0
+            ? "Tiene ordenes registradas: desactivelo en lugar de borrarlo"
+            : undefined
+        }
+      >
+        Borrar
+      </BotonFila>
+    </div>
   );
 }
 

@@ -125,94 +125,80 @@ export function GestionUsuarios() {
             No hay usuarios.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-tci-borde bg-white">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-tci-borde bg-tci-humo text-xs text-tci-gris uppercase">
-                <tr>
-                  <th className="px-4 py-3 font-bold">Nombre</th>
-                  <th className="px-4 py-3 font-bold">Rol</th>
-                  <th className="px-4 py-3 font-bold">Estado</th>
-                  <th className="px-4 py-3 font-bold">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {usuarios.map((usuario) => {
-                  const esUsted = usuario.id === sesion?.user.id;
-                  return (
+          <>
+            {/* Tabla en escritorio, tarjetas en movil (TCI-44): la tabla con
+                scroll horizontal obligaba a arrastrar la fila con el dedo para
+                llegar a los botones. */}
+            <div className="hidden overflow-x-auto rounded-xl border border-tci-borde bg-white md:block">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-tci-borde bg-tci-humo text-xs text-tci-gris uppercase">
+                  <tr>
+                    <th className="px-4 py-3 font-bold">Nombre</th>
+                    <th className="px-4 py-3 font-bold">Rol</th>
+                    <th className="px-4 py-3 font-bold">Estado</th>
+                    <th className="px-4 py-3 font-bold">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usuarios.map((usuario) => (
                     <tr
                       key={usuario.id}
                       className="border-b border-tci-borde last:border-0"
                     >
                       <td className="px-4 py-3">
-                        <p className="font-bold text-tci-negro">
-                          {usuario.name}
-                          {esUsted && (
-                            <span className="ml-2 text-xs font-normal text-tci-gris">
-                              (usted)
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-xs text-tci-gris">{usuario.email}</p>
+                        <Identidad
+                          usuario={usuario}
+                          esUsted={usuario.id === sesion?.user.id}
+                        />
                       </td>
                       <td className="px-4 py-3">
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-bold ${
-                            usuario.rol === "ADMIN"
-                              ? "bg-tci-rojo text-white"
-                              : "bg-tci-borde text-tci-grafito"
-                          }`}
-                        >
-                          {ETIQUETA_ROL[usuario.rol]}
-                        </span>
+                        <EtiquetaRol usuario={usuario} />
                       </td>
                       <td className="px-4 py-3">
-                        <span
-                          className={`text-xs font-bold ${
-                            usuario.activo
-                              ? "text-emerald-700"
-                              : "text-tci-gris"
-                          }`}
-                        >
-                          {usuario.activo ? "Activo" : "Desactivado"}
-                        </span>
+                        <EtiquetaEstado usuario={usuario} />
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-2">
-                          <BotonFila
-                            onClick={() =>
-                              setDialogo({ tipo: "editar", usuario })
-                            }
-                          >
-                            Editar
-                          </BotonFila>
-                          <BotonFila
-                            onClick={() =>
-                              setDialogo({ tipo: "contrasena", usuario })
-                            }
-                          >
-                            Contrasena
-                          </BotonFila>
-                          <BotonFila
-                            onClick={() => void alternarActivo(usuario)}
-                            // El backend lo rechazaria igual; deshabilitarlo
-                            // evita ofrecer algo que no se puede hacer.
-                            disabled={esUsted && usuario.activo}
-                            titulo={
-                              esUsted && usuario.activo
-                                ? "No puede desactivarse a si mismo"
-                                : undefined
-                            }
-                          >
-                            {usuario.activo ? "Desactivar" : "Activar"}
-                          </BotonFila>
-                        </div>
+                        <Acciones
+                          usuario={usuario}
+                          esUsted={usuario.id === sesion?.user.id}
+                          setDialogo={setDialogo}
+                          onAlternar={() => void alternarActivo(usuario)}
+                        />
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <ul className="space-y-3 md:hidden">
+              {usuarios.map((usuario) => (
+                <li
+                  key={usuario.id}
+                  className="rounded-xl border border-tci-borde bg-white p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <Identidad
+                      usuario={usuario}
+                      esUsted={usuario.id === sesion?.user.id}
+                    />
+                    <EtiquetaRol usuario={usuario} />
+                  </div>
+                  <div className="mt-2">
+                    <EtiquetaEstado usuario={usuario} />
+                  </div>
+                  <div className="mt-3">
+                    <Acciones
+                      usuario={usuario}
+                      esUsted={usuario.id === sesion?.user.id}
+                      setDialogo={setDialogo}
+                      onAlternar={() => void alternarActivo(usuario)}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
 
@@ -248,6 +234,95 @@ export function GestionUsuarios() {
 }
 
 
+
+/**
+ * Piezas de una fila de usuario, compartidas por la tabla de escritorio y las
+ * tarjetas de movil (TCI-44). Se extraen para que las dos vistas no se
+ * desincronicen al tocar una.
+ */
+function Identidad({
+  usuario,
+  esUsted,
+}: {
+  usuario: Usuario;
+  esUsted: boolean;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="font-bold text-tci-negro">
+        {usuario.name}
+        {esUsted && (
+          <span className="ml-2 text-xs font-normal text-tci-gris">
+            (usted)
+          </span>
+        )}
+      </p>
+      <p className="truncate text-xs text-tci-gris">{usuario.email}</p>
+    </div>
+  );
+}
+
+function EtiquetaRol({ usuario }: { usuario: Usuario }) {
+  return (
+    <span
+      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${
+        usuario.rol === "ADMIN"
+          ? "bg-tci-rojo text-white"
+          : "bg-tci-borde text-tci-grafito"
+      }`}
+    >
+      {ETIQUETA_ROL[usuario.rol]}
+    </span>
+  );
+}
+
+function EtiquetaEstado({ usuario }: { usuario: Usuario }) {
+  return (
+    <span
+      className={`text-xs font-bold ${
+        usuario.activo ? "text-emerald-700" : "text-tci-gris"
+      }`}
+    >
+      {usuario.activo ? "Activo" : "Desactivado"}
+    </span>
+  );
+}
+
+function Acciones({
+  usuario,
+  esUsted,
+  setDialogo,
+  onAlternar,
+}: {
+  usuario: Usuario;
+  esUsted: boolean;
+  setDialogo: (dialogo: Dialogo) => void;
+  onAlternar: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <BotonFila onClick={() => setDialogo({ tipo: "editar", usuario })}>
+        Editar
+      </BotonFila>
+      <BotonFila onClick={() => setDialogo({ tipo: "contrasena", usuario })}>
+        Contrasena
+      </BotonFila>
+      <BotonFila
+        onClick={onAlternar}
+        // El backend lo rechazaria igual; deshabilitarlo evita ofrecer algo
+        // que no se puede hacer.
+        disabled={esUsted && usuario.activo}
+        titulo={
+          esUsted && usuario.activo
+            ? "No puede desactivarse a si mismo"
+            : undefined
+        }
+      >
+        {usuario.activo ? "Desactivar" : "Activar"}
+      </BotonFila>
+    </div>
+  );
+}
 
 function DialogoUsuario({
   titulo,
