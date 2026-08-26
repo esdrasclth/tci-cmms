@@ -101,6 +101,16 @@ export function IconoUsuarios(props: Props) {
   );
 }
 
+/** Reportes: las barras del tablero. */
+export function IconoReportes(props: Props) {
+  return (
+    <Icono {...props}>
+      <path d="M3.5 20.5h17" />
+      <path d="M7 20.5v-6M12 20.5V7M17 20.5v-9" />
+    </Icono>
+  );
+}
+
 /** Cerrar sesion: la flecha que sale del marco. */
 export function IconoSalir(props: Props) {
   return (
