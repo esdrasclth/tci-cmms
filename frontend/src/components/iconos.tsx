@@ -101,6 +101,18 @@ export function IconoUsuarios(props: Props) {
   );
 }
 
+/** Preventivo: el calendario, que es lo que ordena un plan. */
+export function IconoPreventivo(props: Props) {
+  return (
+    <Icono {...props}>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+      <path d="M3.5 9.75h17" />
+      <path d="M8.25 3v4M15.75 3v4" />
+      <path d="M8 14h.01M12 14h.01M16 14h.01" />
+    </Icono>
+  );
+}
+
 /** Reportes: las barras del tablero. */
 export function IconoReportes(props: Props) {
   return (
