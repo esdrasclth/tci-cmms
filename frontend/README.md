@@ -122,13 +122,44 @@ Dos decisiones que se repiten en todas las pantallas:
   horizontal: son dos vistas del mismo dato. Las celdas se extraen a componentes
   que ambas comparten (`Identidad`, `EtiquetaRol`, `Acciones`…), para que no se
   desincronicen al tocar una sola.
-- **La navegación del admin se pliega.** Cinco enlaces más el logotipo no caben
-  en 375 px, y el logotipo no puede encogerse (ver *Diseño*). Al técnico, que no
-  tiene enlaces, no se le pliega nada: se le muestra "Cerrar sesión" al lado del
-  logotipo, porque plegar un único botón sería esconderlo sin ganar espacio.
+- **La barra lateral se convierte en cajón.** 256 px de navegación permanente no
+  dejan sitio para trabajar en 375 px, así que en móvil la barra se abre sobre el
+  contenido desde un botón de la cabecera, y se cierra con Escape o tocando
+  fuera.
 
 Los diálogos suben desde abajo como hoja (`rounded-t-2xl`, `items-end`) y solo
 se centran a partir de `sm:`.
+
+## Navegación
+
+La navegación del panel es una **columna lateral fija** de 256 px
+(`src/components/barra-lateral.tsx`). En horizontal, los cinco destinos del
+administrador competían con el logotipo por el ancho y había que abreviarlos
+("Tipos"); en vertical caben enteros y entra el icono.
+
+El técnico ve un solo destino, "Mis órdenes". Se le deja aunque sea el único:
+le da contexto de dónde está y mantiene una sola forma de volver al listado
+desde el detalle.
+
+Los iconos (`src/components/iconos.tsx`) son **de trazo, nunca macizos**: 1.75 px
+sobre rejilla de 24, heredando `currentColor`. Así un icono pesa lo mismo que la
+etiqueta que acompaña. Los de relleno se leen como un segundo nivel de jerarquía
+y competirían con el rojo institucional, que es el único acento de color de la
+aplicación. Por eso mismo el estado activo marca con una barra roja de 2 px y
+**no** con texto rojo: sobre negro el rojo da 3.6:1 y no llegaría a AA.
+
+## Tipografía
+
+**Poppins**, cargada con `next/font` y servida desde el propio origen: no hay
+petición a Google en tiempo de ejecución. Solo se piden los pesos 400, 500, 600
+y 700.
+
+Dos ajustes en `globals.css` que la familia pide: más interlineado en el texto
+corrido (tiene la altura de x muy alta y los renglones se tocaban) y menos
+interletrado en los titulares, vía la clase `.tci-display`.
+
+La pila de reserva es **Arial**, la tipografía institucional de TCI: si Poppins
+no llega, la aplicación cae en la fuente de la marca y no en una cualquiera.
 
 ## Diseño
 
@@ -139,8 +170,7 @@ a la izquierda, tarjeta blanca con el formulario a la derecha.
 Adaptaciones respecto a la referencia, y por qué:
 
 - **Colores de TCI** (`#C61D1A` sobre negro y blanco) en lugar de la paleta azul.
-  Los tokens están en `src/app/globals.css`; la tipografía es Arial, la
-  institucional, así que no se carga ninguna webfont.
+  Los tokens están en `src/app/globals.css`.
 - **Sin "Continuar con Google".** El backend solo tiene habilitado
   correo + contraseña (`emailAndPassword` en `auth.config.ts`); un botón social
   sería un callejón sin salida. Cuando se configure un proveedor OAuth, el hueco
