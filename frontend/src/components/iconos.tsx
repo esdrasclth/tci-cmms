@@ -123,6 +123,16 @@ export function IconoReportes(props: Props) {
   );
 }
 
+/** Notificaciones: la campana. */
+export function IconoCampana(props: Props) {
+  return (
+    <Icono {...props}>
+      <path d="M18 8.5a6 6 0 1 0-12 0c0 6-2.5 7.5-2.5 7.5h17S18 14.5 18 8.5" />
+      <path d="M13.75 19.5a2 2 0 0 1-3.5 0" />
+    </Icono>
+  );
+}
+
 /** Cerrar sesion: la flecha que sale del marco. */
 export function IconoSalir(props: Props) {
   return (

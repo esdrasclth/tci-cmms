@@ -4,9 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { CampanaNotificaciones } from "@/components/campana-notificaciones";
 import {
   IconoClientes,
   IconoEquipos,
+  IconoCampana,
   IconoOrdenes,
   IconoPreventivo,
   IconoReportes,
@@ -54,6 +56,11 @@ const DESTINOS_ADMIN: Destino[] = [
   },
   { href: "/panel/reportes", etiqueta: "Reportes", icono: IconoReportes },
   { href: "/panel/usuarios", etiqueta: "Usuarios", icono: IconoUsuarios },
+  {
+    href: "/panel/notificaciones",
+    etiqueta: "Notificaciones",
+    icono: IconoCampana,
+  },
 ];
 
 /**
@@ -141,6 +148,11 @@ export function BarraLateral({
       </nav>
 
       <div className="border-t border-white/10 p-3">
+        {/* TCI-53. Encima del bloque de usuario y no en la cabecera: aqui esta
+            en la misma columna que la navegacion y se ve desde cualquier
+            pantalla, tambien con el cajon abierto en movil. */}
+        <CampanaNotificaciones />
+
         <div className="px-2 py-2">
           <p className="truncate text-sm font-semibold text-white">
             {usuario.nombre}
