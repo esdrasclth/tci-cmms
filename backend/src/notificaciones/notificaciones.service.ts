@@ -153,11 +153,25 @@ export class NotificacionesService {
   // Bandeja del usuario
   // -------------------------------------------------------------------------
 
-  async bandeja(usuarioId: string, soloNoLeidas = false) {
-    const where: Prisma.NotificacionWhereInput = { usuarioId };
-    if (soloNoLeidas) where.leidaEn = null;
+  /**
+   * La bandeja de un usuario, paginada.
+   *
+   * `noLeidas` cuenta sobre TODA la bandeja y no sobre la pagina: el numero del
+   * badge tiene que ser el real, no "cuantas no leidas hay entre las veinte que
+   * se trajeron".
+   */
+  async bandeja(
+    usuarioId: string,
+    opciones: { soloNoLeidas?: boolean; page?: number; perPage?: number } = {},
+  ) {
+    const page = opciones.page ?? 1;
+    const perPage = opciones.perPage ?? 20;
 
-    const [data, noLeidas] = await this.prisma.$transaction([
+    const where: Prisma.NotificacionWhereInput = { usuarioId };
+    if (opciones.soloNoLeidas) where.leidaEn = null;
+
+    const [total, data, noLeidas] = await this.prisma.$transaction([
+      this.prisma.notificacion.count({ where }),
       this.prisma.notificacion.findMany({
         where,
         select: {
@@ -169,13 +183,20 @@ export class NotificacionesService {
           leidaEn: true,
           createdAt: true,
         },
-        orderBy: { createdAt: 'desc' },
-        take: 50,
+        // Por fecha y, a igualdad, por id: varias notificaciones del mismo
+        // evento se escriben con `createdAt` identico y saldrian barajadas.
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: (page - 1) * perPage,
+        take: perPage,
       }),
       this.prisma.notificacion.count({ where: { usuarioId, leidaEn: null } }),
     ]);
 
-    return { data, noLeidas };
+    return {
+      data,
+      noLeidas,
+      meta: { total, page, perPage, totalPages: Math.ceil(total / perPage) },
+    };
   }
 
   /**

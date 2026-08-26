@@ -37,10 +37,7 @@ export class NotificacionesController {
     @Query() filtros: FiltrarBandejaDto,
     @Session() session: UserSession,
   ) {
-    return this.notificaciones.bandeja(
-      usuarioActual(session).id,
-      filtros.soloNoLeidas,
-    );
+    return this.notificaciones.bandeja(usuarioActual(session).id, filtros);
   }
 
   @Patch(':id/leida')

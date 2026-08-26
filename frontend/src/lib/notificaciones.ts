@@ -31,7 +31,9 @@ export interface Notificacion {
 
 export interface Bandeja {
   data: Notificacion[];
+  /** Sobre toda la bandeja, no sobre la página: es el número del badge. */
   noLeidas: number;
+  meta: { total: number; page: number; perPage: number; totalPages: number };
 }
 
 export interface Preferencia {
@@ -50,9 +52,13 @@ export interface Plantilla {
   updatedAt: string;
 }
 
-export function obtenerBandeja(soloNoLeidas = false) {
+export function obtenerBandeja(
+  opciones: { soloNoLeidas?: boolean; page?: number; perPage?: number } = {},
+) {
   const params = new URLSearchParams();
-  if (soloNoLeidas) params.set("soloNoLeidas", "true");
+  if (opciones.soloNoLeidas) params.set("soloNoLeidas", "true");
+  if (opciones.page) params.set("page", String(opciones.page));
+  if (opciones.perPage) params.set("perPage", String(opciones.perPage));
   return apiGet<Bandeja>("/notificaciones", params);
 }
 
