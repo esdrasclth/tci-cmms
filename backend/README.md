@@ -232,6 +232,37 @@ permiso es el de la orden, y así no hay camino que se salte la comprobación. U
 forma de decir que ese repuesto no se controla. El aviso por correo o push necesita el
 módulo 8 y va con `TCI-54`.
 
+## Reportes e historial (TCI-57, TCI-58, TCI-59, TCI-60)
+
+| Método | Ruta | Quién |
+|---|---|---|
+| `GET` | `/api/equipos/:id/historial` | Con sesión — **el historial completo del equipo** |
+| `GET` | `/api/reportes/resumen` | Admin — tablero de indicadores |
+| `GET` | `/api/reportes/tecnicos` | Admin — carga y desempeño por técnico |
+| `GET` | `/api/reportes/ordenes?formato=csv\|pdf` | Admin — exportación |
+
+**El historial del equipo no aplica el aislamiento por técnico, y es deliberado.** En el
+resto del sistema un técnico solo ve sus propias órdenes (regla 3 de `TCI-25`); aquí no,
+porque el historial completo de una máquina es lo que permite diagnosticarla y ocultarle las
+intervenciones ajenas solo le hace repetir el trabajo. Decisión del cliente del 2026-08-26.
+Vive en endpoint propio y no relajando `GET /ordenes?equipoId=`, que conserva la regla
+intacta, y su proyección se acota: sin costos ni datos de contacto.
+
+**El periodo se mide sobre `createdAt` y en hora del negocio.** Un reporte de agosto contiene
+lo que entró en agosto, y `hasta` incluye el día completo. El desfase es
+`REPORTES_UTC_OFFSET` (por defecto `-6`, Honduras, que no aplica horario de verano): sin
+eso, en un contenedor en UTC "hasta el 31" dejaría fuera todo lo creado después de las 18:00
+del 31 en San Pedro Sula.
+
+**Sobre las medias:** `diasPromedioResolucion` va de `createdAt` a `fechaFin` sobre las
+órdenes completadas — al cliente le importa cuánto tardó desde que lo reportó, no cuánto
+estuvo el técnico con las manos encima. Eso último está en `horasTrabajadas`.
+
+El **CSV** va con `;` y con BOM, las dos cosas por Excel: en un Windows en español el
+separador de lista es `;` y sin BOM las tildes salen rotas. El **PDF** (pdfkit) es apaisado
+y lleva membrete tipográfico, no el logotipo: el de TCI es blanco sobre transparente y
+desaparecería en el papel.
+
 ## Usuarios (TCI-35)
 
 | Método | Ruta | Quién |

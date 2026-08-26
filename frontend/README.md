@@ -37,6 +37,7 @@ La app queda en `http://localhost:3000`.
 | `/panel/equipos` | Equipos por cliente — solo admin (TCI-37) |
 | `/panel/equipos/[id]` | Ficha del equipo y su historial de órdenes (TCI-38) |
 | `/panel/repuestos` | Catálogo de repuestos y almacén — solo admin (TCI-45) |
+| `/panel/reportes` | Tablero, desempeño por técnico y exportación — solo admin (TCI-58, TCI-60) |
 | `/panel/tipos-mantenimiento` | Catálogo de tipos de mantenimiento — solo admin (TCI-30) |
 | `/panel/usuarios` | Gestión de usuarios — solo admin (TCI-35) |
 
@@ -74,19 +75,37 @@ Cuando otro usuario comenta, edita o cambia el estado, recibe
 `orden-actualizada` y vuelve a leer la OT. Esto actualiza la vista sin recargar
 y conserva las acciones permitidas para la sesión que recibe el evento.
 
-## Historial por equipo (TCI-38)
+## Historial por equipo (TCI-38, TCI-57)
 
-`/panel/equipos/[id]` no necesitó endpoint nuevo: `GET /api/ordenes?equipoId=`
-ya filtraba y, de paso, aplica el aislamiento por rol.
+`/panel/equipos/[id]` empezó reutilizando `GET /api/ordenes?equipoId=`, que
+aplica el aislamiento por rol: un técnico veía ahí **solo sus propias órdenes**.
+Desde `TCI-57` usa `GET /api/equipos/:id/historial`, que devuelve las de todos.
 
-Eso tiene una consecuencia que conviene tener presente: **un técnico ve ahí solo
-sus propias órdenes sobre el equipo**, no todas. Es consistente con el resto del
-sistema, pero discutible para trabajo de campo — el historial completo de una
-máquina es justo lo que ayuda a diagnosticarla. Si TCI quiere abrirlo, es quitar
-el filtro por técnico solo para esa consulta, y encaja mejor con `TCI-57`.
+El motivo es el diagnóstico: media máquina no se arregla con medio historial, y
+saber que "esto ya falló en marzo y lo atendió otro" es justo lo que evita
+repetir el trabajo. La contrapartida es que la proyección se acota —sin costos— y
+que para abrir el detalle de una orden ajena sigue mandando el permiso de
+siempre.
 
-A diferencia de `/panel/equipos`, esta pantalla **no exige rol**: a un técnico le
-sirve, y se llega a ella desde el campo "Equipo" del detalle de una orden.
+Esta pantalla **no exige rol**: a un técnico le sirve, y se llega a ella desde el
+campo "Equipo" del detalle de una orden.
+
+## Reportes (TCI-58, TCI-59, TCI-60)
+
+Sobre los gráficos del tablero: cada uno es **una sola serie** —cuántas órdenes
+hay en cada estado, en cada tipo—, o sea magnitud y no identidad. Por eso van
+todos del mismo tono en lugar de una paleta categórica, que además competiría con
+el rojo institucional, único acento de color de la aplicación. Y por eso no hay
+leyenda: la etiqueta está al lado de cada barra, con su número escrito. Con seis
+categorías como mucho, obligar a medir contra un eje es peor que decir el valor.
+
+El color que el administrador le pone a un tipo de mantenimiento entra como punto
+junto a la etiqueta, **nunca como relleno de la barra**: es un color libre y uno
+claro dejaría de leerse sobre blanco.
+
+El desempeño por técnico es una tabla y no un gráfico, porque son seis medidas
+por fila. La exportación (`TCI-59`) pide el archivo como blob y lo entrega con un
+enlace temporal; el formato viaja en la URL, no en el `Accept`.
 
 ## Búsqueda y filtrado (TCI-39)
 
