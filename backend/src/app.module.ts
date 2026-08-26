@@ -15,6 +15,7 @@ import { CorreoModule } from './correo/correo.module';
 import { CorreoService } from './correo/correo.service';
 import { EquiposModule } from './equipos/equipos.module';
 import { InventarioModule } from './inventario/inventario.module';
+import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { OrdenesModule } from './ordenes/ordenes.module';
 import { PreventivoModule } from './preventivo/preventivo.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -52,6 +53,7 @@ import { PrismaService } from './prisma/prisma.service';
     CorreoModule,
     EquiposModule,
     InventarioModule,
+    NotificacionesModule,
     OrdenesModule,
     PreventivoModule,
     ReportesModule,

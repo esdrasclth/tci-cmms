@@ -7,6 +7,7 @@ import {
 
 import { Prisma } from '../generated/prisma/client';
 import {
+  EventoNotificable,
   OrdenEstado,
   OrigenOrden,
   Prioridad,
@@ -21,6 +22,7 @@ import { ActualizarOrdenDto } from './dto/actualizar-orden.dto';
 import { CrearOrdenDto } from './dto/crear-orden.dto';
 import { FiltrarOrdenesDto } from './dto/filtrar-ordenes.dto';
 import { AccionOrden, OrdenEstadoService } from './orden-estado.service';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { OrdenesEventosService } from './ordenes-eventos.service';
 import { defer, switchMap, type Observable } from 'rxjs';
 import type { MessageEvent } from '@nestjs/common';
@@ -73,6 +75,7 @@ export class OrdenesService {
     private readonly prisma: PrismaService,
     private readonly estados: OrdenEstadoService,
     private readonly eventos: OrdenesEventosService,
+    private readonly notificaciones: NotificacionesService,
   ) {}
 
   // -------------------------------------------------------------------------
@@ -590,7 +593,44 @@ export class OrdenesService {
 
     const actualizada = await this.obtener(id, usuario);
     this.eventos.publicar(id);
+
+    // TCI-53. Concierne a la otra parte del hilo: al tecnico si comento el
+    // admin, y a los administradores si comento el tecnico. `emitir` descarta
+    // al autor, asi que no hace falta filtrarlo aqui.
+    await this.notificaciones.emitir({
+      evento: EventoNotificable.ORDEN_COMENTADA,
+      destinatarios: await this.interesadosEn(actualizada.id, orden.tecnicoId),
+      autorId: usuario.id,
+      enlace: `/panel/ordenes/${id}`,
+      datos: {
+        numero: actualizada.numero,
+        titulo: actualizada.titulo,
+        autor: actualizada.historial.at(-1)?.usuario?.name ?? 'Alguien',
+        comentario: comentario.trim(),
+      },
+    });
+
     return actualizada;
+  }
+
+  /**
+   * A quien concierne lo que pase en una orden: su tecnico asignado, si lo
+   * tiene, y los administradores activos.
+   *
+   * Se resuelve aqui y no en el servicio de notificaciones porque es una regla
+   * de ordenes —quien esta metido en esta orden— y no de notificaciones.
+   */
+  private async interesadosEn(
+    _ordenId: string,
+    tecnicoId: string | null,
+  ): Promise<string[]> {
+    const admins = await this.prisma.user.findMany({
+      where: { rol: Rol.ADMIN, activo: true },
+      select: { id: true },
+    });
+    const ids = admins.map((a) => a.id);
+    if (tecnicoId) ids.push(tecnicoId);
+    return ids;
   }
 
   // -------------------------------------------------------------------------
@@ -721,7 +761,103 @@ export class OrdenesService {
     });
 
     this.eventos.publicar(id);
+    await this.notificarTransicion(accion, actualizada, usuario, extra);
     return actualizada;
+  }
+
+  /**
+   * TCI-53 — regla 9 de docs/flujo-ordenes.md: `asignar`/`reasignar` avisan al
+   * tecnico, `completar` al admin, `cancelar` al tecnico asignado y `reabrir`
+   * al tecnico.
+   *
+   * Las demas transiciones —iniciar, pausar, reanudar, desasignar— no avisan a
+   * nadie: las hace el propio tecnico sobre su trabajo, y notificarselas al
+   * admin en tiempo real convertiria la bandeja en un registro de actividad que
+   * nadie leeria.
+   */
+  private async notificarTransicion(
+    accion: AccionOrden,
+    orden: {
+      id: string;
+      numero: string;
+      titulo: string;
+      tecnicoId: string | null;
+      cliente: { nombre: string };
+      equipo: { codigo: string; nombre: string } | null;
+    },
+    usuario: UsuarioActual,
+    extra: { motivo?: string },
+  ): Promise<void> {
+    const datos = {
+      numero: orden.numero,
+      titulo: orden.titulo,
+      cliente: orden.cliente.nombre,
+      // Con valor siempre, tambien cuando no hay: una orden sin equipo es
+      // legitima, y dejar `{{equipo}}` a la vista ahi se leeria como un fallo.
+      // El marcador solo debe verse cuando el emisor se olvido de pasarlo.
+      equipo: orden.equipo
+        ? `${orden.equipo.codigo} — ${orden.equipo.nombre}`
+        : 'sin equipo asociado',
+      motivo: extra.motivo ?? 'sin motivo indicado',
+    };
+    const enlace = `/panel/ordenes/${orden.id}`;
+
+    const alTecnico = orden.tecnicoId ? [orden.tecnicoId] : [];
+
+    switch (accion) {
+      case 'asignar':
+      case 'reasignar':
+        await this.notificaciones.emitir({
+          evento: EventoNotificable.ORDEN_ASIGNADA,
+          destinatarios: alTecnico,
+          autorId: usuario.id,
+          enlace,
+          datos,
+        });
+        break;
+
+      case 'completar': {
+        const admins = await this.prisma.user.findMany({
+          where: { rol: Rol.ADMIN, activo: true },
+          select: { id: true, name: true },
+        });
+        const quien = await this.prisma.user.findUnique({
+          where: { id: usuario.id },
+          select: { name: true },
+        });
+        await this.notificaciones.emitir({
+          evento: EventoNotificable.ORDEN_COMPLETADA,
+          destinatarios: admins.map((a) => a.id),
+          autorId: usuario.id,
+          enlace,
+          datos: { ...datos, tecnico: quien?.name ?? 'El tecnico' },
+        });
+        break;
+      }
+
+      case 'cancelar':
+        await this.notificaciones.emitir({
+          evento: EventoNotificable.ORDEN_CANCELADA,
+          destinatarios: alTecnico,
+          autorId: usuario.id,
+          enlace,
+          datos,
+        });
+        break;
+
+      case 'reabrir':
+        await this.notificaciones.emitir({
+          evento: EventoNotificable.ORDEN_REABIERTA,
+          destinatarios: alTecnico,
+          autorId: usuario.id,
+          enlace,
+          datos,
+        });
+        break;
+
+      default:
+        break;
+    }
   }
 
   private async validarTecnico(tecnicoId: string | undefined) {
