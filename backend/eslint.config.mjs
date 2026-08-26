@@ -6,7 +6,10 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['eslint.config.mjs'],
+    // El cliente de Prisma se regenera en cada `db:generate` y su formato
+    // depende de la version: revisarlo con las reglas del proyecto solo produce
+    // ruido que nadie puede arreglar. Tampoco se versiona (ver .gitignore).
+    ignores: ['eslint.config.mjs', 'src/generated/**'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
