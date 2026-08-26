@@ -52,6 +52,13 @@ export interface AlertaRepuesto {
 
 export interface MovimientoInventario {
   id: string;
+  /** Solo lo trae el libro global: en el de un repuesto ya se sabe cuál es. */
+  repuesto?: {
+    id: string;
+    codigo: string;
+    nombre: string;
+    unidadMedida: string;
+  };
   tipo: "ENTRADA" | "SALIDA";
   cantidad: Decimal;
   stockResultante: Decimal;
@@ -143,8 +150,54 @@ export function registrarSalida(
   return apiPost<Repuesto>(`/repuestos/${id}/salidas`, datos);
 }
 
-export function listarMovimientos(id: string) {
-  return apiGet<MovimientoInventario[]>(`/repuestos/${id}/movimientos`);
+export type FiltrosLibro = {
+  desde?: string;
+  hasta?: string;
+  tipo?: "ENTRADA" | "SALIDA";
+  repuestoId?: string;
+  /** Solo lo que salió por consumo de una orden. */
+  soloDeOrdenes?: boolean;
+  page?: number;
+  perPage?: number;
+};
+
+export interface PaginaMovimientos {
+  data: MovimientoInventario[];
+  meta: { total: number; page: number; perPage: number; totalPages: number };
+}
+
+function parametrosLibro(filtros: FiltrosLibro): URLSearchParams {
+  const params = new URLSearchParams();
+  if (filtros.desde) params.set("desde", filtros.desde);
+  if (filtros.hasta) params.set("hasta", filtros.hasta);
+  if (filtros.tipo) params.set("tipo", filtros.tipo);
+  if (filtros.repuestoId) params.set("repuestoId", filtros.repuestoId);
+  if (filtros.soloDeOrdenes) params.set("soloDeOrdenes", "true");
+  if (filtros.page) params.set("page", String(filtros.page));
+  if (filtros.perPage) params.set("perPage", String(filtros.perPage));
+  return params;
+}
+
+/** El libro de un repuesto. */
+export function listarMovimientos(id: string, filtros: FiltrosLibro = {}) {
+  return apiGet<PaginaMovimientos>(
+    `/repuestos/${id}/movimientos`,
+    parametrosLibro(filtros),
+  );
+}
+
+/**
+ * TCI-48 — el libro de todo el almacén.
+ *
+ * Existe además del de cada repuesto porque la pregunta que se hace de verdad
+ * es "qué se movió esta semana", y responderla abriendo repuesto por repuesto
+ * no es responderla.
+ */
+export function listarLibro(filtros: FiltrosLibro = {}) {
+  return apiGet<PaginaMovimientos>(
+    "/repuestos/movimientos",
+    parametrosLibro(filtros),
+  );
 }
 
 // ---------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
@@ -108,12 +109,20 @@ export function GestionRepuestos() {
             Existencias de almacén y su consumo en las órdenes.
           </p>
         </div>
-        <button
-          onClick={() => setDialogo({ tipo: "nuevo" })}
-          className="rounded-lg bg-tci-rojo px-4 py-2.5 text-sm font-semibold text-white hover:bg-tci-rojo-hover"
-        >
-          Nuevo repuesto
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/panel/repuestos/movimientos"
+            className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm font-semibold text-tci-negro hover:bg-tci-humo"
+          >
+            Ver movimientos
+          </Link>
+          <button
+            onClick={() => setDialogo({ tipo: "nuevo" })}
+            className="rounded-lg bg-tci-rojo px-4 py-2.5 text-sm font-semibold text-white hover:bg-tci-rojo-hover"
+          >
+            Nuevo repuesto
+          </button>
+        </div>
       </div>
 
       {/* TCI-47. El aviso vive aqui, donde se puede actuar sobre el, y no en
@@ -630,8 +639,8 @@ function DialogoLibro({
   useEffect(() => {
     let cancelado = false;
     listarMovimientos(repuesto.id)
-      .then((lista) => {
-        if (!cancelado) setMovimientos(lista);
+      .then((pagina) => {
+        if (!cancelado) setMovimientos(pagina.data);
       })
       .catch((e: unknown) => {
         if (!cancelado) {
