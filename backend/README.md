@@ -195,6 +195,43 @@ El `codigo` se normaliza a mayúsculas y solo admite letras, números y guion: e
 etiqueta corta que se ve en la tabla de órdenes y también entra en las claves de los
 adjuntos, donde un espacio o una tilde estorban.
 
+## Inventario y repuestos (TCI-45, TCI-46, TCI-47)
+
+| Método | Ruta | Quién |
+|---|---|---|
+| `GET` | `/api/repuestos` | Con sesión — **solo activos y con existencia** |
+| `GET` | `/api/repuestos/admin` | Admin — todos, con costo y aviso de mínimos |
+| `GET` | `/api/repuestos/alertas` | Admin — los que están en o bajo el mínimo |
+| `GET` | `/api/repuestos/:id/movimientos` | Admin — el libro del repuesto |
+| `POST` | `/api/repuestos` | Admin |
+| `POST` | `/api/repuestos/:id/entradas` | Admin — suma existencia, exige motivo |
+| `POST` | `/api/repuestos/:id/salidas` | Admin — resta existencia, exige motivo |
+| `PATCH` | `/api/repuestos/:id` | Admin — **sin `stockActual`** |
+| `DELETE` | `/api/repuestos/:id` | Admin — 422 si ya se movió o se imputó |
+| `GET` | `/api/ordenes/:id/repuestos` | Admin o el técnico asignado |
+| `POST` | `/api/ordenes/:id/repuestos` | Admin o el técnico asignado |
+| `PATCH` | `/api/ordenes/:id/repuestos/:lineaId` | Admin o el técnico asignado |
+| `DELETE` | `/api/ordenes/:id/repuestos/:lineaId` | Admin o el técnico asignado |
+
+**El stock lo escribe un solo método.** `InventarioService.mover()` guarda el asiento del
+libro y el saldo del repuesto dentro de la misma transacción, y **recibe** la transacción en
+vez de abrirla, porque imputar a una orden mueve almacén e imputa costo y las dos cosas
+tienen que caer o confirmarse juntas. Por eso `stockActual` no está en el DTO de edición: si
+se pudiera escribir a mano, el libro dejaría de explicar el saldo.
+
+**El costo unitario se congela al imputar.** Cambiar el precio del catálogo no mueve lo que
+costó una orden anterior. `costoRepuestos` se recalcula desde las líneas —nunca sumando y
+restando— y `costoTotal` se rehace con la mano de obra ya registrada.
+
+**Las rutas de consumo cuelgan de la orden**, igual que las de evidencia (`TCI-43`): el
+permiso es el de la orden, y así no hay camino que se salte la comprobación. Una orden
+`COMPLETADA` o `CANCELADA` no admite cambios en su consumo, ni de un admin.
+
+**Sobre "alertas de stock bajo" (`TCI-47`):** hoy se consultan, no se envían. Avisan al
+**llegar** al mínimo, no solo al bajar de él, y un mínimo de `0` no avisa nunca — que es la
+forma de decir que ese repuesto no se controla. El aviso por correo o push necesita el
+módulo 8 y va con `TCI-54`.
+
 ## Usuarios (TCI-35)
 
 | Método | Ruta | Quién |
@@ -340,5 +377,7 @@ devolvería la API en producción.
 - `EVIDENCIA_OBLIGATORIA` está en `false` por decisión del 2026-08-25, no por falta de
   soporte: la carga de evidencia (`TCI-43`) ya funciona, pero todavía no bloquea el cierre.
   Encenderla es cambiar la variable.
-- `Repuesto` / `OrdenRepuesto` (módulo 6) y `PlanMantenimiento` (módulo 7) todavía no
-  están en el schema; se agregan en su módulo.
+- `PlanMantenimiento` (módulo 7) todavía no está en el schema; se agrega en su módulo.
+- El inventario **no reserva** existencia: se descuenta al imputar, no al planificar. Con el
+  volumen de TCI no hace falta, pero la generación automática de órdenes preventivas
+  (`TCI-50`) va a querer saber si habrá repuesto el día programado.

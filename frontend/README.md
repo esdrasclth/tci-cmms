@@ -36,6 +36,7 @@ La app queda en `http://localhost:3000`.
 | `/panel/clientes` | Clientes y sedes — solo admin (TCI-36) |
 | `/panel/equipos` | Equipos por cliente — solo admin (TCI-37) |
 | `/panel/equipos/[id]` | Ficha del equipo y su historial de órdenes (TCI-38) |
+| `/panel/repuestos` | Catálogo de repuestos y almacén — solo admin (TCI-45) |
 | `/panel/tipos-mantenimiento` | Catálogo de tipos de mantenimiento — solo admin (TCI-30) |
 | `/panel/usuarios` | Gestión de usuarios — solo admin (TCI-35) |
 
@@ -112,6 +113,27 @@ destruye historial:
   usan lo conservan.
 - **Borrar** solo se ofrece si ninguna orden lo usa. El backend lo rechaza en
   caso contrario, y aquí el botón ya sale deshabilitado con el motivo.
+
+## Repuestos e inventario (TCI-45, TCI-46, TCI-47)
+
+La existencia **no se edita**: se mueve con entradas y salidas, que dejan asiento
+en el libro del repuesto. Por eso el diálogo de edición no tiene campo de stock y
+en su lugar hay dos acciones por fila. El backend rechaza el campo igualmente,
+pero la pantalla no debe ofrecer lo que no se puede hacer.
+
+El consumo por orden (`components/repuestos-orden.tsx`) vive en el detalle,
+entre la evidencia y el historial, porque es parte del parte de trabajo: lo que
+se hizo y lo que se gastó. El desplegable solo trae lo que el backend considera
+imputable —activo y con existencia—, así que no ofrece nada que vaya a devolver
+un 422.
+
+Cada cambio avisa al detalle con `onCambio` porque imputar mueve el costo de la
+orden, que se muestra en otra tarjeta; sin eso el total quedaría desfasado hasta
+recargar.
+
+El aviso de mínimos (`TCI-47`) aparece en dos sitios y a propósito: como banda
+sobre el catálogo, donde el administrador puede reponer, y junto a la línea
+recién imputada en la orden, que es lo único que el técnico ve.
 
 ## Móvil (TCI-44)
 
