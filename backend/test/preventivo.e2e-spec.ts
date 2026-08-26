@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 
+import { CorreoService } from '../src/correo/correo.service';
 import { UnidadFrecuencia } from '../src/generated/prisma/enums';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { sumarFrecuencia } from '../src/preventivo/preventivo.service';
@@ -53,6 +54,15 @@ interface EquipoDelPlan {
   proximoVencimiento: string | null;
   vencido: boolean;
   porVencer: boolean;
+}
+
+interface Aviso {
+  plan: { id: string; nombre: string; diasAnticipacion: number };
+  equipo: { id: string; codigo: string };
+  cliente: { id: string; nombre: string };
+  proximoVencimiento: string | null;
+  vencido: boolean;
+  diasRestantes: number | null;
 }
 
 interface EventoCalendario {
@@ -569,6 +579,121 @@ describe('Mantenimiento preventivo (e2e)', () => {
         .query(rango(30))
         .set('Cookie', esc.tecnico.cookie)
         .expect(403);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // TCI-52 — aviso anticipado
+  // -------------------------------------------------------------------------
+
+  describe('Avisos anticipados', () => {
+    const avisos = async () => {
+      const respuesta = await api()
+        .get('/api/planes-mantenimiento/avisos')
+        .set('Cookie', esc.admin.cookie)
+        .expect(200);
+      return cuerpo<Aviso[]>(respuesta);
+    };
+
+    it('avisa de un equipo al que nunca se le ha hecho el preventivo', async () => {
+      const tipo = await crearTipoEquipo();
+      await asignarTipo(tipo.id);
+      const plan = await crearPlan(tipo.id);
+
+      const mios = (await avisos()).filter((a) => a.plan.id === plan.id);
+      expect(mios).toHaveLength(1);
+      expect(mios[0].equipo.id).toBe(esc.equipoId);
+      // Sin preventivo previo cuenta como vencido: es la primera vez que toca.
+      expect(mios[0].vencido).toBe(true);
+      expect(mios[0].proximoVencimiento).toBeNull();
+    });
+
+    it('deja de avisar en cuanto el equipo tiene orden abierta', async () => {
+      const tipo = await crearTipoEquipo();
+      await asignarTipo(tipo.id);
+      const plan = await crearPlan(tipo.id);
+
+      expect(
+        (await avisos()).filter((a) => a.plan.id === plan.id),
+      ).toHaveLength(1);
+
+      const generacion = await api()
+        .post(`/api/planes-mantenimiento/${plan.id}/generar`)
+        .set('Cookie', esc.admin.cookie)
+        .expect(200);
+      await registrarPorNumero(
+        cuerpo<Generacion>(generacion).creadas[0].numero,
+      );
+
+      // Avisar de algo que ya esta en el listado de trabajo es ruido, y a la
+      // tercera vez nadie lee los avisos.
+      expect((await avisos()).filter((a) => a.plan.id === plan.id)).toEqual([]);
+    });
+
+    it('un plan desactivado no avisa', async () => {
+      const tipo = await crearTipoEquipo();
+      await asignarTipo(tipo.id);
+      const plan = await crearPlan(tipo.id);
+
+      await api()
+        .patch(`/api/planes-mantenimiento/${plan.id}`)
+        .set('Cookie', esc.admin.cookie)
+        .send({ activo: false })
+        .expect(200);
+
+      expect((await avisos()).filter((a) => a.plan.id === plan.id)).toEqual([]);
+    });
+
+    it('lleva la ventana de anticipacion del plan, que es lo que la explica', async () => {
+      const tipo = await crearTipoEquipo();
+      await asignarTipo(tipo.id);
+      const plan = await crearPlan(tipo.id, { diasAnticipacion: 21 });
+
+      const mios = (await avisos()).filter((a) => a.plan.id === plan.id);
+      expect(mios[0].plan.diasAnticipacion).toBe(21);
+    });
+
+    it('un tecnico no consulta los avisos de planificacion', async () => {
+      await api()
+        .get('/api/planes-mantenimiento/avisos')
+        .set('Cookie', esc.tecnico.cookie)
+        .expect(403);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Correo saliente
+  // -------------------------------------------------------------------------
+
+  describe('CorreoService sin configurar', () => {
+    it('no falla ni finge: reporta que no esta configurado', async () => {
+      const correo = app.get(CorreoService);
+
+      // Es el estado en el que corren los tests y en el que corre TCI hasta que
+      // tenga el dominio (TCI-70).
+      expect(correo.configurado).toBe(false);
+
+      const resultado = await correo.enviar({
+        para: ['alguien@tci.test'],
+        asunto: 'Prueba',
+        html: '<p>Prueba</p>',
+      });
+
+      // Ni excepcion —tumbaria la tarea de fondo— ni `true` sin enviar, que
+      // haria creer que los avisos salen.
+      expect(resultado.enviado).toBe(false);
+      expect(resultado.motivo).toContain('RESEND_API_KEY');
+    });
+
+    it('sin destinatarios no intenta enviar', async () => {
+      const correo = app.get(CorreoService);
+      const resultado = await correo.enviar({
+        para: [],
+        asunto: 'Prueba',
+        html: '<p>Prueba</p>',
+      });
+      expect(resultado.enviado).toBe(false);
+      expect(resultado.motivo).toContain('destinatarios');
     });
   });
 

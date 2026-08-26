@@ -13,6 +13,7 @@ import {
 
 import { Roles } from '../auth/roles.decorator';
 import { Rol } from '../generated/prisma/enums';
+import { AvisosPreventivosService } from './avisos.service';
 import { CalendarioService } from './calendario.service';
 import {
   ActualizarPlanDto,
@@ -37,7 +38,19 @@ export class PreventivoController {
     private readonly preventivo: PreventivoService,
     private readonly generador: GeneradorPreventivoService,
     private readonly calendario: CalendarioService,
+    private readonly avisos: AvisosPreventivosService,
   ) {}
+
+  /**
+   * TCI-52 — que mantenimientos entran en su ventana de aviso o ya vencieron.
+   *
+   * Es el canal dentro de la aplicacion, el que funciona haya correo o no. Va
+   * antes de `:id` para que Nest no lea "avisos" como el id de un plan.
+   */
+  @Get('avisos')
+  proximosAvisos() {
+    return this.avisos.proximos();
+  }
 
   /**
    * TCI-51 — que mantenimientos preventivos caen en un rango.

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { OrdenesModule } from '../ordenes/ordenes.module';
+import { AvisosPreventivosService } from './avisos.service';
 import { CalendarioService } from './calendario.service';
 import { GeneradorPreventivoService } from './generador.service';
 import { PreventivoController } from './preventivo.controller';
@@ -16,7 +17,12 @@ import { PreventivoService } from './preventivo.service';
 @Module({
   imports: [OrdenesModule],
   controllers: [PreventivoController],
-  providers: [PreventivoService, GeneradorPreventivoService, CalendarioService],
+  providers: [
+    PreventivoService,
+    GeneradorPreventivoService,
+    CalendarioService,
+    AvisosPreventivosService,
+  ],
   exports: [PreventivoService],
 })
 export class PreventivoModule {}
