@@ -33,4 +33,16 @@ export const authClient = createAuthClient({
 
 export const { signIn, signUp, signOut, useSession } = authClient;
 
+/**
+ * TCI-34 — restablecimiento de contrasena.
+ *
+ * `requestPasswordReset` pide el enlace y `resetPassword` lo consume. Se
+ * llaman asi y no `forgetPassword`: ese nombre es el de la ruta antigua, que
+ * esta version de Better Auth conserva solo por compatibilidad.
+ *
+ * El backend responde igual exista o no el correo, para que nadie pueda
+ * averiguar que cuentas hay probando direcciones.
+ */
+export const { requestPasswordReset, resetPassword } = authClient;
+
 export type Rol = 'ADMIN' | 'TECNICO';

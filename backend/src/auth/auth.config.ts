@@ -2,6 +2,7 @@ import { prismaAdapter } from '@better-auth/prisma-adapter';
 import { betterAuth } from 'better-auth';
 import { APIError } from 'better-auth/api';
 
+import type { CorreoService } from '../correo/correo.service';
 import type { PrismaClient } from '../generated/prisma/client';
 
 /**
@@ -26,7 +27,39 @@ export function origenesConfiados(): string[] {
     .filter(Boolean);
 }
 
-export function createAuth(prisma: PrismaClient) {
+/**
+ * TCI-34 — cuerpo del correo de restablecimiento.
+ *
+ * HTML plano con estilos en linea, por lo mismo que el resumen preventivo: los
+ * clientes de correo descartan el `<style>` del `<head>` y bloquean las
+ * imagenes remotas.
+ */
+function correoDeRestablecimiento(url: string, nombre: string): string {
+  return `<div style="font-family:Arial,sans-serif;color:#333;max-width:560px">
+    <p style="font-size:18px;font-weight:bold;color:#C61D1A;margin:0">TCI</p>
+    <p style="margin:12px 0">Hola ${nombre},</p>
+    <p style="margin:12px 0">
+      Alguien pidio restablecer la contrasena de su cuenta del CMMS. Si fue
+      usted, use este enlace:
+    </p>
+    <p style="margin:20px 0">
+      <a href="${url}" style="background:#C61D1A;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold">
+        Cambiar mi contrasena
+      </a>
+    </p>
+    <p style="margin:12px 0;font-size:13px;color:#6B7280">
+      El enlace caduca en una hora. Si no lo pidio, ignore este mensaje: su
+      contrasena no cambia hasta que alguien use el enlace.
+    </p>
+  </div>`;
+}
+
+/**
+ * @param correo Servicio de envio. Es opcional porque el seed y algunas
+ *   herramientas construyen la instancia de auth sin contenedor de Nest; sin el
+ *   solo se apaga el restablecimiento por correo, no el login.
+ */
+export function createAuth(prisma: PrismaClient, correo?: CorreoService) {
   return betterAuth({
     database: prismaAdapter(prisma, {
       provider: 'postgresql',
@@ -44,10 +77,30 @@ export function createAuth(prisma: PrismaClient) {
       // interna usa el adaptador de Better Auth, ver
       // src/usuarios/crear-usuario-credenciales.ts.
       disableSignUp: true,
-      // TCI-34 (recuperacion de contrasena) necesita un servicio de correo.
-      // Se conecta en el modulo 8 (Notificaciones); por ahora queda apagado
-      // para no dejar un flujo a medias que parezca funcional.
       requireEmailVerification: false,
+
+      /*
+       * TCI-34 — restablecimiento de contrasena.
+       *
+       * El flujo esta completo; lo que falta es la configuracion de Resend, que
+       * depende de que el cliente confirme el dominio con el que firmar los
+       * envios. Sin `RESEND_API_KEY`, `CorreoService` registra el intento y
+       * devuelve `enviado: false`: el usuario ve el mismo mensaje de siempre
+       * —no se le dice si su correo existe— y la salida sigue siendo que un
+       * administrador le asigne una contrasena desde el panel.
+       *
+       * El token lo emite y valida Better Auth. Una hora de vida: suficiente
+       * para leer un correo y corto para un enlace que abre una cuenta.
+       */
+      resetPasswordTokenExpiresIn: 60 * 60,
+      sendResetPassword: async ({ user, url }) => {
+        if (!correo) return;
+        await correo.enviar({
+          para: [user.email],
+          asunto: 'Restablecer su contrasena del CMMS de TCI',
+          html: correoDeRestablecimiento(url, user.name),
+        });
+      },
     },
 
     user: {
