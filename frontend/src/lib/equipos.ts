@@ -5,7 +5,9 @@ export interface Equipo {
   id: string;
   codigo: string;
   nombre: string;
+  /** Texto libre heredado de TCI-37. Lo sustituye `tipoEquipo` (TCI-49). */
   tipo: string | null;
+  tipoEquipo: { id: string; nombre: string } | null;
   marca: string | null;
   modelo: string | null;
   numeroSerie: string | null;
@@ -28,7 +30,7 @@ export type DatosEquipo = {
   nombre: string;
   clienteId: string;
   sedeId?: string;
-  tipo?: string;
+  tipoEquipoId?: string | null;
   marca?: string;
   modelo?: string;
   numeroSerie?: string;

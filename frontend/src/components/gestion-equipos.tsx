@@ -6,6 +6,10 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Alerta, Campo } from "@/components/form";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 import { ApiError } from "@/lib/api";
+import {
+  listarTiposEquipoActivos,
+  type TipoEquipoActivo,
+} from "@/lib/preventivo";
 import { useDebounce } from "@/lib/hooks";
 import { listarClientesAdmin, type Cliente } from "@/lib/clientes";
 import {
@@ -374,6 +378,7 @@ function Identidad({ equipo }: { equipo: Equipo }) {
       </p>
       <p className="text-xs text-tci-gris">
         {[equipo.marca, equipo.modelo].filter(Boolean).join(" ") ||
+          equipo.tipoEquipo?.nombre ||
           equipo.tipo ||
           "Sin detalle"}
       </p>
@@ -440,8 +445,17 @@ function DialogoEquipo({
 }) {
   const [clienteId, setClienteId] = useState(equipo?.cliente.id ?? "");
   const [sedeId, setSedeId] = useState(equipo?.sede?.id ?? "");
+  const [tiposEquipo, setTiposEquipo] = useState<TipoEquipoActivo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+
+  // El catalogo se pide al abrir el dialogo y no con la lista de equipos:
+  // solo hace falta aqui, y son unas pocas filas.
+  useEffect(() => {
+    listarTiposEquipoActivos()
+      .then(setTiposEquipo)
+      .catch(() => setTiposEquipo([]));
+  }, []);
 
   const sedes =
     clientes.find((c) => c.id === clienteId)?.sedes.filter((s) => s.activo) ?? [];
@@ -455,7 +469,9 @@ function DialogoEquipo({
       codigo: texto("codigo"),
       nombre: texto("nombre"),
       ...(equipo || sedeId ? { sedeId } : {}),
-      ...(equipo || texto("tipo") ? { tipo: texto("tipo") } : {}),
+      ...(equipo || texto("tipoEquipoId")
+        ? { tipoEquipoId: texto("tipoEquipoId") || null }
+        : {}),
       ...(equipo || texto("marca") ? { marca: texto("marca") } : {}),
       ...(equipo || texto("modelo") ? { modelo: texto("modelo") } : {}),
       ...(equipo || texto("numeroSerie")
@@ -493,12 +509,33 @@ function DialogoEquipo({
             placeholder="EQ-0001"
             required
           />
-          <Campo
-            etiqueta="Tipo (opcional)"
-            name="tipo"
-            defaultValue={equipo?.tipo ?? ""}
-            placeholder="Compresor"
-          />
+          <div>
+            <label
+              htmlFor="tipoEquipoId"
+              className="mb-1.5 block text-sm font-semibold text-tci-negro"
+            >
+              Tipo de equipo
+            </label>
+            <select
+              id="tipoEquipoId"
+              name="tipoEquipoId"
+              defaultValue={equipo?.tipoEquipo?.id ?? ""}
+              className="w-full rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro"
+            >
+              <option value="">Sin tipo</option>
+              {tiposEquipo.map((tipo) => (
+                <option key={tipo.id} value={tipo.id}>
+                  {tipo.nombre}
+                </option>
+              ))}
+            </select>
+            {/* Desde TCI-49 es un catalogo y no texto libre: los planes de
+                mantenimiento preventivo cuelgan de aqui, y con texto libre se
+                rompian con un plural o una tilde. */}
+            <p className="mt-1 text-xs text-tci-gris">
+              Agrupa equipos que llevan el mismo mantenimiento preventivo.
+            </p>
+          </div>
         </div>
 
         <Campo
