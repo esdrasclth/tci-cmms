@@ -64,14 +64,30 @@ export class PreventivoService {
 
     // A cuantos equipos alcanza cada plan. Es la pregunta que se hace al
     // crearlo —"¿esto a quien le va a caer?"— y sin ella el plan es abstracto.
-    return Promise.all(
-      planes.map(async (plan) => ({
-        ...plan,
-        equipos: await this.prisma.equipo.count({
-          where: this.equiposDelPlan(plan.tipoEquipo.id, plan.cliente?.id),
-        }),
-      })),
-    );
+    //
+    // Se cuenta con un solo `groupBy` y no con un `count` por plan: eso ultimo
+    // era una consulta mas por cada fila de la tabla.
+    const porTipoYCliente = await this.prisma.equipo.groupBy({
+      by: ['tipoEquipoId', 'clienteId'],
+      where: {
+        tipoEquipoId: { in: planes.map((p) => p.tipoEquipo.id) },
+        activo: true,
+        deletedAt: null,
+      },
+      _count: true,
+    });
+
+    return planes.map((plan) => ({
+      ...plan,
+      equipos: porTipoYCliente
+        .filter(
+          (fila) =>
+            fila.tipoEquipoId === plan.tipoEquipo.id &&
+            // Un plan sin cliente alcanza a los equipos de todos.
+            (!plan.cliente || fila.clienteId === plan.cliente.id),
+        )
+        .reduce((total, fila) => total + fila._count, 0),
+    }));
   }
 
   async obtener(id: string, cliente: ClientePrisma = this.prisma) {

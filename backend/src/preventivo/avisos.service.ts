@@ -4,7 +4,7 @@ import { Cron } from '@nestjs/schedule';
 import { CorreoService } from '../correo/correo.service';
 import { OrdenEstado, Rol } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
-import { PreventivoService } from './preventivo.service';
+import { sumarFrecuencia } from './preventivo.service';
 
 /**
  * TCI-52 — aviso anticipado antes de que venza un mantenimiento.
@@ -18,6 +18,11 @@ import { PreventivoService } from './preventivo.service';
  *  - **Por correo**, si hay con que enviarlo. Mientras TCI no tenga el dominio
  *    (TCI-70) el correo queda desactivado y `CorreoService` lo dice sin fallar:
  *    el aviso sigue estando en la aplicacion, que es lo que importa.
+ *
+ * `proximos()` resuelve todo en **tres consultas**, sean cuantos sean los
+ * planes: los planes, sus equipos y las ordenes que importan. La version
+ * anterior consultaba plan a plan y, dentro, orden a orden por equipo — con 20
+ * planes y 100 equipos, ~2000 consultas en cada carga de la pantalla.
  *
  * Es un **resumen diario** y no un aviso por evento, a proposito. Un aviso por
  * evento tendria que recordar cuales ya mando para no repetirlos, y esa tabla
@@ -38,13 +43,26 @@ export interface AvisoPreventivo {
 
 const MS_POR_DIA = 1000 * 60 * 60 * 24;
 
+/** Estados en los que la orden sigue viva y por tanto tapa el aviso. */
+const ABIERTOS: OrdenEstado[] = [
+  OrdenEstado.PENDIENTE,
+  OrdenEstado.ASIGNADA,
+  OrdenEstado.EN_PROCESO,
+  OrdenEstado.EN_ESPERA,
+];
+
+function sumarDias(desde: Date, dias: number): Date {
+  const fecha = new Date(desde);
+  fecha.setDate(fecha.getDate() + dias);
+  return fecha;
+}
+
 @Injectable()
 export class AvisosPreventivosService {
   private readonly log = new Logger(AvisosPreventivosService.name);
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly preventivo: PreventivoService,
     private readonly correo: CorreoService,
   ) {}
 
@@ -84,35 +102,108 @@ export class AvisosPreventivosService {
   async proximos(): Promise<AvisoPreventivo[]> {
     const planes = await this.prisma.planMantenimiento.findMany({
       where: { activo: true },
-      select: { id: true },
+      select: {
+        id: true,
+        nombre: true,
+        diasAnticipacion: true,
+        clienteId: true,
+        tipoEquipoId: true,
+        frecuenciaValor: true,
+        frecuenciaUnidad: true,
+      },
     });
+    if (planes.length === 0) return [];
+
+    // Los equipos de todos los planes de una vez. Antes se consultaban plan a
+    // plan y, dentro, orden a orden por equipo: con 20 planes y 100 equipos
+    // eso eran ~2000 consultas en cada carga de la pantalla.
+    const equipos = await this.prisma.equipo.findMany({
+      where: {
+        tipoEquipoId: { in: planes.map((p) => p.tipoEquipoId) },
+        activo: true,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        codigo: true,
+        nombre: true,
+        clienteId: true,
+        tipoEquipoId: true,
+        cliente: { select: { id: true, nombre: true } },
+      },
+    });
+    if (equipos.length === 0) return [];
+
+    // Y todas las ordenes que importan, tambien de una vez: la ultima cerrada
+    // de cada par plan/equipo y las que siguen abiertas.
+    const ordenes = await this.prisma.ordenTrabajo.findMany({
+      where: {
+        planId: { in: planes.map((p) => p.id) },
+        equipoId: { in: equipos.map((e) => e.id) },
+        deletedAt: null,
+      },
+      select: {
+        planId: true,
+        equipoId: true,
+        estado: true,
+        fechaFin: true,
+      },
+      orderBy: { fechaFin: 'desc' },
+    });
+
+    const clave = (planId: string, equipoId: string) => `${planId}|${equipoId}`;
+
+    const ultimoCierre = new Map<string, Date>();
+    const conOrdenAbierta = new Set<string>();
+    for (const orden of ordenes) {
+      if (!orden.planId || !orden.equipoId) continue;
+      const k = clave(orden.planId, orden.equipoId);
+
+      if (ABIERTOS.includes(orden.estado)) {
+        conOrdenAbierta.add(k);
+        continue;
+      }
+      // Vienen ordenadas por `fechaFin` descendente: la primera completada que
+      // aparece para un par es la mas reciente.
+      if (
+        orden.estado === OrdenEstado.COMPLETADA &&
+        orden.fechaFin &&
+        !ultimoCierre.has(k)
+      ) {
+        ultimoCierre.set(k, orden.fechaFin);
+      }
+    }
 
     const hoy = new Date();
     const avisos: AvisoPreventivo[] = [];
 
-    for (const { id } of planes) {
-      const { plan, equipos } = await this.preventivo.equipos(id);
+    for (const plan of planes) {
+      const suyos = equipos.filter(
+        (e) =>
+          e.tipoEquipoId === plan.tipoEquipoId &&
+          (!plan.clienteId || e.clienteId === plan.clienteId),
+      );
 
-      for (const equipo of equipos) {
-        if (!equipo.vencido && !equipo.porVencer) continue;
+      for (const equipo of suyos) {
+        const k = clave(plan.id, equipo.id);
 
-        const abierta = await this.prisma.ordenTrabajo.findFirst({
-          where: {
-            planId: plan.id,
-            equipoId: equipo.id,
-            estado: {
-              in: [
-                OrdenEstado.PENDIENTE,
-                OrdenEstado.ASIGNADA,
-                OrdenEstado.EN_PROCESO,
-                OrdenEstado.EN_ESPERA,
-              ],
-            },
-            deletedAt: null,
-          },
-          select: { id: true },
-        });
-        if (abierta) continue;
+        // Avisar de algo que ya esta en el listado de trabajo es ruido, y a la
+        // tercera vez nadie lee los avisos.
+        if (conOrdenAbierta.has(k)) continue;
+
+        const cierre = ultimoCierre.get(k);
+        const proximo = cierre
+          ? sumarFrecuencia(cierre, plan.frecuenciaValor, plan.frecuenciaUnidad)
+          : null;
+
+        // Sin preventivo previo cuenta como vencido: es la primera vez que toca.
+        const vencido = proximo === null || proximo <= hoy;
+        const porVencer =
+          proximo !== null &&
+          proximo > hoy &&
+          proximo <= sumarDias(hoy, plan.diasAnticipacion);
+
+        if (!vencido && !porVencer) continue;
 
         avisos.push({
           plan: {
@@ -120,15 +211,16 @@ export class AvisosPreventivosService {
             nombre: plan.nombre,
             diasAnticipacion: plan.diasAnticipacion,
           },
-          equipo: equipo,
+          equipo: {
+            id: equipo.id,
+            codigo: equipo.codigo,
+            nombre: equipo.nombre,
+          },
           cliente: equipo.cliente,
-          proximoVencimiento: equipo.proximoVencimiento,
-          vencido: equipo.vencido,
-          diasRestantes: equipo.proximoVencimiento
-            ? Math.ceil(
-                (equipo.proximoVencimiento.getTime() - hoy.getTime()) /
-                  MS_POR_DIA,
-              )
+          proximoVencimiento: proximo,
+          vencido,
+          diasRestantes: proximo
+            ? Math.ceil((proximo.getTime() - hoy.getTime()) / MS_POR_DIA)
             : null,
         });
       }

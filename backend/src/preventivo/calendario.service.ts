@@ -136,34 +136,66 @@ export class CalendarioService {
     });
 
     const eventos: EventoCalendario[] = [];
+    if (planes.length === 0) return eventos;
+
+    // Los equipos y sus ordenes de una vez, no un `findMany` por plan: la
+    // consulta era una por fila de la tabla de planes.
+    const todosLosEquipos = await this.prisma.equipo.findMany({
+      where: {
+        tipoEquipoId: { in: planes.map((p) => p.tipoEquipoId) },
+        activo: true,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        codigo: true,
+        nombre: true,
+        clienteId: true,
+        tipoEquipoId: true,
+        cliente: { select: { id: true, nombre: true } },
+      },
+    });
+    if (todosLosEquipos.length === 0) return eventos;
+
+    const ordenesDePlan = await this.prisma.ordenTrabajo.findMany({
+      where: {
+        planId: { in: planes.map((p) => p.id) },
+        equipoId: { in: todosLosEquipos.map((e) => e.id) },
+        deletedAt: null,
+      },
+      select: {
+        planId: true,
+        equipoId: true,
+        estado: true,
+        fechaFin: true,
+        fechaProgramada: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const porPar = new Map<string, typeof ordenesDePlan>();
+    for (const orden of ordenesDePlan) {
+      const k = `${orden.planId!}|${orden.equipoId!}`;
+      const lista = porPar.get(k) ?? [];
+      lista.push(orden);
+      porPar.set(k, lista);
+    }
 
     for (const plan of planes) {
-      const equipos = await this.prisma.equipo.findMany({
-        where: {
-          tipoEquipoId: plan.tipoEquipoId,
-          activo: true,
-          deletedAt: null,
-          ...(plan.clienteId ? { clienteId: plan.clienteId } : {}),
-        },
-        select: {
-          id: true,
-          codigo: true,
-          nombre: true,
-          cliente: { select: { id: true, nombre: true } },
-          ordenes: {
-            where: { planId: plan.id, deletedAt: null },
-            select: { estado: true, fechaFin: true, fechaProgramada: true },
-            orderBy: { createdAt: 'desc' },
-          },
-        },
-      });
+      const equipos = todosLosEquipos.filter(
+        (e) =>
+          e.tipoEquipoId === plan.tipoEquipoId &&
+          (!plan.clienteId || e.clienteId === plan.clienteId),
+      );
 
       for (const equipo of equipos) {
-        const ultimoCierre = equipo.ordenes.find(
+        const suyas = porPar.get(`${plan.id}|${equipo.id}`) ?? [];
+
+        const ultimoCierre = suyas.find(
           (o) => o.estado === OrdenEstado.COMPLETADA && o.fechaFin !== null,
         )?.fechaFin;
 
-        const abierta = equipo.ordenes.find(
+        const abierta = suyas.find(
           (o) =>
             o.estado !== OrdenEstado.COMPLETADA &&
             o.estado !== OrdenEstado.CANCELADA,
