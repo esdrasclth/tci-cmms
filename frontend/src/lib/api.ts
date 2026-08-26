@@ -1,4 +1,7 @@
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+// Exportada porque los adjuntos (TCI-43) no pasan por los helpers de
+// abajo: el multipart y la descarga de blobs necesitan armar su propio fetch.
+export const API =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 export class ApiError extends Error {
   constructor(

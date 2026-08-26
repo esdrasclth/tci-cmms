@@ -3,6 +3,7 @@ import { AuthService } from '@thallesp/nestjs-better-auth';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 
+import { AlmacenamientoService } from '../../src/adjuntos/almacenamiento.service';
 import type { Auth } from '../../src/auth/auth.config';
 import { Rol } from '../../src/generated/prisma/enums';
 import { PrismaService } from '../../src/prisma/prisma.service';
@@ -195,6 +196,21 @@ export async function sembrarEscenario(
      * adjuntos caen solos por `onDelete: Cascade` desde la orden.
      */
     async limpiar() {
+      // Los objetos de MinIO hay que borrarlos aparte: el Cascade solo alcanza
+      // a la fila. Se leen antes de borrar las ordenes, que es cuando todavia
+      // se puede saber que claves ocupan (TCI-43).
+      const adjuntos = await prisma.ordenAdjunto.findMany({
+        where: { ordenId: { in: ordenesCreadas } },
+        select: { clave: true },
+      });
+      const almacenamiento = app.get(AlmacenamientoService);
+      for (const { clave } of adjuntos) {
+        await almacenamiento.eliminar(clave).catch(() => {
+          // Que un objeto sobreviva no debe tumbar la limpieza del resto.
+          console.warn(`No se pudo borrar de MinIO: ${clave}`);
+        });
+      }
+
       await prisma.ordenTrabajo.deleteMany({
         where: { id: { in: ordenesCreadas } },
       });

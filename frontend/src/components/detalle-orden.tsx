@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { DialogoAccion, useDialogoAccion } from "@/components/dialogo-accion";
+import { EvidenciaOrden } from "@/components/evidencia-orden";
 import { ApiError } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
 import {
@@ -215,6 +216,21 @@ export function DetalleOrden({ id }: { id: string }) {
             </Tarjeta>
           )}
 
+          {/* TCI-43. Una orden cerrada no admite cambios en su evidencia:
+              el backend responde 422, asi que aqui ni se ofrece. */}
+          <Tarjeta titulo="Evidencia">
+            <EvidenciaOrden
+              ordenId={id}
+              adjuntos={orden.adjuntos}
+              puedeEditar={
+                orden.estado !== "COMPLETADA" && orden.estado !== "CANCELADA"
+              }
+              usuarioId={sesion?.user.id}
+              esAdmin={esAdmin}
+              onCambio={releer}
+            />
+          </Tarjeta>
+
           <Tarjeta titulo="Historial">
             <Historial asientos={orden.historial} />
             <CajaComentario
@@ -376,6 +392,10 @@ function describir(asiento: AsientoHistorial): string {
         : "Quito la asignacion";
     case "EDICION":
       return `Cambio ${asiento.campo ?? "un dato"}`;
+    case "ADJUNTO":
+      return asiento.valorNuevo
+        ? `Adjunto evidencia: ${asiento.valorNuevo}`
+        : `Retiro la evidencia: ${asiento.valorAnterior ?? "un archivo"}`;
     case "CAMBIO_ESTADO":
       if (!asiento.estadoAnterior) return "Creo la orden";
       return `${ETIQUETA_ESTADO[asiento.estadoAnterior]} → ${

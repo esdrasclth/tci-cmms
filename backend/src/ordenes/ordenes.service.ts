@@ -46,7 +46,20 @@ const INCLUDE_DETALLE = {
     orderBy: { createdAt: 'asc' },
     include: { usuario: { select: { id: true, name: true } } },
   },
-  adjuntos: true,
+  // Sin `clave`: es la ruta del objeto en MinIO y no le sirve al cliente, que
+  // pide el archivo por GET /ordenes/:id/adjuntos/:adjuntoId (TCI-43).
+  adjuntos: {
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      nombreArchivo: true,
+      mimeType: true,
+      tamanoBytes: true,
+      tipo: true,
+      createdAt: true,
+      usuario: { select: { id: true, name: true } },
+    },
+  },
 } satisfies Prisma.OrdenTrabajoInclude;
 
 @Injectable()

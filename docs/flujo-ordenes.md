@@ -67,7 +67,12 @@ Cualquier combinación que no esté en esta tabla es inválida y la API responde
    el servicio, no solo en el guard de rol (TCI-33).
 4. **Requisitos para `completar`:** `trabajoRealizado` no vacío **y** al menos un adjunto
    de evidencia (TCI-43). Se controla con la bandera de configuración
-   `EVIDENCIA_OBLIGATORIA` por si TCI quiere relajarlo.
+   `EVIDENCIA_OBLIGATORIA`, hoy en **`false`** por decisión del 2026-08-25: la carga de
+   evidencia ya funciona y se usa, pero todavía no bloquea el cierre. Encenderla es
+   cambiar la variable, sin tocar código — pero antes conviene confirmarlo con TCI (ver §4).
+   **La evidencia no se puede modificar en una orden `COMPLETADA` ni `CANCELADA`**, ni
+   siquiera por un admin: es parte del acta de cierre. Para corregirla hay que reabrir la
+   orden, lo que deja rastro en el historial.
 5. **`pausar`, `cancelar` y `reabrir` exigen `motivo`** (texto libre), que se guarda en el
    historial.
 6. **Todo cambio de estado escribe en `OrdenHistorial`** (TCI-29): usuario, timestamp,
@@ -85,4 +90,6 @@ Cualquier combinación que no esté en esta tabla es inválida y la API responde
 - ¿Se permite reabrir una OT completada, o el cierre es definitivo y se genera una OT nueva?
   (Propuesta: se permite, solo Admin, y queda registrado en el historial.)
 - ¿La evidencia fotográfica es obligatoria para cerrar en todos los tipos de mantenimiento?
+  (Pendiente. Hoy `EVIDENCIA_OBLIGATORIA=false`: se puede cerrar sin foto. Si TCI la quiere
+  obligatoria, considerar que un técnico sin señal en campo se quedaría sin poder cerrar.)
 - ¿Debe el cliente aprobar/firmar el cierre? (Propuesta: fuera de v1, ver fase 2 en TCI-22.)

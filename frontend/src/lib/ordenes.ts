@@ -1,3 +1,4 @@
+import type { Adjunto } from "./adjuntos";
 import { apiGet, apiPatch, apiPost } from "./api";
 
 /**
@@ -136,7 +137,9 @@ export type TipoHistorial =
   | "CAMBIO_ESTADO"
   | "ASIGNACION"
   | "COMENTARIO"
-  | "EDICION";
+  | "EDICION"
+  /** Subida o retiro de evidencia (TCI-43). */
+  | "ADJUNTO";
 
 export interface AsientoHistorial {
   id: string;
@@ -163,6 +166,8 @@ export interface OrdenDetalle extends OrdenListada {
   moneda: string;
   creadoPor: { id: string; name: string; email: string };
   historial: AsientoHistorial[];
+  /** Evidencia adjunta (TCI-43). */
+  adjuntos: Adjunto[];
   /**
    * Lo calcula el backend segun estado y rol (TCI-78 regla 2). El frontend solo
    * pinta estos botones; nunca decide el si una transicion es valida.

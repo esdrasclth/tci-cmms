@@ -268,6 +268,27 @@ asignar al registrarse — solo lo cambia un Admin (TCI-35).
 - **CORS** se configura solo, a partir de `trustedOrigins` en `auth.config.ts`
   (que lee `CORS_ORIGIN`).
 
+## Adjuntos (TCI-43)
+
+La evidencia vive en **MinIO** (compatible con S3), en un bucket **privado**. El backend es
+el único que habla con MinIO: el archivo entra por `POST /api/ordenes/:id/adjuntos`
+(multipart, campo `archivo`) y sale por `GET /api/ordenes/:id/adjuntos/:adjuntoId`, que es
+donde se comprueba si quien pregunta es el admin o el técnico asignado.
+
+- **No se confía en el `Content-Type` del navegador.** Se comprueban los primeros bytes
+  (`src/adjuntos/tipos-permitidos.ts`): un HTML renombrado a `.png` se rechaza con 422. Sin
+  eso, servir adjuntos desde el origen de la API sería un XSS almacenado. Los PDF se
+  entregan como `attachment` y nunca en línea.
+- **Las claves agrupan por orden**, para poder navegar el bucket a mano:
+  `ordenes/{año}/{numero}/{tipo}/{id}-{nombre}`.
+- **El frontend no puede pintar `<img src={urlDeLaApi}>`**: la cookie es `SameSite=Lax` y no
+  viaja en subrecursos hacia otro origen. Las miniaturas bajan su blob con `fetch` y usan un
+  object URL (`frontend/src/components/evidencia-orden.tsx`).
+- **multer entrega el nombre del archivo decodificado como latin1.** `Compresión.png` llega
+  como `CompresiÃ³n.png`; lo recompone `src/adjuntos/nombre-original.ts`.
+- **El nombre no puede ir crudo en una cabecera HTTP.** MinIO responde 400 ante un byte no
+  ASCII en `Content-Disposition`; se codifica según RFC 5987 (`src/adjuntos/disposicion.ts`).
+
 ## Tests
 
 | Comando | Qué corre |
@@ -293,8 +314,9 @@ devolvería la API en producción.
 
 - `TCI-34` recuperación de contraseña: necesita servicio de correo (módulo 8).
 - **El catálogo de tipos de mantenimiento no se puede editar** (`TCI-30`).
-- `EVIDENCIA_OBLIGATORIA` está en `false` hasta que exista la carga de adjuntos
-  (`TCI-43`).
+- `EVIDENCIA_OBLIGATORIA` está en `false` por decisión del 2026-08-25, no por falta de
+  soporte: la carga de evidencia (`TCI-43`) ya funciona, pero todavía no bloquea el cierre.
+  Encenderla es cambiar la variable.
 - `Repuesto` / `OrdenRepuesto` (módulo 6) y `PlanMantenimiento` (módulo 7) todavía no
   están en el schema; se agregan en su módulo.
 - El catálogo de tipos de mantenimiento vive en el seed; falta su CRUD real (`TCI-30`).

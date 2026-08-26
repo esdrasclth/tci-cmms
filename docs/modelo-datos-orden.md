@@ -49,8 +49,13 @@ de técnico (TCI-41) · `(clienteId)` · `(equipoId)` — historial por equipo (
 Índice `(ordenId, createdAt)`.
 
 **`OrdenAdjunto`** (TCI-43) — evidencia.
-`id` · `ordenId` FK · `usuarioId` FK · `url` · `nombreArchivo` · `mimeType` ·
+`id` · `ordenId` FK · `usuarioId` FK · `clave` (única) · `nombreArchivo` · `mimeType` ·
 `tamanoBytes` · `tipo` enum (`EVIDENCIA_ANTES`, `EVIDENCIA_DESPUES`, `DOCUMENTO`) · `createdAt`.
+**`clave` es la ruta del objeto en MinIO, no una URL.** El bucket es privado y el archivo
+solo se sirve por `GET /ordenes/:id/adjuntos/:adjuntoId`, que es donde se comprueba el
+permiso sobre la orden. Guardar una URL invitaría a repartirla y saltarse ese control.
+El formato agrupa por orden para que el bucket se pueda navegar a mano:
+`ordenes/{año}/{numero}/{evidencia-antes|evidencia-despues|documentos}/{id}-{nombre}`.
 
 **`OrdenRepuesto`** (TCI-46) — consumo de inventario.
 `id` · `ordenId` FK · `repuestoId` FK → `Repuesto` (TCI-45) · `cantidad` decimal(10,2) ·

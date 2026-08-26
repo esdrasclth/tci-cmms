@@ -5,6 +5,7 @@ import { APP_GUARD } from '@nestjs/core';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AdjuntosModule } from './adjuntos/adjuntos.module';
 import { createAuth } from './auth/auth.config';
 import { RolesGuard } from './auth/roles.guard';
 import { CatalogosModule } from './catalogos/catalogos.module';
@@ -31,6 +32,7 @@ import { PrismaService } from './prisma/prisma.service';
         auth: createAuth(prisma),
       }),
     }),
+    AdjuntosModule,
     CatalogosModule,
     ClientesModule,
     EquiposModule,

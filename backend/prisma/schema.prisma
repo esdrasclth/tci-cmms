@@ -280,6 +280,9 @@ enum TipoHistorial {
   ASIGNACION
   COMENTARIO
   EDICION
+  // TCI-43. Sobre todo por el borrado: al eliminar un adjunto desaparece su
+  // fila, y sin este asiento no quedaria rastro de que la evidencia existio.
+  ADJUNTO
 }
 
 model OrdenHistorial {
@@ -313,7 +316,10 @@ model OrdenAdjunto {
   id            String      @id @default(cuid())
   ordenId       String      @map("orden_id")
   usuarioId     String      @map("usuario_id")
-  url           String
+  // Clave del objeto en MinIO, no una URL: el bucket es privado y el archivo
+  // solo se sirve por la API (GET /ordenes/:id/adjuntos/:adjuntoId), que es
+  // donde se comprueba el permiso. Guardar una URL invitaria a repartirla.
+  clave         String      @unique
   nombreArchivo String      @map("nombre_archivo")
   mimeType      String      @map("mime_type")
   tamanoBytes   Int         @map("tamano_bytes")
