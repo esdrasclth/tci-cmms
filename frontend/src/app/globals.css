@@ -17,8 +17,9 @@
   --color-tci-humo: #f8f9fa;
   --color-tci-borde: #e0e0e0;
 
-  --font-sans: Aptos, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  --font-tci-display: Bahnschrift, "Arial Narrow", Arial, sans-serif;
+  /* La pila de reserva es Arial, la institucional de TCI: si Poppins no llega,
+     la aplicacion cae en la tipografia de la marca y no en una cualquiera. */
+  --font-sans: var(--font-poppins), Arial, Helvetica, sans-serif;
 }
 
 /*
@@ -34,13 +35,20 @@ body {
   background: #ffffff;
   color: var(--color-tci-grafito);
   font-family: var(--font-sans);
+  /* Poppins tiene la altura de x muy alta y las letras muy abiertas: con el
+     interlineado por defecto los renglones se tocan. */
+  line-height: 1.6;
 }
 
-/* La familia de display aporta un tono tecnico al mensaje de marca sin
-   comprometer la comodidad de lectura de la interfaz. */
+/*
+ * Titulares. Poppins es geometrica y, a cuerpo grande, deja huecos visibles
+ * entre letras; cerrar el interletrado la vuelve compacta y le da el tono
+ * tecnico que pide la marca. A cuerpo de texto no se toca: ahi el mismo ajuste
+ * dificultaria la lectura.
+ */
 .tci-display {
-  font-family: var(--font-tci-display);
-  font-variation-settings: "wdth" 92;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
 }
 
 /* Foco visible y consistente en toda la app, en el rojo institucional. */
