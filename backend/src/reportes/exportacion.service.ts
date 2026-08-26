@@ -185,24 +185,50 @@ export class ExportacionService {
     const alturaFila = 16;
     const limiteInferior = doc.page.height - doc.page.margins.bottom - 24;
 
-    const cabecera = () => {
-      doc.font('Helvetica-Bold').fontSize(8).fillColor(GRIS);
+    /*
+     * `doc.text()` avanza el cursor vertical aunque se le pase una `y` fija, asi
+     * que la fila se compone contra una `y` capturada ANTES del bucle. Leyendola
+     * dentro, cada celda caia mas abajo que la anterior y la cabecera salia en
+     * escalera.
+     */
+    const fila = (
+      valores: string[],
+      y: number,
+      opciones: { negrita?: boolean } = {},
+    ) => {
+      doc.font(opciones.negrita ? 'Helvetica-Bold' : 'Helvetica').fontSize(8);
       let x = izquierda;
-      for (const columna of columnas) {
-        doc.text(columna.titulo.toUpperCase(), x, doc.y, {
-          width: columna.ancho - 4,
+      for (const [i, valor] of valores.entries()) {
+        doc.text(valor, x, y, {
+          width: columnas[i].ancho - 4,
+          // `height` obliga a una sola linea: sin el, un titulo largo se parte
+          // en dos y pisa la fila siguiente.
+          height: alturaFila,
           lineBreak: false,
+          ellipsis: true,
         });
-        x += columna.ancho;
+        x += columnas[i].ancho;
       }
-      doc.moveDown(0.3);
+    };
+
+    const cabecera = () => {
+      const y = doc.y;
+      doc.fillColor(GRIS);
+      fila(
+        columnas.map((c) => c.titulo.toUpperCase()),
+        y,
+        { negrita: true },
+      );
+
+      const yLinea = y + alturaFila - 4;
       doc
-        .moveTo(izquierda, doc.y)
-        .lineTo(doc.page.width - doc.page.margins.right, doc.y)
+        .moveTo(izquierda, yLinea)
+        .lineTo(doc.page.width - doc.page.margins.right, yLinea)
         .lineWidth(0.5)
         .strokeColor('#E0E0E0')
         .stroke();
-      doc.moveDown(0.3);
+
+      doc.y = yLinea + 4;
     };
 
     cabecera();
@@ -216,15 +242,11 @@ export class ExportacionService {
       }
 
       const y = doc.y;
-      let x = izquierda;
-      for (const columna of columnas) {
-        doc.text(columna.valor(orden), x, y, {
-          width: columna.ancho - 4,
-          lineBreak: false,
-          ellipsis: true,
-        });
-        x += columna.ancho;
-      }
+      doc.fillColor(NEGRO);
+      fila(
+        columnas.map((columna) => columna.valor(orden)),
+        y,
+      );
       doc.y = y + alturaFila;
     }
   }
