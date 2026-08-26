@@ -159,8 +159,13 @@ describe('Ordenes de trabajo (e2e)', () => {
       const primera = await crearOrden();
       const segunda = await crearOrden();
 
+      // Avanza, no necesariamente de uno en uno: los archivos de e2e corren en
+      // paralelo contra la misma base y entre estas dos altas puede colarse la
+      // orden de otra suite. Lo que se comprueba es que el correlativo avanza y
+      // no se repite, que es la garantia del sistema.
       const numero = (n: string) => Number.parseInt(n.slice(-4), 10);
-      expect(numero(segunda.numero)).toBe(numero(primera.numero) + 1);
+      expect(numero(segunda.numero)).toBeGreaterThan(numero(primera.numero));
+      expect(segunda.numero).not.toBe(primera.numero);
     });
 
     it('acepta prioridad y fechas de planificacion', async () => {
