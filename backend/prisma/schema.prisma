@@ -2,8 +2,8 @@
 // Modelo de Orden de Trabajo definido en TCI-22; estados y flujo en TCI-78.
 //
 // Alcance de este archivo: los modulos 2 (Ordenes de Trabajo), 3 (Auth),
-// 4 (Clientes y Equipos), 6 (Inventario y Repuestos) y 7 (Mantenimiento
-// Preventivo).
+// 4 (Clientes y Equipos), 6 (Inventario y Repuestos), 7 (Mantenimiento
+// Preventivo) y 8 (Notificaciones).
 
 generator client {
   provider            = "prisma-client"
@@ -53,6 +53,7 @@ model User {
   historial        OrdenHistorial[]
   adjuntos         OrdenAdjunto[]
   movimientos      MovimientoInventario[]
+  notificaciones   Notificacion[]
 
   @@index([rol, activo])
   @@map("users")
@@ -523,4 +524,102 @@ model PlanMantenimiento {
   @@index([activo])
   @@index([tipoEquipoId])
   @@map("planes_mantenimiento")
+}
+
+// ---------------------------------------------------------------------------
+// Notificaciones — modulo 8 (TCI-53, TCI-54, TCI-55, TCI-56)
+//
+// El canal en vivo (SSE) del que hablaba TCI-53 ya existe desde TCI-42: es
+// `GET /ordenes/:id/eventos`. Lo que falta aqui es lo otro que pedia el item,
+// que es decidir QUE avisa, A QUIEN y POR DONDE.
+//
+// Los eventos son un enum de codigo y no un catalogo editable, al reves que los
+// tipos de mantenimiento (TCI-30): un evento solo existe si hay una linea de
+// codigo que lo emite, asi que dejar crear filas nuevas por pantalla solo
+// permitiria inventar eventos que no ocurren nunca. Lo que si es editable es
+// todo lo demas: quien lo recibe, por donde y con que texto.
+// ---------------------------------------------------------------------------
+
+/// Los eventos que el sistema sabe emitir. Los cuatro primeros son la regla 9
+/// de docs/flujo-ordenes.md; los dos ultimos vienen de TCI-47 y TCI-52.
+enum EventoNotificable {
+  ORDEN_ASIGNADA
+  ORDEN_COMPLETADA
+  ORDEN_CANCELADA
+  ORDEN_REABIERTA
+  ORDEN_COMENTADA
+  PREVENTIVO_POR_VENCER
+  REPUESTO_BAJO_MINIMO
+}
+
+/// TCI-54. Sin `PUSH`: las notificaciones push del navegador necesitan service
+/// worker, claves VAPID y un almacen de suscripciones por dispositivo, que es
+/// infraestructura propia y no una opcion de configuracion. Anadir el valor sin
+/// eso solo produciria una casilla que no hace nada.
+enum CanalNotificacion {
+  EN_APP
+  CORREO
+}
+
+/// TCI-54 y TCI-55: quien recibe que, y por donde.
+///
+/// La clave es (evento, rol, canal): la configuracion es por ROL y no por
+/// usuario a proposito. Con el tamano de equipo de TCI, preferencias
+/// individuales solo servirian para que alguien se desactive los avisos y luego
+/// no se entere de su trabajo.
+model PreferenciaNotificacion {
+  id     String            @id @default(cuid())
+  evento EventoNotificable
+  rol    Rol
+  canal  CanalNotificacion
+  activo Boolean           @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([evento, rol, canal])
+  @@map("preferencias_notificacion")
+}
+
+/// TCI-56: el texto de cada notificacion.
+///
+/// Editable en base de datos y no fija en codigo porque es contenido: TCI va a
+/// querer cambiar como suena un aviso sin esperar a un despliegue. El cuerpo
+/// admite marcadores `{{campo}}` que el servicio sustituye.
+model PlantillaNotificacion {
+  id     String            @id
+  evento EventoNotificable @unique
+
+  asunto String
+  cuerpo String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("plantillas_notificacion")
+}
+
+/// La bandeja de cada usuario: donde cae lo que se envia por el canal EN_APP.
+///
+/// Se guarda el texto ya compuesto y no una referencia a la plantilla: si
+/// manana alguien reescribe la plantilla, lo que ya se notifico tiene que
+/// seguir diciendo lo que dijo.
+model Notificacion {
+  id        String            @id @default(cuid())
+  usuarioId String            @map("usuario_id")
+  evento    EventoNotificable
+
+  titulo String
+  cuerpo String
+  /// Ruta de la aplicacion a la que lleva. Relativa: el dominio cambia (TCI-70).
+  enlace String?
+
+  leidaEn   DateTime? @map("leida_en")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, leidaEn])
+  @@index([usuarioId, createdAt])
+  @@map("notificaciones")
 }
