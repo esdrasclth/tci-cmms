@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { DialogoAccion, useDialogoAccion } from "@/components/dialogo-accion";
 import { EvidenciaOrden } from "@/components/evidencia-orden";
-import { ApiError } from "@/lib/api";
+import { API, ApiError } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
 import {
   COLOR_ESTADO,
@@ -34,10 +34,9 @@ import {
  * accion se relee la orden entera, de modo que la vista refleja el estado real
  * y no una suposicion local.
  *
- * Ojo con "en tiempo real" del work item: la vista se actualiza al instante para
- * quien actua, pero NO hay envio desde el servidor. Si dos personas miran la
- * misma orden, una no ve lo que hace la otra hasta recargar. Eso necesita
- * WebSocket o SSE y va con el modulo de notificaciones (TCI-53).
+ * El canal SSE notifica los cambios producidos por otros usuarios. La vista no
+ * confia en el payload del evento: vuelve a leer la orden para conservar sus
+ * permisos y las acciones disponibles calculadas por el backend.
  */
 export function DetalleOrden({ id }: { id: string }) {
   const { data: sesion } = useSession();
@@ -48,6 +47,7 @@ export function DetalleOrden({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
   const [cargandoTecnicos, setCargandoTecnicos] = useState(false);
+  const [conexionEnVivo, setConexionEnVivo] = useState(false);
   const dialogo = useDialogoAccion();
 
   useEffect(() => {
@@ -74,6 +74,33 @@ export function DetalleOrden({ id }: { id: string }) {
   const releer = useCallback(async () => {
     setOrden(await obtenerOrden(id));
   }, [id]);
+
+  // El stream se abre una sola vez por orden, cuando ya se sabe que la carga
+  // inicial funciono. Depender del objeto `orden` entero lo reabriria en cada
+  // relectura, y como cada evento provoca una relectura, seria un bucle.
+  const ordenCargada = orden !== null;
+
+  useEffect(() => {
+    if (!ordenCargada) return;
+
+    const fuente = new EventSource(`${API}/api/ordenes/${id}/eventos`, {
+      withCredentials: true,
+    });
+    const conectado = () => setConexionEnVivo(true);
+    const actualizado = () => {
+      void releer().catch(() => undefined);
+    };
+    const conError = () => setConexionEnVivo(false);
+
+    fuente.addEventListener("conectado", conectado);
+    fuente.addEventListener("orden-actualizada", actualizado);
+    fuente.addEventListener("error", conError);
+
+    return () => {
+      fuente.close();
+      setConexionEnVivo(false);
+    };
+  }, [id, ordenCargada, releer]);
 
   // Los tecnicos solo hacen falta al asignar, y solo un admin puede pedirlos.
   const abrirAccion = useCallback(
@@ -155,6 +182,12 @@ export function DetalleOrden({ id }: { id: string }) {
           </span>
           <span className={`text-xs ${COLOR_PRIORIDAD[orden.prioridad]}`}>
             Prioridad {ETIQUETA_PRIORIDAD[orden.prioridad]}
+          </span>
+          <span
+            className={`text-xs ${conexionEnVivo ? "text-emerald-700" : "text-tci-gris"}`}
+            aria-live="polite"
+          >
+            {conexionEnVivo ? "Cambios en vivo" : "Reconectando cambios en vivo..."}
           </span>
         </div>
       </header>

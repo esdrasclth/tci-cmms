@@ -68,11 +68,10 @@ El historial mezcla en un solo hilo cronológico los cambios de estado, las
 asignaciones, las ediciones y los comentarios sueltos
 (`POST /api/ordenes/:id/comentarios`).
 
-> **Sobre "en tiempo real" del work item:** la vista se actualiza al instante
-> para quien ejecuta la acción, pero **no hay envío desde el servidor**. Si dos
-> personas miran la misma orden, una no ve lo que hace la otra hasta recargar.
-> Eso necesita WebSocket o SSE y encaja con el módulo de notificaciones
-> (`TCI-53`).
+Cada detalle abre `GET /api/ordenes/:id/eventos`, un stream **SSE** autenticado.
+Cuando otro usuario comenta, edita o cambia el estado, recibe
+`orden-actualizada` y vuelve a leer la OT. Esto actualiza la vista sin recargar
+y conserva las acciones permitidas para la sesión que recibe el evento.
 
 ## Historial por equipo (TCI-38)
 
@@ -174,7 +173,6 @@ un middleware.
 
 - No hay tests. Falta decidir herramienta (Vitest + Testing Library encajaría con
   lo que ya usa el backend).
-- **No hay actualización en vivo entre usuarios** (ver el aviso de TCI-42).
 - Las listas de clientes, equipos y tipos **no paginan**. Con el volumen actual
   de TCI no hace falta; si crece, la API ya acepta filtros y solo faltaría el
   `page`.
