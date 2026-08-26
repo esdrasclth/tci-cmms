@@ -91,55 +91,46 @@ export function ListaOrdenes({ esAdmin }: { esAdmin: boolean }) {
 
   return (
     <section>
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="text-lg font-bold text-tci-negro">
-          {esAdmin ? "Ordenes de trabajo" : "Mis ordenes asignadas"}
-        </h2>
-        <div className="flex items-center gap-4">
-          {pagina && !cargando && (
-            <p className="text-sm text-tci-gris">
-              {pagina.meta.total}{" "}
-              {pagina.meta.total === 1 ? "orden" : "ordenes"}
-            </p>
-          )}
-          <Link
-            href="/panel/ordenes/nueva"
-            className="rounded-lg bg-tci-rojo px-4 py-2.5 text-sm font-bold text-white hover:bg-tci-rojo-hover"
-          >
-            Nueva orden
-          </Link>
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        {ESTADOS.map((estado) => {
-          const activo = estados.includes(estado);
-          return (
+      {/* El titulo y el alta los pone la pagina, como en el resto de pantallas
+          de gestion. Aqui el recuento acompana a los filtros, que es lo que
+          modifica: al pulsar un estado, el numero de al lado cambia. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="flex flex-wrap gap-2">
+          {ESTADOS.map((estado) => {
+            const activo = estados.includes(estado);
+            return (
+              <button
+                key={estado}
+                onClick={() => alternarEstado(estado)}
+                aria-pressed={activo}
+                className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${
+                  activo
+                    ? "border-tci-rojo bg-tci-rojo text-white"
+                    : "border-tci-borde bg-white text-tci-grafito hover:border-tci-gris"
+                }`}
+              >
+                {ETIQUETA_ESTADO[estado]}
+              </button>
+            );
+          })}
+          {estados.length > 0 && (
             <button
-              key={estado}
-              onClick={() => alternarEstado(estado)}
-              aria-pressed={activo}
-              className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${
-                activo
-                  ? "border-tci-rojo bg-tci-rojo text-white"
-                  : "border-tci-borde bg-white text-tci-grafito hover:border-tci-gris"
-              }`}
+              onClick={() => {
+                setCargando(true);
+                setEstados([]);
+                setNroPagina(1);
+              }}
+              className="px-2 py-1.5 text-xs text-tci-gris underline-offset-2 hover:text-tci-rojo hover:underline"
             >
-              {ETIQUETA_ESTADO[estado]}
+              Limpiar
             </button>
-          );
-        })}
-        {estados.length > 0 && (
-          <button
-            onClick={() => {
-              setCargando(true);
-              setEstados([]);
-              setNroPagina(1);
-            }}
-            className="px-2 py-1.5 text-xs text-tci-gris underline-offset-2 hover:text-tci-rojo hover:underline"
-          >
-            Limpiar
-          </button>
+          )}
+        </div>
+
+        {pagina && !cargando && (
+          <p className="text-sm text-tci-gris">
+            {pagina.meta.total} {pagina.meta.total === 1 ? "orden" : "órdenes"}
+          </p>
         )}
       </div>
 
@@ -162,8 +153,8 @@ export function ListaOrdenes({ esAdmin }: { esAdmin: boolean }) {
               {estados.length > 0
                 ? "Ninguna orden coincide con el filtro."
                 : esAdmin
-                  ? "Todavia no hay ordenes registradas."
-                  : "No tiene ordenes asignadas."}
+                  ? "Todavía no hay órdenes registradas."
+                  : "No tiene órdenes asignadas."}
             </p>
           </Aviso>
         ) : (
@@ -173,12 +164,12 @@ export function ListaOrdenes({ esAdmin }: { esAdmin: boolean }) {
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-tci-borde bg-tci-humo text-xs text-tci-gris uppercase">
                   <tr>
-                    <th className="px-4 py-3 font-bold">Numero</th>
+                    <th className="px-4 py-3 font-bold">Número</th>
                     <th className="px-4 py-3 font-bold">Orden</th>
                     <th className="px-4 py-3 font-bold">Cliente</th>
                     <th className="px-4 py-3 font-bold">Estado</th>
                     <th className="px-4 py-3 font-bold">Prioridad</th>
-                    {esAdmin && <th className="px-4 py-3 font-bold">Tecnico</th>}
+                    {esAdmin && <th className="px-4 py-3 font-bold">Técnico</th>}
                     <th className="px-4 py-3 font-bold">Programada</th>
                   </tr>
                 </thead>
