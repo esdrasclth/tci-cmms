@@ -2,9 +2,8 @@
 // Modelo de Orden de Trabajo definido en TCI-22; estados y flujo en TCI-78.
 //
 // Alcance de este archivo: los modulos 2 (Ordenes de Trabajo), 3 (Auth),
-// 4 (Clientes y Equipos) y 6 (Inventario y Repuestos). Queda pendiente para su
-// propio modulo:
-//   - PlanMantenimiento  -> modulo 7 (TCI-49/50)
+// 4 (Clientes y Equipos), 6 (Inventario y Repuestos) y 7 (Mantenimiento
+// Preventivo).
 
 generator client {
   provider            = "prisma-client"
@@ -131,6 +130,7 @@ model Cliente {
   sedes   Sede[]
   equipos Equipo[]
   ordenes OrdenTrabajo[]
+  planes  PlanMantenimiento[]
 
   @@index([activo])
   @@map("clientes")
@@ -156,11 +156,33 @@ model Sede {
   @@map("sedes")
 }
 
+/// TCI-49 — catalogo de tipos de equipo.
+///
+/// Hasta TCI-37 el tipo era texto libre en `Equipo.tipo`. Un plan de
+/// mantenimiento colgado de ese campo se rompe en silencio con un plural o una
+/// tilde, y los equipos sin tipo no reciben plan y nadie se entera. Al hacerse
+/// catalogo, la relacion es una FK y el problema desaparece.
+model TipoEquipo {
+  id        String   @id @default(cuid())
+  nombre    String   @unique
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  equipos Equipo[]
+  planes  PlanMantenimiento[]
+
+  @@map("tipos_equipo")
+}
+
 model Equipo {
   id              String    @id @default(cuid())
   codigo          String    @unique
   nombre          String
+  /// Texto libre heredado de TCI-37. Lo sustituye `tipoEquipoId`; se conserva
+  /// para no perder lo que se escribio antes de existir el catalogo.
   tipo            String?
+  tipoEquipoId    String?   @map("tipo_equipo_id")
   marca           String?
   modelo          String?
   numeroSerie     String?   @map("numero_serie")
@@ -172,12 +194,14 @@ model Equipo {
   updatedAt       DateTime  @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
 
-  cliente Cliente        @relation(fields: [clienteId], references: [id], onDelete: Restrict)
-  sede    Sede?          @relation(fields: [sedeId], references: [id], onDelete: SetNull)
-  ordenes OrdenTrabajo[]
+  cliente    Cliente        @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  sede       Sede?          @relation(fields: [sedeId], references: [id], onDelete: SetNull)
+  tipoEquipo TipoEquipo?    @relation(fields: [tipoEquipoId], references: [id], onDelete: Restrict)
+  ordenes    OrdenTrabajo[]
 
   @@index([clienteId])
   @@index([sedeId])
+  @@index([tipoEquipoId])
   @@map("equipos")
 }
 
@@ -218,6 +242,7 @@ model TipoMantenimiento {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   ordenes OrdenTrabajo[]
+  planes  PlanMantenimiento[]
 
   @@map("tipos_mantenimiento")
 }
@@ -237,6 +262,8 @@ model OrdenTrabajo {
   equipoId            String? @map("equipo_id")
   tipoMantenimientoId String  @map("tipo_mantenimiento_id")
   tecnicoId           String? @map("tecnico_id")
+  /// De que plan preventivo nacio, si nacio de uno (TCI-50).
+  planId              String? @map("plan_id")
   creadoPorId         String  @map("creado_por_id")
 
   fechaProgramada DateTime? @map("fecha_programada")
@@ -255,12 +282,13 @@ model OrdenTrabajo {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  cliente           Cliente           @relation(fields: [clienteId], references: [id], onDelete: Restrict)
-  sede              Sede?             @relation(fields: [sedeId], references: [id], onDelete: SetNull)
-  equipo            Equipo?           @relation(fields: [equipoId], references: [id], onDelete: Restrict)
-  tipoMantenimiento TipoMantenimiento @relation(fields: [tipoMantenimientoId], references: [id], onDelete: Restrict)
-  tecnico           User?             @relation("TecnicoAsignado", fields: [tecnicoId], references: [id], onDelete: Restrict)
-  creadoPor         User              @relation("CreadoPor", fields: [creadoPorId], references: [id], onDelete: Restrict)
+  cliente           Cliente            @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  sede              Sede?              @relation(fields: [sedeId], references: [id], onDelete: SetNull)
+  equipo            Equipo?            @relation(fields: [equipoId], references: [id], onDelete: Restrict)
+  tipoMantenimiento TipoMantenimiento  @relation(fields: [tipoMantenimientoId], references: [id], onDelete: Restrict)
+  tecnico           User?              @relation("TecnicoAsignado", fields: [tecnicoId], references: [id], onDelete: Restrict)
+  plan              PlanMantenimiento? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  creadoPor         User               @relation("CreadoPor", fields: [creadoPorId], references: [id], onDelete: Restrict)
 
   historial   OrdenHistorial[]
   adjuntos    OrdenAdjunto[]
@@ -272,6 +300,7 @@ model OrdenTrabajo {
   @@index([clienteId])
   @@index([equipoId])
   @@index([fechaProgramada])
+  @@index([planId])
   @@index([deletedAt])
   @@map("ordenes_trabajo")
 }
@@ -435,4 +464,63 @@ model OrdenRepuesto {
   @@unique([ordenId, repuestoId])
   @@index([repuestoId])
   @@map("orden_repuestos")
+}
+
+// ---------------------------------------------------------------------------
+// Mantenimiento preventivo — modulo 7 (TCI-49, TCI-50)
+//
+// Un plan dice "todo equipo de este tipo lleva este mantenimiento cada N
+// unidades de tiempo". La generacion automatica de ordenes es TCI-50; aqui solo
+// se define el plan y se lleva la cuenta de cuando toca.
+//
+// El vencimiento se cuenta **desde el ultimo cierre real**, no desde un
+// calendario fijo: si el preventivo de marzo se hizo el 10 de abril, el
+// siguiente cuenta desde el 10 de abril. Asi el plan refleja el estado de la
+// maquina y no acumula ordenes atrasadas cuando el equipo se retrasa. Decision
+// del cliente del 2026-08-26.
+// ---------------------------------------------------------------------------
+
+enum UnidadFrecuencia {
+  DIAS
+  SEMANAS
+  MESES
+}
+
+model PlanMantenimiento {
+  id          String  @id @default(cuid())
+  nombre      String
+  descripcion String?
+
+  /// A que equipos aplica.
+  tipoEquipoId String  @map("tipo_equipo_id")
+  /// Acota el plan a un cliente. Nulo = todos los equipos de ese tipo.
+  clienteId    String? @map("cliente_id")
+
+  /// Con que tipo se levantara la orden generada (normalmente "Preventivo").
+  tipoMantenimientoId String @map("tipo_mantenimiento_id")
+
+  frecuenciaValor  Int              @map("frecuencia_valor")
+  frecuenciaUnidad UnidadFrecuencia @map("frecuencia_unidad")
+
+  /// Cuantos dias antes del vencimiento se avisa (TCI-52).
+  diasAnticipacion Int @default(7) @map("dias_anticipacion")
+
+  /// Prioridad con la que nacen las ordenes de este plan.
+  prioridad Prioridad @default(MEDIA)
+
+  /// Instrucciones que se copian a la descripcion de la orden generada.
+  instrucciones String?
+
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tipoEquipo        TipoEquipo        @relation(fields: [tipoEquipoId], references: [id], onDelete: Restrict)
+  cliente           Cliente?          @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  tipoMantenimiento TipoMantenimiento @relation(fields: [tipoMantenimientoId], references: [id], onDelete: Restrict)
+  ordenes           OrdenTrabajo[]
+
+  @@index([activo])
+  @@index([tipoEquipoId])
+  @@map("planes_mantenimiento")
 }
