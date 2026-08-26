@@ -338,6 +338,12 @@ una orden generada esta mañana para hoy no está vencida aunque su hora ya haya
 | `GET` `PATCH` | `/api/notificaciones/preferencias…` | Admin (TCI-54, TCI-55) |
 | `GET` `PATCH` | `/api/notificaciones/plantillas…` | Admin (TCI-56) |
 
+La bandeja **pagina** (`page`, `perPage`, 20 por defecto). Es la única lista del sistema que
+lo necesitaba: `notificaciones` solo crece —cada evento añade una fila por destinatario y
+nada las borra—, mientras que clientes, equipos y usuarios están acotados por el negocio.
+`noLeidas` se cuenta sobre toda la bandeja y no sobre la página, porque es el número del
+badge.
+
 **El canal en vivo que pedía `TCI-53` ya existía**: es el SSE de `GET /ordenes/:id/eventos`,
 construido con `TCI-42`. Lo que añade este módulo es decidir *qué* avisa, *a quién* y *por
 dónde*.

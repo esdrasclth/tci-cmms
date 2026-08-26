@@ -316,9 +316,15 @@ un middleware.
 
 - No hay tests. Falta decidir herramienta (Vitest + Testing Library encajaría con
   lo que ya usa el backend).
-- Las listas de clientes, equipos y tipos **no paginan**. Con el volumen actual
-  de TCI no hace falta; si crece, la API ya acepta filtros y solo faltaría el
-  `page`.
+- Las listas de clientes, equipos y tipos **no paginan**, y es una decisión
+  medida: están acotadas por el negocio —decenas de filas— y responden en menos
+  de 30 ms. La que sí crece sin techo es la bandeja de notificaciones, y esa
+  pagina desde el principio. Si alguna de las otras crece, la API ya acepta
+  filtros y solo faltaría el `page`.
+- **Cada pantalla vuelve a pedir sus datos al montarse.** No hay caché de
+  cliente: navegar a Clientes y volver a Órdenes repite las dos peticiones. Con
+  respuestas de 15–30 ms se nota poco, pero es lo que habría que atacar
+  (TanStack Query o SWR) si el sistema se siente lento tras el despliegue.
 - El historial de un equipo muestra **las 25 más recientes**, sin paginar. Para
   más, se remite al listado general.
 - La lista de usuarios no pagina ni filtra desde la interfaz, aunque la API sí
