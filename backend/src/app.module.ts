@@ -14,6 +14,7 @@ import { EquiposModule } from './equipos/equipos.module';
 import { InventarioModule } from './inventario/inventario.module';
 import { OrdenesModule } from './ordenes/ordenes.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ReportesModule } from './reportes/reportes.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { PrismaService } from './prisma/prisma.service';
 
@@ -42,6 +43,7 @@ import { PrismaService } from './prisma/prisma.service';
     EquiposModule,
     InventarioModule,
     OrdenesModule,
+    ReportesModule,
     UsuariosModule,
   ],
   controllers: [AppController],
