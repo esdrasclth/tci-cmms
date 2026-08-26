@@ -1,0 +1,135 @@
+# Despliegue de produccion — TCI-61, TCI-68, TCI-69.
+#
+# Se separa del docker-compose.yml de desarrollo a proposito. Aquel expone
+# Postgres en el puerto 5436 para que el backend corra en local contra el, y
+# trae contrasenas por defecto para que `docker compose up` funcione sin
+# configurar nada. Las dos cosas son justo lo que no se quiere en un servidor.
+#
+# Diferencias con el de desarrollo:
+#   - Postgres NO publica puertos: solo se llega a el desde la red interna.
+#   - Ninguna variable tiene valor por defecto. Si falta, el arranque falla y
+#     dice cual — mejor que levantar con una contrasena conocida.
+#   - Los tres servicios tienen healthcheck, que es de lo que se fia Dokploy
+#     para saber si el despliegue salio bien.
+#
+# Uso:
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# En Dokploy se apunta a este archivo y las variables se ponen en su panel.
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?falta POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?falta POSTGRES_DB}
+    # Sin `ports`: la base no se asoma a internet. El backend la alcanza por el
+    # nombre del servicio dentro de la red de compose.
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      # Los volcados salen aqui para que el script de respaldo (TCI-71) los
+      # encuentre desde el host sin entrar al contenedor.
+      - ./respaldos:/respaldos
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+
+      # Autenticacion. `BETTER_AUTH_URL` es la URL publica del backend y
+      # `CORS_ORIGIN` la del frontend: si no coinciden con lo que ve el
+      # navegador, la cookie de sesion no viaja y todo responde 401.
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?falta BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:?falta BETTER_AUTH_URL}
+      CORS_ORIGIN: ${CORS_ORIGIN:?falta CORS_ORIGIN}
+
+      # Adjuntos (TCI-43). El bucket es privado: los archivos entran y salen
+      # siempre por la API. `S3_ENDPOINT` es la API S3 (puerto 9000), NO la
+      # consola web. Sin estas cuatro el backend no arranca: falla al construir
+      # AlmacenamientoService, no al subir el primer archivo.
+      S3_ENDPOINT: ${S3_ENDPOINT:?falta S3_ENDPOINT}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?falta S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?falta S3_SECRET_KEY}
+      S3_BUCKET: ${S3_BUCKET:?falta S3_BUCKET}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      # MinIO necesita rutas tipo `endpoint/bucket/clave`; S3 de AWS no.
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
+      ADJUNTOS_MAX_BYTES: ${ADJUNTOS_MAX_BYTES:-10485760}
+
+      # Correo (TCI-34, TCI-52, TCI-54). Opcionales a proposito: sin la clave el
+      # sistema funciona igual y los avisos siguen dentro de la aplicacion.
+      # Pendiente de que el cliente confirme el dominio.
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      CORREO_REMITENTE: ${CORREO_REMITENTE:-}
+
+      # Tareas programadas (TCI-50, TCI-52) y zona horaria del negocio.
+      PREVENTIVO_CRON: ${PREVENTIVO_CRON:-0 6 * * *}
+      PREVENTIVO_AUTOMATICO: ${PREVENTIVO_AUTOMATICO:-true}
+      AVISOS_CRON: ${AVISOS_CRON:-0 7 * * *}
+      AVISOS_PREVENTIVOS: ${AVISOS_PREVENTIVOS:-true}
+      REPORTES_UTC_OFFSET: ${REPORTES_UTC_OFFSET:--6}
+
+      EVIDENCIA_OBLIGATORIA: ${EVIDENCIA_OBLIGATORIA:-false}
+    expose:
+      - "3001"
+    healthcheck:
+      # Node en vez de curl: la imagen es alpine y no lo trae.
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # En la COMPILACION, no al arrancar: Next incrusta las `NEXT_PUBLIC_*`
+        # en el paquete que descarga el navegador. Cambiar el dominio obliga a
+        # reconstruir la imagen, no solo a reiniciar el contenedor.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?falta NEXT_PUBLIC_API_URL}
+    restart: always
+    depends_on:
+      backend:
+        condition: service_healthy
+    expose:
+      - "3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres_data:
