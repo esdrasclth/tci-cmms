@@ -328,6 +328,46 @@ Un plan mensual marca **todos los meses del rango**, no solo el primero; el tope
 `MAX_OCURRENCIAS` (24) por equipo y plan. `vencido` se decide **por día y no por instante**:
 una orden generada esta mañana para hoy no está vencida aunque su hora ya haya pasado.
 
+## Notificaciones (TCI-53, TCI-54, TCI-55, TCI-56)
+
+| Método | Ruta | Quién |
+|---|---|---|
+| `GET` | `/api/notificaciones` | Con sesión — **la bandeja de quien pregunta** |
+| `PATCH` | `/api/notificaciones/:id/leida` | Con sesión — solo las suyas |
+| `POST` | `/api/notificaciones/leidas` | Con sesión — marca todas las suyas |
+| `GET` `PATCH` | `/api/notificaciones/preferencias…` | Admin (TCI-54, TCI-55) |
+| `GET` `PATCH` | `/api/notificaciones/plantillas…` | Admin (TCI-56) |
+
+**El canal en vivo que pedía `TCI-53` ya existía**: es el SSE de `GET /ordenes/:id/eventos`,
+construido con `TCI-42`. Lo que añade este módulo es decidir *qué* avisa, *a quién* y *por
+dónde*.
+
+**Los eventos son un enum de código, no un catálogo editable** —al revés que los tipos de
+mantenimiento (`TCI-30`)—. Un evento solo existe si hay una línea que lo emite, así que dejar
+crear filas por pantalla solo permitiría inventar eventos que no ocurren nunca. Editable es
+todo lo demás: quién lo recibe, por qué canal y con qué texto.
+
+**La configuración es por rol y no por usuario.** Con el tamaño de equipo de TCI, las
+preferencias individuales solo servirían para que alguien se desactive los avisos y luego no
+se entere de su trabajo.
+
+`emitir()` es el único camino, y **no lanza nunca**: notificar es un efecto secundario y una
+asignación que se cae porque el correo está caído sería absurda. A quien actúa no se le
+notifica lo que acaba de hacer. El texto se guarda ya compuesto: si mañana alguien reescribe
+la plantilla, lo ya notificado sigue diciendo lo que dijo.
+
+Los eventos y sus destinatarios salen de la **regla 9 de `docs/flujo-ordenes.md`**: `asignar`
+y `reasignar` → al técnico, `completar` → al admin, `cancelar` → al técnico, `reabrir` → al
+técnico. Las demás transiciones (iniciar, pausar, reanudar, desasignar) no avisan: las hace
+el propio técnico sobre su trabajo, y notificarlas convertiría la bandeja en un registro de
+actividad que nadie leería.
+
+**Sin `PUSH` en `CanalNotificacion`:** las notificaciones push del navegador necesitan service
+worker, claves VAPID y un almacén de suscripciones por dispositivo, que es infraestructura
+propia y no una opción de configuración. Añadir el valor sin eso solo produciría una casilla
+que no hace nada. El canal `CORREO` existe y arranca **apagado**, pendiente del dominio (ver
+la entrada de Intake sobre Resend).
+
 ## Reportes e historial (TCI-57, TCI-58, TCI-59, TCI-60)
 
 | Método | Ruta | Quién |

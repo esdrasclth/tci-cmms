@@ -43,6 +43,7 @@ La app queda en `http://localhost:3000`.
 | `/panel/reportes` | Tablero, desempeño por técnico y exportación — solo admin (TCI-58, TCI-60) |
 | `/panel/tipos-mantenimiento` | Catálogo de tipos de mantenimiento — solo admin (TCI-30) |
 | `/panel/usuarios` | Gestión de usuarios — solo admin (TCI-35) |
+| `/panel/notificaciones` | Qué avisa el sistema y con qué texto — solo admin (TCI-54, TCI-55, TCI-56) |
 
 **No hay pantalla de registro.** El backend tiene el registro público cerrado
 (`disableSignUp`): las cuentas se dan de alta desde `/panel/usuarios`, que solo
@@ -250,6 +251,28 @@ interletrado en los titulares, vía la clase `.tci-display`.
 
 La pila de reserva es **Arial**, la tipografía institucional de TCI: si Poppins
 no llega, la aplicación cae en la fuente de la marca y no en una cualquiera.
+
+## Notificaciones (TCI-53 a TCI-56)
+
+La **campana** vive en la barra lateral y no en una cabecera: tiene que verse
+desde cualquier pantalla, y una bandeja a la que hay que navegar no la mira
+nadie.
+
+**Se refresca sondeando cada minuto, no por SSE.** El canal SSE que existe
+(`TCI-42`) está atado a *una orden concreta*: sirve para que el detalle abierto
+se actualice, no para avisar de algo que ocurre en otra parte. Un canal global
+por usuario es otra cosa y no lo pedía ningún work item; un sondeo de un minuto
+basta para un aviso que no es urgente al segundo.
+
+Lo no leído se marca con **un punto además del fondo**, no solo con el fondo: un
+tono apenas más claro no se distingue en una pantalla al sol, que es donde
+trabaja el técnico.
+
+En la pantalla de configuración las casillas responden **al instante y se
+corrigen si el backend dice que no**: esperar la respuesta en una rejilla de
+casillas se siente roto. El diálogo de plantilla enseña los marcadores
+disponibles, porque no hay forma de adivinarlos y uno mal escrito no falla —sale
+tal cual en el aviso.
 
 ## Diseño
 
