@@ -51,6 +51,18 @@ interface Movimiento {
   createdAt: string;
   usuario: { id: string; name: string };
   orden: { id: string; numero: string } | null;
+  /** Solo lo trae el libro global: en el de un repuesto ya se sabe cual es. */
+  repuesto?: {
+    id: string;
+    codigo: string;
+    nombre: string;
+    unidadMedida: string;
+  };
+}
+
+interface PaginaMovimientos {
+  data: Movimiento[];
+  meta: { total: number; page: number; perPage: number; totalPages: number };
 }
 
 interface LineaConsumo {
@@ -275,7 +287,8 @@ describe('Inventario y repuestos (e2e)', () => {
         .set('Cookie', esc.admin.cookie)
         .expect(200);
 
-      const [ultimo] = cuerpo<Movimiento[]>(libro);
+      // El libro pagina desde TCI-48: el asiento vive en `data`.
+      const [ultimo] = cuerpo<PaginaMovimientos>(libro).data;
       expect(ultimo.tipo).toBe('ENTRADA');
       expect(Number(ultimo.cantidad)).toBe(25);
       expect(Number(ultimo.stockResultante)).toBe(125);
@@ -313,6 +326,174 @@ describe('Inventario y repuestos (e2e)', () => {
         .post(`/api/repuestos/${repuesto.id}/entradas`)
         .set('Cookie', esc.tecnico.cookie)
         .send({ cantidad: 5, motivo: 'Intento' })
+        .expect(403);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // TCI-48 — libro de movimientos
+  // -------------------------------------------------------------------------
+
+  describe('Libro de movimientos', () => {
+    const libroDe = async (
+      repuestoId: string,
+      query: Record<string, unknown> = {},
+    ) => {
+      const respuesta = await api()
+        .get(`/api/repuestos/${repuestoId}/movimientos`)
+        .query(query)
+        .set('Cookie', esc.admin.cookie)
+        .expect(200);
+      return cuerpo<PaginaMovimientos>(respuesta);
+    };
+
+    const libroGlobal = async (query: Record<string, unknown> = {}) => {
+      const respuesta = await api()
+        .get('/api/repuestos/movimientos')
+        .query(query)
+        .set('Cookie', esc.admin.cookie)
+        .expect(200);
+      return cuerpo<PaginaMovimientos>(respuesta);
+    };
+
+    const entrada = (repuestoId: string, cantidad: number, motivo: string) =>
+      api()
+        .post(`/api/repuestos/${repuestoId}/entradas`)
+        .set('Cookie', esc.admin.cookie)
+        .send({ cantidad, motivo })
+        .expect(201);
+
+    it('devuelve los asientos del mas reciente al mas antiguo', async () => {
+      const repuesto = await crearRepuesto();
+      for (const cantidad of [1, 2, 3]) {
+        await entrada(repuesto.id, cantidad, `Compra ${cantidad}`);
+      }
+
+      const { data } = await libroDe(repuesto.id);
+      expect(data).toHaveLength(3);
+      // El ultimo movimiento primero: es lo que se quiere ver al abrirlo.
+      expect(Number(data[0].cantidad)).toBe(3);
+      expect(Number(data[2].cantidad)).toBe(1);
+      // El saldo de cada asiento explica como se llego al actual.
+      expect(Number(data[0].stockResultante)).toBe(106);
+    });
+
+    it('pagina: perPage recorta y meta dice cuantos hay en total', async () => {
+      const repuesto = await crearRepuesto();
+      for (const cantidad of [1, 2, 3]) {
+        await entrada(repuesto.id, cantidad, 'Compra');
+      }
+
+      const pagina = await libroDe(repuesto.id, { perPage: 2 });
+      expect(pagina.data).toHaveLength(2);
+      expect(pagina.meta.total).toBe(3);
+      expect(pagina.meta.totalPages).toBe(2);
+
+      const segunda = await libroDe(repuesto.id, { perPage: 2, page: 2 });
+      expect(segunda.data).toHaveLength(1);
+    });
+
+    it('filtra por fecha: un periodo pasado no trae lo de hoy', async () => {
+      const repuesto = await crearRepuesto();
+      await entrada(repuesto.id, 5, 'Compra de hoy');
+
+      const viejo = await libroDe(repuesto.id, {
+        desde: '1990-01-01',
+        hasta: '1990-12-31',
+      });
+      expect(viejo.data).toHaveLength(0);
+
+      const hoy = new Date().toISOString().slice(0, 10);
+      const reciente = await libroDe(repuesto.id, { desde: hoy, hasta: hoy });
+      // `hasta` incluye el dia completo: sin eso lo de esta tarde caeria fuera.
+      expect(reciente.data).toHaveLength(1);
+    });
+
+    it('filtra por tipo de movimiento', async () => {
+      const repuesto = await crearRepuesto();
+      await entrada(repuesto.id, 5, 'Compra');
+      await api()
+        .post(`/api/repuestos/${repuesto.id}/salidas`)
+        .set('Cookie', esc.admin.cookie)
+        .send({ cantidad: 2, motivo: 'Merma' })
+        .expect(201);
+
+      const salidas = await libroDe(repuesto.id, { tipo: 'SALIDA' });
+      expect(salidas.data).toHaveLength(1);
+      expect(salidas.data[0].tipo).toBe('SALIDA');
+    });
+
+    it('404 si el repuesto no existe, en vez de un libro vacio', async () => {
+      // Una lista vacia se leeria como "no hubo movimientos" y no como
+      // "ese repuesto no existe".
+      await api()
+        .get('/api/repuestos/no-existe/movimientos')
+        .set('Cookie', esc.admin.cookie)
+        .expect(404);
+    });
+
+    it('el libro global cruza repuestos y dice de cual es cada asiento', async () => {
+      const uno = await crearRepuesto();
+      const otro = await crearRepuesto();
+      await entrada(uno.id, 7, 'Compra global');
+      await entrada(otro.id, 7, 'Compra global');
+
+      const { data } = await libroGlobal({ perPage: 200 });
+      const mios = data.filter(
+        (m) => m.repuesto && [uno.id, otro.id].includes(m.repuesto.id),
+      );
+      expect(mios).toHaveLength(2);
+      // El global identifica el repuesto; en el de uno solo no hace falta.
+      expect(mios[0].repuesto?.codigo).toBeTruthy();
+    });
+
+    it('el consumo de una orden queda con el numero de la orden y su tecnico', async () => {
+      const repuesto = await crearRepuesto();
+      const orden = await crearOrden();
+
+      await api()
+        .post(`/api/ordenes/${orden.id}/repuestos`)
+        .set('Cookie', esc.tecnico.cookie)
+        .send({ repuestoId: repuesto.id, cantidad: 2 })
+        .expect(201);
+
+      const { data } = await libroDe(repuesto.id);
+      expect(data[0].tipo).toBe('SALIDA');
+      expect(data[0].orden?.numero).toBe(orden.numero);
+      expect(data[0].motivo).toContain(orden.numero);
+      expect(data[0].usuario.id).toBe(esc.tecnico.id);
+    });
+
+    it('soloDeOrdenes deja fuera los movimientos de almacen a mano', async () => {
+      const repuesto = await crearRepuesto();
+      const orden = await crearOrden();
+
+      await entrada(repuesto.id, 5, 'Compra a mano');
+      await api()
+        .post(`/api/ordenes/${orden.id}/repuestos`)
+        .set('Cookie', esc.tecnico.cookie)
+        .send({ repuestoId: repuesto.id, cantidad: 1 })
+        .expect(201);
+
+      const { data } = await libroGlobal({
+        repuestoId: repuesto.id,
+        soloDeOrdenes: 'true',
+      });
+      expect(data).toHaveLength(1);
+      expect(data[0].orden?.numero).toBe(orden.numero);
+    });
+
+    it('un tecnico no consulta el libro: es informacion de almacen', async () => {
+      const repuesto = await crearRepuesto();
+
+      await api()
+        .get(`/api/repuestos/${repuesto.id}/movimientos`)
+        .set('Cookie', esc.tecnico.cookie)
+        .expect(403);
+
+      await api()
+        .get('/api/repuestos/movimientos')
+        .set('Cookie', esc.tecnico.cookie)
         .expect(403);
     });
   });

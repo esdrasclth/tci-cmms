@@ -1,7 +1,10 @@
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsDateString,
+  IsEnum,
   IsInt,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -10,6 +13,8 @@ import {
   Max,
   Min,
 } from 'class-validator';
+
+import { TipoMovimiento } from '../../generated/prisma/enums';
 
 /**
  * TCI-45 — catalogo de repuestos.
@@ -163,12 +168,52 @@ export class RegistrarMovimientoDto {
   motivo!: string;
 }
 
-/** Paginacion del libro de movimientos de un repuesto. */
+/**
+ * TCI-48 — filtros del libro de movimientos.
+ *
+ * Los mismos para el libro de un repuesto y para el global. El periodo se mide
+ * sobre `createdAt`, que en una tabla solo-append es tambien la fecha del
+ * hecho: un asiento no se edita nunca.
+ */
 export class FiltrarMovimientosDto {
+  @IsOptional()
+  @IsDateString()
+  desde?: string;
+
+  @IsOptional()
+  @IsDateString()
+  hasta?: string;
+
+  @IsOptional()
+  @IsEnum(TipoMovimiento)
+  tipo?: TipoMovimiento;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page: number = 1;
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(200)
-  limite?: number;
+  perPage: number = 50;
+}
+
+/** El libro global anade el filtro por repuesto, que en el de uno ya viene dado. */
+export class FiltrarLibroDto extends FiltrarMovimientosDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  repuestoId?: string;
+
+  /** Solo los movimientos que nacieron del consumo de una orden. */
+  @IsOptional()
+  @Transform(
+    ({ value }: { value: unknown }) => value === 'true' || value === true,
+  )
+  @IsBoolean()
+  soloDeOrdenes?: boolean;
 }

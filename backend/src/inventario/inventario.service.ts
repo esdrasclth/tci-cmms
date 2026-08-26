@@ -7,9 +7,11 @@ import {
 import { Prisma } from '../generated/prisma/client';
 import { TipoMovimiento } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
+import { finDelDia, inicioDelDia } from '../comun/fechas';
 import {
   ActualizarRepuestoDto,
   CrearRepuestoDto,
+  FiltrarLibroDto,
   FiltrarMovimientosDto,
   FiltrarRepuestosDto,
   RegistrarMovimientoDto,
@@ -213,24 +215,81 @@ export class InventarioService {
   // Movimientos de almacen
   // -------------------------------------------------------------------------
 
-  /** El libro de un repuesto, del mas reciente al mas antiguo. */
+  /**
+   * TCI-48 — el libro de un repuesto, del mas reciente al mas antiguo.
+   *
+   * Comprueba primero que el repuesto existe: sin eso, un id equivocado
+   * devolveria una lista vacia, que se lee como "no hubo movimientos" en vez de
+   * como "ese repuesto no existe".
+   */
   async movimientos(id: string, filtros: FiltrarMovimientosDto) {
     await this.buscar(id);
-    return this.prisma.movimientoInventario.findMany({
-      where: { repuestoId: id },
-      select: {
-        id: true,
-        tipo: true,
-        cantidad: true,
-        stockResultante: true,
-        motivo: true,
-        createdAt: true,
-        usuario: { select: { id: true, name: true } },
-        orden: { select: { id: true, numero: true } },
+    return this.libro({ ...filtros, repuestoId: id });
+  }
+
+  /**
+   * TCI-48 — el libro de todo el almacen.
+   *
+   * Existe ademas del de cada repuesto porque la pregunta que se hace de verdad
+   * es "que se movio esta semana", y responderla abriendo repuesto por repuesto
+   * no es responderla. Va paginado: a diferencia del catalogo, esta tabla solo
+   * crece.
+   */
+  async libro(filtros: FiltrarLibroDto) {
+    const where: Prisma.MovimientoInventarioWhereInput = {};
+
+    if (filtros.repuestoId) where.repuestoId = filtros.repuestoId;
+    if (filtros.tipo) where.tipo = filtros.tipo;
+    // `not: null` y no `isSet`: lo que se pregunta es si el asiento nacio del
+    // consumo de una orden.
+    if (filtros.soloDeOrdenes) where.ordenId = { not: null };
+
+    if (filtros.desde || filtros.hasta) {
+      where.createdAt = {
+        gte: filtros.desde ? inicioDelDia(filtros.desde) : undefined,
+        lte: filtros.hasta ? finDelDia(filtros.hasta) : undefined,
+      };
+    }
+
+    const [total, data] = await this.prisma.$transaction([
+      this.prisma.movimientoInventario.count({ where }),
+      this.prisma.movimientoInventario.findMany({
+        where,
+        select: {
+          id: true,
+          tipo: true,
+          cantidad: true,
+          stockResultante: true,
+          motivo: true,
+          createdAt: true,
+          repuesto: {
+            select: {
+              id: true,
+              codigo: true,
+              nombre: true,
+              unidadMedida: true,
+            },
+          },
+          usuario: { select: { id: true, name: true } },
+          orden: { select: { id: true, numero: true } },
+        },
+        // Por fecha y, a igualdad, por id: dos asientos del mismo instante
+        // —los que deja una correccion de consumo— saldrian en orden aleatorio.
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: (filtros.page - 1) * filtros.perPage,
+        take: filtros.perPage,
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page: filtros.page,
+        perPage: filtros.perPage,
+        totalPages: Math.ceil(total / filtros.perPage),
       },
-      orderBy: { createdAt: 'desc' },
-      take: filtros.limite ?? 50,
-    });
+    };
   }
 
   /** Entrada o salida registrada a mano por un administrador. */

@@ -18,6 +18,7 @@ import { Rol, TipoMovimiento } from '../generated/prisma/enums';
 import {
   ActualizarRepuestoDto,
   CrearRepuestoDto,
+  FiltrarLibroDto,
   FiltrarMovimientosDto,
   FiltrarRepuestosDto,
   RegistrarMovimientoDto,
@@ -57,6 +58,13 @@ export class RepuestosController {
   @Get('alertas')
   alertas() {
     return this.inventario.alertas();
+  }
+
+  /** TCI-48 — el libro de todo el almacen, no el de un repuesto. */
+  @Roles(Rol.ADMIN)
+  @Get('movimientos')
+  libro(@Query() filtros: FiltrarLibroDto) {
+    return this.inventario.libro(filtros);
   }
 
   @Roles(Rol.ADMIN)
