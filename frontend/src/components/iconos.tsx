@@ -79,6 +79,16 @@ export function IconoTipos(props: Props) {
   );
 }
 
+/** Repuestos: la tuerca, que es la pieza de almacen mas reconocible. */
+export function IconoRepuestos(props: Props) {
+  return (
+    <Icono {...props}>
+      <path d="M11.13 2.9a1.75 1.75 0 0 1 1.74 0l6 3.46c.54.31.88.89.88 1.51v6.92c0 .62-.34 1.2-.88 1.51l-6 3.46a1.75 1.75 0 0 1-1.74 0l-6-3.46a1.75 1.75 0 0 1-.88-1.51V7.87c0-.62.34-1.2.88-1.51l6-3.46Z" />
+      <circle cx="12" cy="11.83" r="3.25" />
+    </Icono>
+  );
+}
+
 /** Usuarios del sistema. */
 export function IconoUsuarios(props: Props) {
   return (

@@ -8,6 +8,7 @@ import {
   IconoClientes,
   IconoEquipos,
   IconoOrdenes,
+  IconoRepuestos,
   IconoSalir,
   IconoTipos,
   IconoUsuarios,
@@ -38,6 +39,7 @@ const DESTINOS_ADMIN: Destino[] = [
   { href: "/panel", etiqueta: "Órdenes", icono: IconoOrdenes, exacto: true },
   { href: "/panel/clientes", etiqueta: "Clientes", icono: IconoClientes },
   { href: "/panel/equipos", etiqueta: "Equipos", icono: IconoEquipos },
+  { href: "/panel/repuestos", etiqueta: "Repuestos", icono: IconoRepuestos },
   {
     href: "/panel/tipos-mantenimiento",
     etiqueta: "Tipos de mantenimiento",
