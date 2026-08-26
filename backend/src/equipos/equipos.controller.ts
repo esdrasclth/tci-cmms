@@ -19,6 +19,7 @@ import {
   FiltrarEquiposDto,
 } from './dto/equipo.dto';
 import { EquiposService } from './equipos.service';
+import { HistorialEquipoService } from './historial-equipo.service';
 
 /**
  * TCI-37 — equipos por cliente.
@@ -28,7 +29,10 @@ import { EquiposService } from './equipos.service';
  */
 @Controller('equipos')
 export class EquiposController {
-  constructor(private readonly equipos: EquiposService) {}
+  constructor(
+    private readonly equipos: EquiposService,
+    private readonly historial: HistorialEquipoService,
+  ) {}
 
   @Get()
   listar(@Query() filtros: FiltrarEquiposDto) {
@@ -38,6 +42,18 @@ export class EquiposController {
   @Get(':id')
   obtener(@Param('id') id: string) {
     return this.equipos.obtener(id);
+  }
+
+  /**
+   * TCI-57 — historial consolidado del equipo.
+   *
+   * Sin `@Roles`: lo consulta tambien el tecnico en campo, y a proposito ve
+   * aqui las intervenciones de todos, no solo las suyas. Ver la nota del
+   * servicio.
+   */
+  @Get(':id/historial')
+  historialDelEquipo(@Param('id') id: string) {
+    return this.historial.historial(id);
   }
 
   @Roles(Rol.ADMIN)
