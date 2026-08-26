@@ -1,0 +1,3 @@
+# Los volcados no se versionan: llevan datos de clientes de TCI.
+*
+!.gitignore
