@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
@@ -134,6 +135,12 @@ export function GestionPreventivo() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link
+            href="/panel/preventivo/calendario"
+            className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm font-semibold text-tci-negro hover:bg-tci-humo"
+          >
+            Ver calendario
+          </Link>
           <button
             onClick={() => void generar()}
             disabled={generando || planes.length === 0}

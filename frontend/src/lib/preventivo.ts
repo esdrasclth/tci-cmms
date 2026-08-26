@@ -1,5 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
-import type { Prioridad } from "./ordenes";
+import type { Estado, Prioridad } from "./ordenes";
 
 /**
  * Módulo 7 — mantenimiento preventivo (TCI-49).
@@ -177,6 +177,50 @@ export function generarOrdenes(planId?: string) {
     ? `/planes-mantenimiento/${planId}/generar`
     : "/planes-mantenimiento/generar";
   return apiPost<ResultadoGeneracion>(ruta, {});
+}
+
+// ---------------------------------------------------------------------------
+// Calendario (TCI-51)
+// ---------------------------------------------------------------------------
+
+/**
+ * Un evento del calendario. Hay dos clases y no son lo mismo:
+ *
+ *  - `ORDEN` — ya existe, tiene número y se puede abrir.
+ *  - `PROYECCION` — cuándo le tocará según el plan, todavía sin orden. Es una
+ *    previsión: cambia si el mantenimiento se adelanta o se atrasa, porque el
+ *    vencimiento se cuenta desde el último cierre real.
+ */
+export interface EventoCalendario {
+  fecha: string;
+  tipo: "ORDEN" | "PROYECCION";
+  plan: { id: string; nombre: string };
+  equipo: { id: string; codigo: string; nombre: string };
+  cliente: { id: string; nombre: string };
+  orden: { id: string; numero: string; estado: Estado } | null;
+  vencido: boolean;
+}
+
+export interface Calendario {
+  periodo: { desde: string; hasta: string };
+  eventos: EventoCalendario[];
+}
+
+export function obtenerCalendario(desde: string, hasta: string) {
+  const params = new URLSearchParams({ desde, hasta });
+  return apiGet<Calendario>("/planes-mantenimiento/calendario", params);
+}
+
+/** Primer y último día del mes que contiene `fecha`, en `YYYY-MM-DD`. */
+export function limitesDelMes(fecha: Date): { desde: string; hasta: string } {
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate(),
+    ).padStart(2, "0")}`;
+  return {
+    desde: iso(new Date(fecha.getFullYear(), fecha.getMonth(), 1)),
+    hasta: iso(new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0)),
+  };
 }
 
 // ---------------------------------------------------------------------------
