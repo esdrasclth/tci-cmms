@@ -13,6 +13,7 @@ import { ClientesModule } from './clientes/clientes.module';
 import { EquiposModule } from './equipos/equipos.module';
 import { InventarioModule } from './inventario/inventario.module';
 import { OrdenesModule } from './ordenes/ordenes.module';
+import { PreventivoModule } from './preventivo/preventivo.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReportesModule } from './reportes/reportes.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
@@ -43,6 +44,7 @@ import { PrismaService } from './prisma/prisma.service';
     EquiposModule,
     InventarioModule,
     OrdenesModule,
+    PreventivoModule,
     ReportesModule,
     UsuariosModule,
   ],

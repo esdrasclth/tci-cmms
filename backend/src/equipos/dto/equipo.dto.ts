@@ -33,6 +33,11 @@ export class CrearEquipoDto {
   @Length(2, 80)
   tipo?: string;
 
+  /** TCI-49: el tipo del catalogo. Sustituye al texto libre de arriba. */
+  @IsOptional()
+  @IsString()
+  tipoEquipoId?: string | null;
+
   @IsOptional()
   @IsString()
   @Length(1, 80)
@@ -74,6 +79,11 @@ export class ActualizarEquipoDto {
   @IsString()
   @Length(2, 80)
   tipo?: string;
+
+  /** TCI-49: el tipo del catalogo. Sustituye al texto libre de arriba. */
+  @IsOptional()
+  @IsString()
+  tipoEquipoId?: string | null;
 
   @IsOptional()
   @IsString()

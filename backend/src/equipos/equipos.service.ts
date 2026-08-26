@@ -15,6 +15,9 @@ import {
 const INCLUDE = {
   cliente: { select: { id: true, nombre: true } },
   sede: { select: { id: true, nombre: true, ciudad: true } },
+  // TCI-49: el tipo del catalogo. El campo `tipo` de texto sigue en la tabla
+  // con lo que se escribio antes de la migracion, pero ya no manda.
+  tipoEquipo: { select: { id: true, nombre: true } },
   // Cuantas ordenes tiene: la interfaz avisa con esto de que no se puede borrar.
   _count: { select: { ordenes: true } },
 } satisfies Prisma.EquipoInclude;
@@ -75,6 +78,7 @@ export class EquiposService {
         clienteId: dto.clienteId,
         sedeId: dto.sedeId || null,
         tipo: dto.tipo?.trim() || null,
+        tipoEquipoId: dto.tipoEquipoId || null,
         marca: dto.marca?.trim() || null,
         modelo: dto.modelo?.trim() || null,
         numeroSerie: dto.numeroSerie?.trim() || null,
@@ -97,6 +101,8 @@ export class EquiposService {
         nombre: dto.nombre?.trim(),
         sedeId: dto.sedeId === undefined ? undefined : dto.sedeId || null,
         tipo: dto.tipo === undefined ? undefined : dto.tipo.trim() || null,
+        tipoEquipoId:
+          dto.tipoEquipoId === undefined ? undefined : dto.tipoEquipoId || null,
         marca: dto.marca === undefined ? undefined : dto.marca.trim() || null,
         modelo:
           dto.modelo === undefined ? undefined : dto.modelo.trim() || null,
