@@ -42,8 +42,8 @@ export default function LoginPage() {
 
   return (
     <AuthShell
-      titulo="Inicie sesión"
-      subtitulo="Ingrese sus credenciales para gestionar sus órdenes de trabajo."
+      titulo="Bienvenido de nuevo"
+      subtitulo="Entre con su cuenta para ver y actualizar sus órdenes de trabajo."
     >
       <form onSubmit={alEnviar} className="space-y-5" noValidate>
         {error && <Alerta>{error}</Alerta>}
@@ -61,7 +61,7 @@ export default function LoginPage() {
           etiqueta="Contraseña"
           name="password"
           autoComplete="current-password"
-          placeholder="Ingrese su contraseña"
+          placeholder="Su contraseña"
           required
         />
 
@@ -73,7 +73,7 @@ export default function LoginPage() {
               defaultChecked
               className="h-4 w-4 cursor-pointer rounded border-tci-borde accent-tci-rojo"
             />
-            Mantener sesión iniciada
+            Mantener la sesión abierta
           </label>
           <Link
             href="/recuperar-contrasena"
@@ -84,14 +84,14 @@ export default function LoginPage() {
         </div>
 
         <BotonPrimario type="submit" cargando={cargando}>
-          {cargando ? "Iniciando sesión..." : "Iniciar sesión"}
+          {cargando ? "Verificando..." : "Iniciar sesión"}
         </BotonPrimario>
 
         {/* No hay registro publico: el backend tiene `disableSignUp` y las
             cuentas las da de alta un administrador (TCI-35). */}
         <p className="pt-1 text-center text-sm leading-6 text-tci-gris">
-          Las cuentas son administradas por TCI. Si necesita acceso, solicítelo a
-          su supervisor.
+          Las cuentas las administra TCI. Si necesita acceso, solicítelo a su
+          supervisor.
         </p>
       </form>
     </AuthShell>
@@ -110,16 +110,16 @@ export default function LoginPage() {
  */
 function mensajeDeError(status?: number): string {
   if (status === 403) {
-    return "Su cuenta esta desactivada. Contacte al administrador.";
+    return "Su cuenta está desactivada. Contacte al administrador.";
   }
   if (status === 401) {
-    return "Correo o contrasena incorrectos.";
+    return "Correo o contraseña incorrectos. Revíselos e intente de nuevo.";
   }
   if (status === 429) {
-    return "Demasiados intentos. Espere un momento antes de reintentar.";
+    return "Demasiados intentos seguidos. Espere un momento e intente de nuevo.";
   }
   if (status === 0 || status === undefined) {
-    return "No se pudo conectar con el servidor. Verifique que la API este arriba.";
+    return "No se pudo conectar con el servidor. Revise su conexión e intente de nuevo.";
   }
-  return "No se pudo iniciar sesion. Intente de nuevo.";
+  return "No se pudo iniciar sesión. Intente de nuevo.";
 }

@@ -41,14 +41,15 @@ export function AuthShell({
           {/* El mensaje solo cabe en escritorio; en movil estorbaria al formulario. */}
           <div className="hidden max-w-xl lg:block">
             <span className="mb-6 block h-1 w-16 bg-tci-rojo" />
-            <h1 className="tci-display text-4xl leading-[1.05] font-semibold tracking-[-0.035em] text-white xl:text-5xl">
-              Cada orden de trabajo
+            <h1 className="tci-display text-4xl font-semibold text-white xl:text-5xl">
+              Cada orden de trabajo,
               <br />
               bajo control.
             </h1>
             <p className="mt-6 max-w-md text-[0.9375rem] leading-7 text-white/75">
-              Planifique, asigne y dé seguimiento a los mantenimientos preventivos
-              y correctivos. Todo el historial de sus equipos, en un solo lugar.
+              Planifique, asigne y dé seguimiento a cada intervención, desde la
+              oficina o desde la planta. El historial completo de sus equipos,
+              siempre a la mano.
             </p>
           </div>
         </div>
@@ -57,7 +58,7 @@ export function AuthShell({
         <div className="flex flex-1 items-center px-4 pb-6 lg:my-4 lg:mr-4 lg:ml-0 lg:px-0 lg:pb-0">
           <div className="w-full rounded-2xl bg-white p-7 shadow-2xl sm:p-10 lg:flex lg:h-full lg:items-center lg:p-12">
             <div className="mx-auto w-full max-w-md">
-              <h2 className="text-[2rem] leading-tight font-semibold tracking-[-0.035em] text-tci-negro">
+              <h2 className="tci-display text-[2rem] font-semibold text-tci-negro">
                 {titulo}
               </h2>
               <p className="mt-2 text-[0.9375rem] leading-6 text-tci-gris">{subtitulo}</p>
