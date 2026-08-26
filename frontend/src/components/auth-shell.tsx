@@ -23,7 +23,7 @@ export function AuthShell({
 }) {
   return (
     <div className="relative min-h-screen bg-tci-negro">
-      <FondoFacetado />
+      <FondoLogin />
 
       <div className="relative flex min-h-screen flex-col lg:flex-row">
         {/* Columna de marca */}
@@ -32,7 +32,7 @@ export function AuthShell({
             <Logo />
             <a
               href="https://www.tcihn.com"
-              className="hidden shrink-0 text-sm text-white/70 transition-colors hover:text-white lg:inline"
+              className="hidden shrink-0 text-sm font-medium text-white/75 transition-colors hover:text-white lg:inline"
             >
               &larr; Volver al sitio
             </a>
@@ -41,14 +41,14 @@ export function AuthShell({
           {/* El mensaje solo cabe en escritorio; en movil estorbaria al formulario. */}
           <div className="hidden max-w-xl lg:block">
             <span className="mb-6 block h-1 w-16 bg-tci-rojo" />
-            <h1 className="text-4xl leading-tight font-bold text-white xl:text-5xl">
-              Cada orden de trabajo,
+            <h1 className="tci-display text-4xl leading-[1.05] font-semibold tracking-[-0.035em] text-white xl:text-5xl">
+              Cada orden de trabajo
               <br />
               bajo control.
             </h1>
-            <p className="mt-5 max-w-md text-base leading-relaxed text-white/60">
-              Registre, asigne y cierre mantenimientos preventivos y correctivos.
-              Con historial completo por equipo y por tecnico.
+            <p className="mt-6 max-w-md text-[0.9375rem] leading-7 text-white/75">
+              Planifique, asigne y dé seguimiento a los mantenimientos preventivos
+              y correctivos. Todo el historial de sus equipos, en un solo lugar.
             </p>
           </div>
         </div>
@@ -57,10 +57,10 @@ export function AuthShell({
         <div className="flex flex-1 items-center px-4 pb-6 lg:my-4 lg:mr-4 lg:ml-0 lg:px-0 lg:pb-0">
           <div className="w-full rounded-2xl bg-white p-7 shadow-2xl sm:p-10 lg:flex lg:h-full lg:items-center lg:p-12">
             <div className="mx-auto w-full max-w-md">
-              <h2 className="text-3xl font-bold tracking-tight text-tci-negro">
+              <h2 className="text-[2rem] leading-tight font-semibold tracking-[-0.035em] text-tci-negro">
                 {titulo}
               </h2>
-              <p className="mt-2 text-sm text-tci-gris">{subtitulo}</p>
+              <p className="mt-2 text-[0.9375rem] leading-6 text-tci-gris">{subtitulo}</p>
 
               <div className="mt-8">{children}</div>
             </div>
@@ -86,51 +86,15 @@ function Logo() {
   );
 }
 
-/**
- * Fondo geometrico en lugar de una fotografia: el repositorio no tiene banco de
- * imagenes propio y una foto de archivo desentonaria con la marca. Las facetas
- * evocan el plano industrial del logo.
- */
-function FondoFacetado() {
+/** Fondo de marca con una capa oscura que mantiene legible el contenido. */
+function FondoLogin() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      <svg
-        className="h-full w-full"
-        preserveAspectRatio="xMidYMid slice"
-        viewBox="0 0 1200 800"
-      >
-        <defs>
-          <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#1a1a1a" />
-            <stop offset="55%" stopColor="#0d0d0d" />
-            <stop offset="100%" stopColor="#000000" />
-          </linearGradient>
-          {/* Acento de marca, no protagonista: por encima de ~0.2 el rojo
-              inunda el panel y el arco rojo del logo pierde contraste. */}
-          <radialGradient id="brasa" cx="12%" cy="92%" r="52%">
-            <stop offset="0%" stopColor="#c61d1a" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#c61d1a" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-
-        <rect width="1200" height="800" fill="url(#base)" />
-
-        <g fill="#ffffff" fillOpacity="0.028">
-          <polygon points="0,300 380,140 520,470 210,660" />
-          <polygon points="380,140 760,0 900,300 520,470" />
-          <polygon points="520,470 900,300 1010,640 700,800" />
-          <polygon points="900,300 1200,190 1200,540 1010,640" />
-          <polygon points="0,660 210,660 320,800 0,800" />
-        </g>
-        <g stroke="#ffffff" strokeOpacity="0.07" strokeWidth="1" fill="none">
-          <polygon points="0,300 380,140 520,470 210,660" />
-          <polygon points="380,140 760,0 900,300 520,470" />
-          <polygon points="520,470 900,300 1010,640 700,800" />
-          <polygon points="900,300 1200,190 1200,540 1010,640" />
-        </g>
-
-        <rect width="1200" height="800" fill="url(#brasa)" />
-      </svg>
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('/background.jpg')" }}
+      />
+      <div className="absolute inset-0 bg-tci-negro/55" />
     </div>
   );
 }

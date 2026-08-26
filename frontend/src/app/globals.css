@@ -17,7 +17,8 @@
   --color-tci-humo: #f8f9fa;
   --color-tci-borde: #e0e0e0;
 
-  --font-sans: Arial, Helvetica, sans-serif;
+  --font-sans: Aptos, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-tci-display: Bahnschrift, "Arial Narrow", Arial, sans-serif;
 }
 
 /*
@@ -33,6 +34,13 @@ body {
   background: #ffffff;
   color: var(--color-tci-grafito);
   font-family: var(--font-sans);
+}
+
+/* La familia de display aporta un tono tecnico al mensaje de marca sin
+   comprometer la comodidad de lectura de la interfaz. */
+.tci-display {
+  font-family: var(--font-tci-display);
+  font-variation-settings: "wdth" 92;
 }
 
 /* Foco visible y consistente en toda la app, en el rojo institucional. */

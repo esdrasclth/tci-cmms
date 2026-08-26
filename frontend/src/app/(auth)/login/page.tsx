@@ -42,14 +42,14 @@ export default function LoginPage() {
 
   return (
     <AuthShell
-      titulo="Bienvenido de nuevo"
-      subtitulo="Ingrese para gestionar las ordenes de trabajo."
+      titulo="Inicie sesión"
+      subtitulo="Ingrese sus credenciales para gestionar sus órdenes de trabajo."
     >
       <form onSubmit={alEnviar} className="space-y-5" noValidate>
         {error && <Alerta>{error}</Alerta>}
 
         <Campo
-          etiqueta="Correo"
+          etiqueta="Correo electrónico"
           name="email"
           type="email"
           autoComplete="email"
@@ -58,14 +58,14 @@ export default function LoginPage() {
         />
 
         <CampoContrasena
-          etiqueta="Contrasena"
+          etiqueta="Contraseña"
           name="password"
           autoComplete="current-password"
-          placeholder="Su contrasena"
+          placeholder="Ingrese su contraseña"
           required
         />
 
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <label className="flex cursor-pointer items-center gap-2 text-sm text-tci-gris">
             <input
               type="checkbox"
@@ -73,25 +73,25 @@ export default function LoginPage() {
               defaultChecked
               className="h-4 w-4 cursor-pointer rounded border-tci-borde accent-tci-rojo"
             />
-            Recordarme
+            Mantener sesión iniciada
           </label>
           <Link
             href="/recuperar-contrasena"
             className="text-sm text-tci-gris underline-offset-2 hover:text-tci-rojo hover:underline"
           >
-            Olvide mi contrasena
+            ¿Olvidó su contraseña?
           </Link>
         </div>
 
         <BotonPrimario type="submit" cargando={cargando}>
-          {cargando ? "Ingresando..." : "Ingresar"}
+          {cargando ? "Iniciando sesión..." : "Iniciar sesión"}
         </BotonPrimario>
 
         {/* No hay registro publico: el backend tiene `disableSignUp` y las
             cuentas las da de alta un administrador (TCI-35). */}
-        <p className="pt-1 text-center text-sm text-tci-gris">
-          Las cuentas las crea un administrador. Si necesita acceso,
-          solicitelo a su supervisor.
+        <p className="pt-1 text-center text-sm leading-6 text-tci-gris">
+          Las cuentas son administradas por TCI. Si necesita acceso, solicítelo a
+          su supervisor.
         </p>
       </form>
     </AuthShell>

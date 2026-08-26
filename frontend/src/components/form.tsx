@@ -3,7 +3,7 @@
 import { useId, useState, type InputHTMLAttributes, type ReactNode } from "react";
 
 const CLASES_INPUT =
-  "w-full rounded-lg border border-tci-borde bg-white px-4 py-3 text-sm text-tci-negro " +
+  "w-full rounded-lg border border-tci-borde bg-white px-4 py-3 text-[0.9375rem] leading-6 text-tci-negro " +
   "placeholder:text-tci-gris/70 transition-colors " +
   "hover:border-tci-gris/60 focus:border-tci-rojo focus:outline-none " +
   "disabled:cursor-not-allowed disabled:bg-tci-humo";
@@ -22,7 +22,7 @@ export function Campo({ etiqueta, error, id, ...props }: CampoProps) {
     <div>
       <label
         htmlFor={idCampo}
-        className="mb-1.5 block text-sm font-bold text-tci-negro"
+        className="mb-1.5 block text-sm font-semibold tracking-[-0.01em] text-tci-negro"
       >
         {etiqueta}
       </label>
@@ -58,7 +58,7 @@ export function CampoContrasena({
     <div>
       <label
         htmlFor={idCampo}
-        className="mb-1.5 block text-sm font-bold text-tci-negro"
+        className="mb-1.5 block text-sm font-semibold tracking-[-0.01em] text-tci-negro"
       >
         {etiqueta}
       </label>
@@ -104,7 +104,7 @@ export function BotonPrimario({
     <button
       {...props}
       disabled={cargando || props.disabled}
-      className="flex w-full items-center justify-center gap-2 rounded-lg bg-tci-rojo px-4 py-3.5 text-sm font-bold text-white transition-colors hover:bg-tci-rojo-hover disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex w-full items-center justify-center gap-2 rounded-lg bg-tci-rojo px-4 py-3.5 text-sm font-semibold tracking-[0.01em] text-white transition-colors hover:bg-tci-rojo-hover disabled:cursor-not-allowed disabled:opacity-60"
     >
       {cargando && <Girador />}
       {children}
