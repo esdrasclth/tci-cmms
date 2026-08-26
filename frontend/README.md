@@ -91,7 +91,7 @@ siempre.
 Esta pantalla **no exige rol**: a un técnico le sirve, y se llega a ella desde el
 campo "Equipo" del detalle de una orden.
 
-## Mantenimiento preventivo (TCI-49)
+## Mantenimiento preventivo (TCI-49, TCI-50)
 
 Un plan es abstracto hasta que se ve a quién alcanza, así que cada fila dice a
 cuántos equipos aplica y se abre para ver cuáles y cuándo le toca a cada uno.
@@ -106,6 +106,11 @@ equipo y no con la lista, porque solo hace falta ahí.
 Sin tipos de equipo no hay plan posible, así que el camino para crear el primero
 vive en esta pantalla —con el botón de alta deshabilitado y explicado— y no
 escondido en otra.
+
+**"Generar órdenes ahora"** (`TCI-50`) dispara una pasada del generador sin
+esperar al horario diario, que es lo que hace verificable una tarea de fondo. El
+resumen dice también lo que omitió y por qué: "0 órdenes creadas" a secas se lee
+como un fallo, cuando lo normal es que no haya nada vencido.
 
 ## Reportes (TCI-58, TCI-59, TCI-60)
 

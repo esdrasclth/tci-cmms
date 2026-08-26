@@ -232,7 +232,7 @@ permiso es el de la orden, y así no hay camino que se salte la comprobación. U
 forma de decir que ese repuesto no se controla. El aviso por correo o push necesita el
 módulo 8 y va con `TCI-54`.
 
-## Mantenimiento preventivo (TCI-49)
+## Mantenimiento preventivo (TCI-49, TCI-50)
 
 | Método | Ruta | Quién |
 |---|---|---|
@@ -265,8 +265,34 @@ son 90 días, y convertirlo al guardar desplazaría la fecha unos días cada tri
 `tipoEquipoId` no está en el DTO de edición del plan: cambiarlo lo convertiría en otro plan y
 dejaría colgadas las órdenes que ya generó.
 
-> **Pendiente:** la generación automática de órdenes es `TCI-50` y todavía no existe.
-> `PreventivoService` ya calcula qué equipos están vencidos, que es lo que esa tarea leerá.
+### Generación automática (TCI-50)
+
+| Método | Ruta | Quién |
+|---|---|---|
+| `POST` | `/api/planes-mantenimiento/generar` | Admin — pasada de todos los planes |
+| `POST` | `/api/planes-mantenimiento/:id/generar` | Admin — pasada de un plan |
+
+Corre sola a las **6:00** (`PREVENTIVO_CRON` lo cambia; `PREVENTIVO_AUTOMATICO=false` lo
+apaga) y crea una orden `PREVENTIVO_AUTOMATICO` por cada equipo vencido, con la fecha
+programada del vencimiento —no la de hoy— para que el atraso quede a la vista.
+
+Tres cosas la hacen segura de repetir:
+
+1. **No duplica.** Si el equipo ya tiene una orden abierta de ese plan, se omite. Sin esta
+   regla un plan vencido crearía una orden cada día hasta que alguien la cerrara.
+2. **Un solo proceso a la vez.** La pasada entera corre en una transacción que toma
+   `pg_try_advisory_xact_lock`. El lock es **de transacción y no de sesión** a propósito:
+   Prisma reparte las consultas por un pool, así que un `pg_advisory_lock` puede tomarse en
+   una conexión y soltarse en otra, quedar retenido para siempre y dejar el generador mudo.
+   Eso pasó de verdad durante el desarrollo y lo destapó un e2e.
+3. **Todo o nada.** Como corre en una transacción, no queda media pasada aplicada. Reintentar
+   es seguro por la regla 1.
+
+Las órdenes automáticas se atribuyen a un **usuario de sistema**
+(`USUARIO_SISTEMA_EMAIL`, por defecto `sistema@tci.local`), creado la primera vez que hace
+falta y **sin fila en `accounts`**: no tiene contraseña que verificar, así que no hay forma de
+iniciar sesión con él. Además va con `activo: false`, de modo que el guard de `TCI-33` lo
+rechazaría aunque alguien le fabricara credenciales.
 
 ## Reportes e historial (TCI-57, TCI-58, TCI-59, TCI-60)
 
