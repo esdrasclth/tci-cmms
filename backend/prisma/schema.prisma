@@ -1,16 +1,15 @@
 // CMMS TCI — Esquema de base de datos
 // Modelo de Orden de Trabajo definido en TCI-22; estados y flujo en TCI-78.
 //
-// Alcance de este archivo: lo necesario para el modulo 2 (Ordenes de Trabajo),
-// el modulo 3 (Auth) y las entidades del modulo 4 (Clientes y Equipos) de las
-// que la orden depende. Quedan pendientes para su propio modulo:
-//   - Repuesto / OrdenRepuesto / MovimientoInventario  -> modulo 6 (TCI-45/46/48)
-//   - PlanMantenimiento                                -> modulo 7 (TCI-49/50)
+// Alcance de este archivo: los modulos 2 (Ordenes de Trabajo), 3 (Auth),
+// 4 (Clientes y Equipos) y 6 (Inventario y Repuestos). Queda pendiente para su
+// propio modulo:
+//   - PlanMantenimiento  -> modulo 7 (TCI-49/50)
 
 generator client {
-  provider     = "prisma-client"
-  output       = "../src/generated/prisma"
-  moduleFormat = "cjs"
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "cjs"
   // Explicito a proposito: si Prisma no encuentra un tsconfig.json (por ejemplo
   // dentro del build de Docker) emite los imports con extension .ts y el
   // contenedor revienta con "Cannot find module './internal/class.ts'".
@@ -50,10 +49,11 @@ model User {
   sessions Session[]
   accounts Account[]
 
-  ordenesAsignadas OrdenTrabajo[]   @relation("TecnicoAsignado")
-  ordenesCreadas   OrdenTrabajo[]   @relation("CreadoPor")
+  ordenesAsignadas OrdenTrabajo[]         @relation("TecnicoAsignado")
+  ordenesCreadas   OrdenTrabajo[]         @relation("CreadoPor")
   historial        OrdenHistorial[]
   adjuntos         OrdenAdjunto[]
+  movimientos      MovimientoInventario[]
 
   @@index([rol, activo])
   @@map("users")
@@ -76,7 +76,7 @@ model Session {
 }
 
 model Account {
-  id String @id @default(cuid())
+  id                    String    @id @default(cuid())
   // Better Auth 1.7 identifica la cuenta por (issuer, accountId), no solo por
   // accountId. Es obligatorio.
   issuer                String
@@ -262,8 +262,10 @@ model OrdenTrabajo {
   tecnico           User?             @relation("TecnicoAsignado", fields: [tecnicoId], references: [id], onDelete: Restrict)
   creadoPor         User              @relation("CreadoPor", fields: [creadoPorId], references: [id], onDelete: Restrict)
 
-  historial OrdenHistorial[]
-  adjuntos  OrdenAdjunto[]
+  historial   OrdenHistorial[]
+  adjuntos    OrdenAdjunto[]
+  repuestos   OrdenRepuesto[]
+  movimientos MovimientoInventario[]
 
   @@index([estado])
   @@index([tecnicoId, estado])
@@ -331,4 +333,106 @@ model OrdenAdjunto {
 
   @@index([ordenId])
   @@map("orden_adjuntos")
+}
+
+// ---------------------------------------------------------------------------
+// Inventario y repuestos — modulo 6 (TCI-45, TCI-46, TCI-47)
+//
+// El stock vive en dos sitios a proposito: `Repuesto.stockActual` es el saldo
+// que leen los listados y las alertas, y `MovimientoInventario` es el libro que
+// explica como se llego a el. Se podria derivar el saldo con un SUM en cada
+// consulta, pero el listado y el aviso de minimos lo piden en cada pantalla.
+//
+// El riesgo de esa duplicidad es que las dos versiones se separen, asi que en
+// el codigo hay un unico camino que las toca: `InventarioService.mover()`, que
+// escribe el asiento y el saldo dentro de la misma transaccion. Nada mas puede
+// escribir `stockActual`.
+// ---------------------------------------------------------------------------
+
+model Repuesto {
+  id           String  @id @default(cuid())
+  codigo       String  @unique
+  nombre       String
+  descripcion  String?
+  // Texto y no enum: TCI compra por unidad, litro, metro y kilo, y la lista
+  // crecera. Un enum obligaria a migrar la base para anadir una unidad.
+  unidadMedida String  @map("unidad_medida") @db.VarChar(12)
+
+  // Tres decimales porque hay consumo fraccionado: 0.750 litros de refrigerante.
+  stockActual Decimal @default(0) @map("stock_actual") @db.Decimal(12, 3)
+  // TCI-47: por debajo de esto el repuesto entra en la lista de avisos.
+  stockMinimo Decimal @default(0) @map("stock_minimo") @db.Decimal(12, 3)
+
+  costoUnitario Decimal @default(0) @map("costo_unitario") @db.Decimal(12, 2)
+  moneda        String  @default("HNL") @db.Char(3)
+
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  consumos    OrdenRepuesto[]
+  movimientos MovimientoInventario[]
+
+  @@index([activo])
+  @@map("repuestos")
+}
+
+/// Solo dos sentidos. Un ajuste de inventario se registra como la entrada o la
+/// salida que corresponda, con su motivo: asi `cantidad` siempre es positiva y
+/// el signo lo da el tipo, sin excepciones que recordar.
+enum TipoMovimiento {
+  ENTRADA
+  SALIDA
+}
+
+/// Libro de inventario: solo-append, como OrdenHistorial (TCI-29).
+model MovimientoInventario {
+  id         String  @id @default(cuid())
+  repuestoId String  @map("repuesto_id")
+  usuarioId  String  @map("usuario_id")
+  /// Presente cuando el movimiento nace de consumir en una orden (TCI-46).
+  ordenId    String? @map("orden_id")
+
+  tipo            TipoMovimiento
+  /// Siempre positiva: el signo lo da `tipo`. Asi no hay que recordar el
+  /// convenio al leer una fila suelta.
+  cantidad        Decimal        @db.Decimal(12, 3)
+  /// Saldo despues del asiento. Redundante con la suma, pero permite auditar
+  /// el libro sin recalcularlo entero.
+  stockResultante Decimal        @map("stock_resultante") @db.Decimal(12, 3)
+
+  motivo    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  repuesto Repuesto      @relation(fields: [repuestoId], references: [id], onDelete: Restrict)
+  usuario  User          @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  orden    OrdenTrabajo? @relation(fields: [ordenId], references: [id], onDelete: SetNull)
+
+  @@index([repuestoId, createdAt])
+  @@index([ordenId])
+  @@map("movimientos_inventario")
+}
+
+/// TCI-46 — que repuestos se usaron en una orden, y cuantos.
+model OrdenRepuesto {
+  id         String @id @default(cuid())
+  ordenId    String @map("orden_id")
+  repuestoId String @map("repuesto_id")
+
+  cantidad      Decimal @db.Decimal(12, 3)
+  /// Congelado al imputarlo. El precio del catalogo cambia, y el costo de una
+  /// orden ya cerrada no puede moverse por detras.
+  costoUnitario Decimal @map("costo_unitario") @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  orden    OrdenTrabajo @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+  repuesto Repuesto     @relation(fields: [repuestoId], references: [id], onDelete: Restrict)
+
+  /// Una linea por repuesto y orden: si se imputa dos veces, se acumula en la
+  /// misma linea. El detalle de cada imputacion queda en el libro.
+  @@unique([ordenId, repuestoId])
+  @@index([repuestoId])
+  @@map("orden_repuestos")
 }
