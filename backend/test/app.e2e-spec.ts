@@ -1,23 +1,20 @@
 import { INestApplication } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { App } from 'supertest/types';
+import type { App } from 'supertest/types';
 
-import { AppModule } from './../src/app.module';
+import { crearAppE2E } from './utils/app-e2e';
 
 // Este e2e levanta el AppModule completo, asi que necesita la base de datos
 // arriba: `docker compose up -d postgres` desde la raiz del repo.
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+  beforeAll(async () => {
+    app = await crearAppE2E();
+  });
 
-    app = moduleFixture.createNestApplication({ bodyParser: false });
-    app.setGlobalPrefix('api', { exclude: ['health'] });
-    await app.init();
+  afterAll(async () => {
+    await app?.close();
   });
 
   it('/health (GET) es publico y responde ok', () => {
@@ -32,9 +29,5 @@ describe('AppController (e2e)', () => {
 
   it('/api/me (GET) sin sesion responde 401', () => {
     return request(app.getHttpServer()).get('/api/me').expect(401);
-  });
-
-  afterEach(async () => {
-    await app.close();
   });
 });

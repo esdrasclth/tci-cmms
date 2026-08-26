@@ -268,13 +268,31 @@ asignar al registrarse — solo lo cambia un Admin (TCI-35).
 - **CORS** se configura solo, a partir de `trustedOrigins` en `auth.config.ts`
   (que lee `CORS_ORIGIN`).
 
+## Tests
+
+| Comando | Qué corre |
+|---|---|
+| `npm test` | Unitarios. No tocan la base; la máquina de estados (`orden-estado.service.spec.ts`) se prueba aquí porque es un servicio puro. |
+| `npm run test:e2e` | De punta a punta sobre HTTP **contra Postgres real**. Requiere `docker compose up -d postgres` desde la raíz. |
+
+Los e2e corren contra la **misma base que el desarrollo**, así que no vacían nada:
+`test/utils/escenario.ts` siembra usuarios, cliente, sede, equipo y tipos con un sufijo
+único por ejecución y al terminar borra exactamente los ids que creó. Si se agrega un
+test que cree órdenes por fuera del helper `crearOrden`, hay que pasarlas por
+`esc.registrarOrden(id)` o quedarán huérfanas en la base.
+
+`test/utils/app-e2e.ts` levanta el `AppModule` replicando el arranque de `main.ts`
+(incluido el `ValidationPipe`). **Cualquier cambio en el bootstrap de `main.ts` hay que
+replicarlo ahí**, o los tests de validación dejarían de probar lo que corre en producción.
+
+Las sesiones se obtienen iniciando sesión de verdad contra `/api/auth/sign-in/email`:
+no se simula el guard, así que los 401/403 que verifican los tests son los mismos que
+devolvería la API en producción.
+
 ## Pendientes conocidos
 
 - `TCI-34` recuperación de contraseña: necesita servicio de correo (módulo 8).
 - **El catálogo de tipos de mantenimiento no se puede editar** (`TCI-30`).
-- **No hay tests e2e de órdenes**: la máquina de estados está cubierta por tests
-  unitarios (`orden-estado.service.spec.ts`), pero el controller solo se verificó
-  a mano contra la base real.
 - `EVIDENCIA_OBLIGATORIA` está en `false` hasta que exista la carga de adjuntos
   (`TCI-43`).
 - `Repuesto` / `OrdenRepuesto` (módulo 6) y `PlanMantenimiento` (módulo 7) todavía no
