@@ -39,9 +39,11 @@
     "class-validator": "^0.15.1",
     "pdfkit": "^0.20.1",
     "pg": "^8.23.0",
+    "prisma": "^7.9.1",
     "reflect-metadata": "^0.2.2",
     "resend": "^6.23.0",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "tsx": "^4.23.12"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -62,13 +64,11 @@
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^17.0.0",
     "prettier": "^3.4.2",
-    "prisma": "^7.9.1",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "tsx": "^4.23.12",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.20.0",
     "unplugin-swc": "^1.5.11",

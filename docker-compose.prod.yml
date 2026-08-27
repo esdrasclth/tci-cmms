@@ -89,6 +89,12 @@ services:
       EVIDENCIA_OBLIGATORIA: ${EVIDENCIA_OBLIGATORIA:-false}
     expose:
       - "3001"
+    # `default` para hablar con Postgres por nombre de servicio; `dokploy-network`
+    # para que Traefik lo alcance. Un servicio que declara `networks` deja de
+    # estar en la default, asi que hay que nombrar las dos.
+    networks:
+      - default
+      - dokploy-network
     healthcheck:
       # Node en vez de curl: la imagen es alpine y no lo trae.
       test:
@@ -118,6 +124,9 @@ services:
         condition: service_healthy
     expose:
       - "3000"
+    networks:
+      - default
+      - dokploy-network
     healthcheck:
       test:
         [
@@ -133,3 +142,13 @@ services:
 
 volumes:
   postgres_data:
+
+networks:
+  # La red overlay que ya creo Dokploy. Es donde vive Traefik: sin estar aqui,
+  # los contenedores levantan sanos pero no hay ruta desde internet hacia ellos.
+  # `external: true` = no la crea este compose, se une a la existente.
+  dokploy-network:
+    external: true
+  # Postgres se queda solo en esta, que compose crea por su cuenta. No se asoma
+  # a Traefik ni a los demas proyectos del servidor.
+  default:
