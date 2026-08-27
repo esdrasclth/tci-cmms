@@ -69,7 +69,12 @@ const DESTINOS_ADMIN: Destino[] = [
  * de volver al listado desde el detalle.
  */
 const DESTINOS_TECNICO: Destino[] = [
-  { href: "/panel", etiqueta: "Mis órdenes", icono: IconoOrdenes, exacto: true },
+  {
+    href: "/panel",
+    etiqueta: "Mis órdenes",
+    icono: IconoOrdenes,
+    exacto: true,
+  },
 ];
 
 export function destinosDe(esAdmin: boolean): Destino[] {

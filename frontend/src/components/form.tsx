@@ -1,43 +1,97 @@
 "use client";
 
-import { useId, useState, type InputHTMLAttributes, type ReactNode } from "react";
+import {
+  useId,
+  useState,
+  type ButtonHTMLAttributes,
+  type InputHTMLAttributes,
+  type ReactNode,
+} from "react";
+import { Boton } from "@/components/ui";
+
+/**
+ * Primitivas de formulario.
+ *
+ * Los campos existen en dos tamanos y no en uno. `md` (44px en movil, 36px en
+ * escritorio) es la del panel: alinea con `Boton` del mismo tamano, que es lo
+ * que hace que un campo y su boton de al lado queden a ras. `lg` es la de las
+ * pantallas de autenticacion, cuyo diseno viene de la referencia que dio el
+ * cliente (`branding/idea-login.jpg`) y no debe encogerse: ahi el formulario es
+ * el unico contenido de la pantalla y la holgura es parte del diseno.
+ *
+ * Ver el cabezal de `ui.tsx` para por que las alturas son explicitas.
+ */
+
+const ALTURA_CAMPO = {
+  md: "h-11 px-3.5 text-sm md:h-9",
+  lg: "h-12 px-4 text-[0.9375rem]",
+} as const;
+
+type Tamano = keyof typeof ALTURA_CAMPO;
 
 const CLASES_INPUT =
-  "w-full rounded-lg border border-tci-borde bg-white px-4 py-3 text-[0.9375rem] leading-6 text-tci-negro " +
+  "w-full rounded-lg border border-tci-borde bg-white text-tci-negro " +
   "placeholder:text-tci-gris/70 transition-colors " +
   "hover:border-tci-gris/60 focus:border-tci-rojo focus:outline-none " +
   "disabled:cursor-not-allowed disabled:bg-tci-humo";
 
+function clasesInput(tamano: Tamano, error?: string) {
+  return `${CLASES_INPUT} ${ALTURA_CAMPO[tamano]} ${error ? "border-tci-rojo" : ""}`;
+}
+
+function Etiqueta({
+  htmlFor,
+  children,
+}: {
+  htmlFor: string;
+  children: ReactNode;
+}) {
+  return (
+    <label
+      htmlFor={htmlFor}
+      className="mb-1.5 block text-sm font-semibold tracking-[-0.01em] text-tci-negro"
+    >
+      {children}
+    </label>
+  );
+}
+
+function Error({ id, children }: { id: string; children: ReactNode }) {
+  return (
+    <p id={id} className="mt-1.5 text-xs text-tci-rojo">
+      {children}
+    </p>
+  );
+}
+
 type CampoProps = InputHTMLAttributes<HTMLInputElement> & {
   etiqueta: string;
   error?: string;
+  tamano?: Tamano;
 };
 
-export function Campo({ etiqueta, error, id, ...props }: CampoProps) {
+export function Campo({
+  etiqueta,
+  error,
+  id,
+  tamano = "md",
+  ...props
+}: CampoProps) {
   const generado = useId();
   const idCampo = id ?? generado;
   const idError = `${idCampo}-error`;
 
   return (
     <div>
-      <label
-        htmlFor={idCampo}
-        className="mb-1.5 block text-sm font-semibold tracking-[-0.01em] text-tci-negro"
-      >
-        {etiqueta}
-      </label>
+      <Etiqueta htmlFor={idCampo}>{etiqueta}</Etiqueta>
       <input
         {...props}
         id={idCampo}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? idError : undefined}
-        className={`${CLASES_INPUT} ${error ? "border-tci-rojo" : ""}`}
+        className={clasesInput(tamano, error)}
       />
-      {error && (
-        <p id={idError} className="mt-1.5 text-xs text-tci-rojo">
-          {error}
-        </p>
-      )}
+      {error && <Error id={idError}>{error}</Error>}
     </div>
   );
 }
@@ -47,6 +101,7 @@ export function CampoContrasena({
   etiqueta,
   error,
   id,
+  tamano = "md",
   ...props
 }: Omit<CampoProps, "type">) {
   const generado = useId();
@@ -54,14 +109,14 @@ export function CampoContrasena({
   const idError = `${idCampo}-error`;
   const [visible, setVisible] = useState(false);
 
+  // El boton del ojo se mete dentro del campo, asi que su ancho tiene que
+  // seguir la altura o queda un cuadrado desproporcionado en el campo corto.
+  const anchoOjo = tamano === "lg" ? "w-12" : "w-11 md:w-10";
+  const reserva = tamano === "lg" ? "pr-12" : "pr-11 md:pr-10";
+
   return (
     <div>
-      <label
-        htmlFor={idCampo}
-        className="mb-1.5 block text-sm font-semibold tracking-[-0.01em] text-tci-negro"
-      >
-        {etiqueta}
-      </label>
+      <Etiqueta htmlFor={idCampo}>{etiqueta}</Etiqueta>
       <div className="relative">
         <input
           {...props}
@@ -69,7 +124,7 @@ export function CampoContrasena({
           type={visible ? "text" : "password"}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? idError : undefined}
-          className={`${CLASES_INPUT} pr-12 ${error ? "border-tci-rojo" : ""}`}
+          className={`${clasesInput(tamano, error)} ${reserva}`}
         />
         <button
           type="button"
@@ -77,38 +132,43 @@ export function CampoContrasena({
           // El estado va en el texto accesible, no solo en el icono.
           aria-label={visible ? "Ocultar contrasena" : "Mostrar contrasena"}
           aria-pressed={visible}
-          className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-lg text-tci-gris transition-colors hover:text-tci-negro"
+          className={`absolute inset-y-0 right-0 flex ${anchoOjo} items-center justify-center rounded-r-lg text-tci-gris transition-colors hover:text-tci-negro`}
         >
           <IconoOjo tachado={visible} />
         </button>
       </div>
-      {error && (
-        <p id={idError} className="mt-1.5 text-xs text-tci-rojo">
-          {error}
-        </p>
-      )}
+      {error && <Error id={idError}>{error}</Error>}
     </div>
   );
 }
 
+/**
+ * Boton de enviar de ancho completo. Se conserva porque lo usan siete pantallas
+ * y su semantica es clara, pero ya no tiene estilos propios: delega en `Boton`
+ * para que no vuelvan a divergir.
+ */
 export function BotonPrimario({
   children,
   cargando = false,
+  tamano = "lg",
+  className = "",
   ...props
-}: InputHTMLAttributes<HTMLButtonElement> & {
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
   cargando?: boolean;
+  tamano?: Tamano;
   type?: "submit" | "button";
 }) {
   return (
-    <button
+    <Boton
       {...props}
-      disabled={cargando || props.disabled}
-      className="flex w-full items-center justify-center gap-2 rounded-lg bg-tci-rojo px-4 py-3.5 text-sm font-semibold tracking-[0.01em] text-white transition-colors hover:bg-tci-rojo-hover disabled:cursor-not-allowed disabled:opacity-60"
+      variante="primario"
+      tamano={tamano}
+      cargando={cargando}
+      className={`w-full ${className}`}
     >
-      {cargando && <Girador />}
       {children}
-    </button>
+    </Boton>
   );
 }
 
@@ -121,32 +181,6 @@ export function Alerta({ children }: { children: ReactNode }) {
     >
       {children}
     </div>
-  );
-}
-
-function Girador() {
-  return (
-    <svg
-      className="h-4 w-4 animate-spin"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeOpacity="0.3"
-        strokeWidth="3"
-      />
-      <path
-        d="M22 12a10 10 0 0 0-10-10"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }
 

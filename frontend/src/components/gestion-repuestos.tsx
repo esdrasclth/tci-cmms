@@ -4,6 +4,14 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
+import {
+  Boton,
+  EncabezadoPagina,
+  Vacio,
+  clasesBoton,
+  clasesControl,
+} from "@/components/ui";
+
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 import { ApiError } from "@/lib/api";
 import { useDebounce } from "@/lib/hooks";
@@ -65,7 +73,9 @@ export function GestionRepuestos() {
       .catch((e: unknown) => {
         if (!cancelado) {
           setError(
-            e instanceof ApiError ? e.message : "No se pudo cargar el catalogo.",
+            e instanceof ApiError
+              ? e.message
+              : "No se pudo cargar el catalogo.",
           );
         }
       })
@@ -100,30 +110,23 @@ export function GestionRepuestos() {
 
   return (
     <section>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="tci-display text-2xl font-semibold text-tci-negro">
-            Repuestos
-          </h1>
-          <p className="mt-1 text-sm text-tci-gris">
-            Existencias de almacén y su consumo en las órdenes.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/panel/repuestos/movimientos"
-            className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm font-semibold text-tci-negro hover:bg-tci-humo"
-          >
-            Ver movimientos
-          </Link>
-          <button
-            onClick={() => setDialogo({ tipo: "nuevo" })}
-            className="rounded-lg bg-tci-rojo px-4 py-2.5 text-sm font-semibold text-white hover:bg-tci-rojo-hover"
-          >
-            Nuevo repuesto
-          </button>
-        </div>
-      </div>
+      <EncabezadoPagina
+        titulo="Repuestos"
+        descripcion="Existencias de almacén y su consumo en las órdenes."
+        acciones={
+          <>
+            <Link
+              href="/panel/repuestos/movimientos"
+              className={clasesBoton({ variante: "secundario" })}
+            >
+              Ver movimientos
+            </Link>
+            <Boton onClick={() => setDialogo({ tipo: "nuevo" })}>
+              Nuevo repuesto
+            </Boton>
+          </>
+        }
+      />
 
       {/* TCI-47. El aviso vive aqui, donde se puede actuar sobre el, y no en
           una pantalla aparte que habria que acordarse de visitar. */}
@@ -150,7 +153,7 @@ export function GestionRepuestos() {
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Buscar por código o nombre..."
-          className="w-full max-w-sm rounded-lg border border-tci-borde px-4 py-2.5 text-sm text-tci-negro placeholder:text-tci-gris/70 focus:border-tci-rojo focus:outline-none"
+          className={clasesControl("w-full max-w-sm")}
         />
         <label htmlFor="filtro-repuesto-activo" className="sr-only">
           Filtrar por estado
@@ -161,19 +164,16 @@ export function GestionRepuestos() {
           onChange={(e) =>
             setFiltroActivo(e.target.value as "" | "true" | "false")
           }
-          className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro"
+          className={clasesControl()}
         >
           <option value="">Activos y desactivados</option>
           <option value="true">Solo activos</option>
           <option value="false">Solo desactivados</option>
         </select>
         {soloBajoMinimo && (
-          <button
-            onClick={() => setSoloBajoMinimo(false)}
-            className="rounded-full border border-tci-rojo bg-tci-rojo px-3 py-1.5 text-xs font-semibold text-white"
-          >
+          <Boton onClick={() => setSoloBajoMinimo(false)}>
             Solo bajo mínimo ✕
-          </button>
+          </Boton>
         )}
         {!cargando && (
           <p className="text-sm text-tci-gris">
@@ -193,11 +193,11 @@ export function GestionRepuestos() {
         {cargando && repuestos.length === 0 ? (
           <Esqueleto />
         ) : repuestos.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-tci-borde bg-white p-8 text-center text-sm text-tci-grafito">
+          <Vacio>
             {busqueda || filtroActivo || soloBajoMinimo
               ? "Ningún repuesto coincide."
               : "No hay repuestos en el catálogo."}
-          </p>
+          </Vacio>
         ) : (
           <div className={cargando ? "opacity-50" : ""}>
             {/* Tabla en escritorio, tarjetas en movil (TCI-44). */}
@@ -367,7 +367,9 @@ function Acciones({
 }) {
   return (
     <div className="flex flex-wrap gap-2">
-      <BotonFila onClick={() => setDialogo({ tipo: "entrada", item: repuesto })}>
+      <BotonFila
+        onClick={() => setDialogo({ tipo: "entrada", item: repuesto })}
+      >
         Entrada
       </BotonFila>
       <BotonFila onClick={() => setDialogo({ tipo: "salida", item: repuesto })}>
@@ -567,7 +569,9 @@ function DialogoMovimiento({
       onGuardado();
     } catch (e) {
       setError(
-        e instanceof ApiError ? e.message : "No se pudo registrar el movimiento.",
+        e instanceof ApiError
+          ? e.message
+          : "No se pudo registrar el movimiento.",
       );
       setGuardando(false);
     }
@@ -711,12 +715,9 @@ function DialogoLibro({
           </ul>
         )}
 
-        <button
-          onClick={onCerrar}
-          className="mt-5 w-full rounded-lg border border-tci-borde px-4 py-3 text-sm font-bold text-tci-negro hover:bg-tci-humo"
-        >
+        <Boton onClick={onCerrar} variante="secundario" className="mt-5 w-full">
           Cerrar
-        </button>
+        </Boton>
       </div>
     </Modal>
   );
@@ -751,26 +752,27 @@ function DialogoBorrar({
       <div className="mt-4 space-y-4">
         {error && <Alerta>{error}</Alerta>}
         <p className="text-sm text-tci-grafito">
-          Se borrará <strong>{repuesto.nombre}</strong> del catálogo. Esta acción
-          no se puede deshacer.
+          Se borrará <strong>{repuesto.nombre}</strong> del catálogo. Esta
+          acción no se puede deshacer.
         </p>
         <div className="flex gap-3 pt-2">
-          <button
+          <Boton
             type="button"
             onClick={onCerrar}
             disabled={borrando}
-            className="flex-1 rounded-lg border border-tci-borde px-4 py-3 text-sm font-bold text-tci-negro hover:bg-tci-humo disabled:opacity-50"
+            variante="secundario"
+            className="flex-1"
           >
             Cancelar
-          </button>
-          <button
+          </Boton>
+          <Boton
             type="button"
             onClick={() => void borrar()}
             disabled={borrando}
-            className="flex-1 rounded-lg bg-tci-rojo px-4 py-3 text-sm font-bold text-white hover:bg-tci-rojo-hover disabled:opacity-50"
+            className="flex-1"
           >
             {borrando ? "Borrando..." : "Borrar"}
-          </button>
+          </Boton>
         </div>
       </div>
     </Modal>

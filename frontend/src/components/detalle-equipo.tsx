@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { ApiError } from "@/lib/api";
+import { EncabezadoPagina } from "@/components/ui";
 import {
   COLOR_ESTADO,
   COLOR_PRIORIDAD,
@@ -86,38 +87,36 @@ export function DetalleEquipo({ id }: { id: string }) {
 
   // Del resumen, que cuenta sobre TODO el historial y no solo sobre las que
   // caben en la lista.
-  const abiertas = (["PENDIENTE", "ASIGNADA", "EN_PROCESO", "EN_ESPERA"] as const)
+  const abiertas = (
+    ["PENDIENTE", "ASIGNADA", "EN_PROCESO", "EN_ESPERA"] as const
+  )
     .map((estado) => resumen.porEstado[estado] ?? 0)
     .reduce((suma, n) => suma + n, 0);
 
   return (
     <div>
-      <Link
-        href="/panel/equipos"
-        className="text-sm text-tci-gris underline-offset-2 hover:text-tci-rojo hover:underline"
-      >
-        &larr; Volver a equipos
-      </Link>
-
-      <header className="mt-3 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="font-mono text-xs text-tci-gris">{equipo.codigo}</p>
-          <h1 className="text-2xl font-bold text-tci-negro">
+      <EncabezadoPagina
+        volver={{ href: "/panel/equipos", texto: "Volver a equipos" }}
+        encima={equipo.codigo}
+        titulo={
+          <>
             {equipo.nombre}
             {!equipo.activo && (
-              <span className="ml-3 rounded-full bg-tci-humo px-3 py-1 text-xs font-normal text-tci-gris">
+              <span className="ml-3 rounded-full bg-tci-humo px-3 py-1 align-middle text-xs font-normal tracking-normal text-tci-gris">
                 Desactivado
               </span>
             )}
-          </h1>
-          <p className="mt-1 text-sm text-tci-grafito">
+          </>
+        }
+        descripcion={
+          <>
             {equipo.cliente.nombre}
             {equipo.sede && ` · ${equipo.sede.nombre}`}
-          </p>
-        </div>
-      </header>
+          </>
+        }
+      />
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <section className="rounded-xl border border-tci-borde bg-white p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             <h2 className="text-sm font-bold text-tci-negro uppercase">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, BotonPrimario, Campo } from "@/components/form";
+import { EncabezadoPagina } from "@/components/ui";
 import { ApiError } from "@/lib/api";
 import {
   ETIQUETA_PRIORIDAD,
@@ -76,7 +77,9 @@ export function FormularioOrden({ id }: { id?: string }) {
       .catch((e: unknown) => {
         if (!cancelado) {
           setError(
-            e instanceof ApiError ? e.message : "No se pudo cargar el formulario.",
+            e instanceof ApiError
+              ? e.message
+              : "No se pudo cargar el formulario.",
           );
         }
       })
@@ -122,9 +125,7 @@ export function FormularioOrden({ id }: { id?: string }) {
     const datos = new FormData(evento.currentTarget);
 
     if (exigeEquipo && !equipoId) {
-      setError(
-        `El tipo '${tipo?.nombre}' exige indicar un equipo.`,
-      );
+      setError(`El tipo '${tipo?.nombre}' exige indicar un equipo.`);
       return;
     }
 
@@ -181,22 +182,21 @@ export function FormularioOrden({ id }: { id?: string }) {
 
   return (
     <div className="max-w-2xl">
-      <Link
-        href={volverA}
-        className="text-sm text-tci-gris underline-offset-2 hover:text-tci-rojo hover:underline"
-      >
-        &larr; {editando ? "Volver a la orden" : "Volver al listado"}
-      </Link>
-
-      <h1 className="mt-3 text-2xl font-bold text-tci-negro">
-        {editando ? `Editar ${orden?.numero}` : "Nueva orden de trabajo"}
-      </h1>
-      {!editando && (
-        <p className="mt-1 text-sm text-tci-gris">
-          La orden nace <strong>Pendiente</strong>. El tecnico se asigna despues,
-          desde el detalle.
-        </p>
-      )}
+      <EncabezadoPagina
+        volver={{
+          href: volverA,
+          texto: editando ? "Volver a la orden" : "Volver al listado",
+        }}
+        titulo={editando ? `Editar ${orden?.numero}` : "Nueva orden de trabajo"}
+        descripcion={
+          editando ? undefined : (
+            <>
+              La orden nace <strong>Pendiente</strong>. El tecnico se asigna
+              despues, desde el detalle.
+            </>
+          )
+        }
+      />
 
       <form onSubmit={alEnviar} className="mt-7 space-y-5" noValidate>
         {error && <Alerta>{error}</Alerta>}
@@ -380,7 +380,10 @@ function Selector({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-bold text-tci-negro">
+      <label
+        htmlFor={id}
+        className="mb-1.5 block text-sm font-bold text-tci-negro"
+      >
         {etiqueta}
       </label>
       <select

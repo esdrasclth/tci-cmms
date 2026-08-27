@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { DialogoAccion, useDialogoAccion } from "@/components/dialogo-accion";
+import { Boton, EncabezadoPagina, clasesBoton } from "@/components/ui";
+
 import { EvidenciaOrden } from "@/components/evidencia-orden";
 import { RepuestosOrden } from "@/components/repuestos-orden";
 import { API, ApiError } from "@/lib/api";
@@ -159,48 +161,46 @@ export function DetalleOrden({ id }: { id: string }) {
 
   return (
     <div>
-      <Link
-        href="/panel"
-        className="text-sm text-tci-gris underline-offset-2 hover:text-tci-rojo hover:underline"
-      >
-        &larr; Volver al listado
-      </Link>
-
-      <header className="mt-3 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="font-mono text-xs text-tci-gris">{orden.numero}</p>
-          <h1 className="text-2xl font-bold text-tci-negro">{orden.titulo}</h1>
-          <p className="mt-1 text-sm text-tci-grafito">
+      <EncabezadoPagina
+        volver={{ href: "/panel", texto: "Volver al listado" }}
+        encima={orden.numero}
+        titulo={orden.titulo}
+        descripcion={
+          <>
             {orden.cliente.nombre}
             {orden.sede && ` · ${orden.sede.nombre}`}
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <span
-            className={`rounded-full px-3 py-1 text-sm font-bold ${COLOR_ESTADO[orden.estado]}`}
-          >
-            {ETIQUETA_ESTADO[orden.estado]}
-          </span>
-          <span className={`text-xs ${COLOR_PRIORIDAD[orden.prioridad]}`}>
-            Prioridad {ETIQUETA_PRIORIDAD[orden.prioridad]}
-          </span>
-          <span
-            className={`text-xs ${conexionEnVivo ? "text-emerald-700" : "text-tci-gris"}`}
-            aria-live="polite"
-          >
-            {conexionEnVivo ? "Cambios en vivo" : "Reconectando cambios en vivo..."}
-          </span>
-        </div>
-      </header>
+          </>
+        }
+        acciones={
+          <div className="flex flex-col items-end gap-2">
+            <span
+              className={`rounded-full px-3 py-1 text-sm font-bold ${COLOR_ESTADO[orden.estado]}`}
+            >
+              {ETIQUETA_ESTADO[orden.estado]}
+            </span>
+            <span className={`text-xs ${COLOR_PRIORIDAD[orden.prioridad]}`}>
+              Prioridad {ETIQUETA_PRIORIDAD[orden.prioridad]}
+            </span>
+            <span
+              className={`text-xs ${conexionEnVivo ? "text-emerald-700" : "text-tci-gris"}`}
+              aria-live="polite"
+            >
+              {conexionEnVivo
+                ? "Cambios en vivo"
+                : "Reconectando cambios en vivo..."}
+            </span>
+          </div>
+        }
+      />
 
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         {/* Editar es solo-admin y el backend lo rechaza en estado final. */}
         {esAdmin &&
           orden.estado !== "COMPLETADA" &&
           orden.estado !== "CANCELADA" && (
             <Link
               href={`/panel/ordenes/${orden.id}/editar`}
-              className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm font-bold text-tci-negro hover:bg-tci-humo"
+              className={clasesBoton({ variante: "secundario" })}
             >
               Editar datos
             </Link>
@@ -345,7 +345,9 @@ export function DetalleOrden({ id }: { id: string }) {
                 />
                 <Dato
                   etiqueta="Horas"
-                  valor={orden.horasTrabajadas ? String(orden.horasTrabajadas) : "—"}
+                  valor={
+                    orden.horasTrabajadas ? String(orden.horasTrabajadas) : "—"
+                  }
                 />
                 {esAdmin && (
                   <Dato
@@ -497,13 +499,9 @@ function CajaComentario({
       />
       {error && <p className="mt-1 text-xs text-tci-rojo">{error}</p>}
       <div className="mt-2 flex justify-end">
-        <button
-          type="submit"
-          disabled={enviando || texto.trim().length < 2}
-          className="rounded-lg bg-tci-rojo px-4 py-2 text-sm font-bold text-white hover:bg-tci-rojo-hover disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        <Boton type="submit" disabled={enviando || texto.trim().length < 2}>
           {enviando ? "Guardando..." : "Comentar"}
-        </button>
+        </Boton>
       </div>
     </form>
   );

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { Alerta } from "@/components/form";
+import { Boton, EncabezadoPagina, Vacio, clasesBoton } from "@/components/ui";
 import { ApiError } from "@/lib/api";
 import {
   formatearCantidad,
@@ -81,22 +82,20 @@ export function LibroInventario() {
 
   return (
     <section>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="tci-display text-2xl font-semibold text-tci-negro">
-            Movimientos de almacén
-          </h1>
-          <p className="mt-1 text-sm text-tci-gris">
-            Todas las entradas y salidas, con quién las hizo y por qué.
-          </p>
-        </div>
-        <Link
-          href="/panel/repuestos"
-          className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm font-semibold text-tci-negro hover:bg-tci-humo"
-        >
-          Ver catálogo
-        </Link>
-      </div>
+      <EncabezadoPagina
+        titulo="Movimientos de almacén"
+        descripcion="Todas las entradas y salidas, con quién las hizo y por qué."
+        acciones={
+          <>
+            <Link
+              href="/panel/repuestos"
+              className={clasesBoton({ variante: "secundario" })}
+            >
+              Ver catálogo
+            </Link>
+          </>
+        }
+      />
 
       <div className="mt-5 flex flex-wrap items-end gap-3 rounded-xl border border-tci-borde bg-white p-4">
         <div>
@@ -143,13 +142,18 @@ export function LibroInventario() {
           </select>
         </div>
         <div className="min-w-52">
-          <label htmlFor="repuesto" className="mb-1 block text-xs text-tci-gris">
+          <label
+            htmlFor="repuesto"
+            className="mb-1 block text-xs text-tci-gris"
+          >
             Repuesto
           </label>
           <select
             id="repuesto"
             value={filtros.repuestoId ?? ""}
-            onChange={(e) => cambiar({ repuestoId: e.target.value || undefined })}
+            onChange={(e) =>
+              cambiar({ repuestoId: e.target.value || undefined })
+            }
             className="w-full rounded-lg border border-tci-borde bg-white px-3 py-2 text-sm text-tci-negro"
           >
             <option value="">Todos</option>
@@ -188,9 +192,7 @@ export function LibroInventario() {
         {cargando && !pagina ? (
           <Esqueleto />
         ) : movimientos.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-tci-borde bg-white p-8 text-center text-sm text-tci-grafito">
-            No hay movimientos que coincidan con el filtro.
-          </p>
+          <Vacio>No hay movimientos que coincidan con el filtro.</Vacio>
         ) : (
           <>
             {/* Tabla en escritorio, tarjetas en movil (TCI-44). */}
@@ -288,23 +290,23 @@ export function LibroInventario() {
 
             {pagina && pagina.meta.totalPages > 1 && (
               <div className="mt-4 flex items-center justify-between gap-3">
-                <button
+                <Boton
                   onClick={() => irAPagina(pagina.meta.page - 1)}
                   disabled={pagina.meta.page <= 1}
-                  className="rounded-lg border border-tci-borde bg-white px-4 py-2 text-sm font-semibold text-tci-negro hover:bg-tci-humo disabled:opacity-40"
+                  variante="secundario"
                 >
                   Anteriores
-                </button>
+                </Boton>
                 <p className="text-sm text-tci-gris">
                   Página {pagina.meta.page} de {pagina.meta.totalPages}
                 </p>
-                <button
+                <Boton
                   onClick={() => irAPagina(pagina.meta.page + 1)}
                   disabled={pagina.meta.page >= pagina.meta.totalPages}
-                  className="rounded-lg border border-tci-borde bg-white px-4 py-2 text-sm font-semibold text-tci-negro hover:bg-tci-humo disabled:opacity-40"
+                  variante="secundario"
                 >
                   Siguientes
-                </button>
+                </Boton>
               </div>
             )}
           </>

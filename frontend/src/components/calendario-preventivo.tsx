@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { Alerta } from "@/components/form";
+import { Boton, EncabezadoPagina, Vacio } from "@/components/ui";
 import { ApiError } from "@/lib/api";
 import { ETIQUETA_ESTADO } from "@/lib/ordenes";
 import {
@@ -77,51 +78,49 @@ export function CalendarioPreventivo() {
   function cambiarMes(delta: number) {
     setCargando(true);
     setDiaAbierto(null);
-    setMes((actual) => new Date(actual.getFullYear(), actual.getMonth() + delta, 1));
+    setMes(
+      (actual) => new Date(actual.getFullYear(), actual.getMonth() + delta, 1),
+    );
   }
 
   const abiertos = diaAbierto ? (porDia.get(diaAbierto) ?? []) : [];
 
   return (
     <section>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="tci-display text-2xl font-semibold text-tci-negro">
-            Calendario de mantenimientos
-          </h1>
-          <p className="mt-1 text-sm text-tci-gris">
-            Lo que toca según los planes, con y sin orden generada.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/panel/preventivo"
-            className="rounded-lg border border-tci-borde bg-white px-4 py-2 text-sm font-semibold text-tci-negro hover:bg-tci-humo"
-          >
-            Ver planes
-          </Link>
-          <button
-            onClick={() => cambiarMes(-1)}
-            aria-label="Mes anterior"
-            className="rounded-lg border border-tci-borde bg-white px-3 py-2 text-sm font-semibold text-tci-negro hover:bg-tci-humo"
-          >
-            ←
-          </button>
-          <p className="min-w-40 text-center text-sm font-semibold text-tci-negro">
-            {mes.toLocaleDateString("es-HN", {
-              month: "long",
-              year: "numeric",
-            })}
-          </p>
-          <button
-            onClick={() => cambiarMes(1)}
-            aria-label="Mes siguiente"
-            className="rounded-lg border border-tci-borde bg-white px-3 py-2 text-sm font-semibold text-tci-negro hover:bg-tci-humo"
-          >
-            →
-          </button>
-        </div>
-      </div>
+      <EncabezadoPagina
+        titulo="Calendario de mantenimientos"
+        descripcion="Lo que toca según los planes, con y sin orden generada."
+        acciones={
+          <>
+            <Link
+              href="/panel/preventivo"
+              className="rounded-lg border border-tci-borde bg-white px-4 py-2 text-sm font-semibold text-tci-negro hover:bg-tci-humo"
+            >
+              Ver planes
+            </Link>
+            <Boton
+              onClick={() => cambiarMes(-1)}
+              aria-label="Mes anterior"
+              variante="secundario"
+            >
+              ←
+            </Boton>
+            <p className="min-w-40 text-center text-sm font-semibold text-tci-negro">
+              {mes.toLocaleDateString("es-HN", {
+                month: "long",
+                year: "numeric",
+              })}
+            </p>
+            <Boton
+              onClick={() => cambiarMes(1)}
+              aria-label="Mes siguiente"
+              variante="secundario"
+            >
+              →
+            </Boton>
+          </>
+        }
+      />
 
       <Leyenda />
 
@@ -191,9 +190,7 @@ export function CalendarioPreventivo() {
       {/* Movil: la misma informacion en lista cronologica. */}
       <div className={`mt-5 md:hidden ${cargando ? "opacity-50" : ""}`}>
         {eventos.length === 0 && !cargando ? (
-          <p className="rounded-xl border border-dashed border-tci-borde bg-white p-8 text-center text-sm text-tci-grafito">
-            No hay mantenimientos programados este mes.
-          </p>
+          <Vacio>No hay mantenimientos programados este mes.</Vacio>
         ) : (
           <ul className="space-y-3">
             {eventos.map((evento, i) => (

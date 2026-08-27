@@ -3,11 +3,8 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Alerta, BotonPrimario, Campo } from "@/components/form";
-import {
-  CONFIG_ACCION,
-  type Accion,
-  type Tecnico,
-} from "@/lib/ordenes";
+import { Boton } from "@/components/ui";
+import { CONFIG_ACCION, type Accion, type Tecnico } from "@/lib/ordenes";
 
 /**
  * Formulario de una transicion (TCI-42).
@@ -177,14 +174,15 @@ export function DialogoAccion({
           )}
 
           <div className="flex gap-3 pt-2">
-            <button
+            <Boton
               type="button"
               onClick={onCerrar}
               disabled={enviando}
-              className="flex-1 rounded-lg border border-tci-borde px-4 py-3 text-sm font-bold text-tci-negro hover:bg-tci-humo disabled:opacity-50"
+              variante="secundario"
+              className="flex-1"
             >
               Cancelar
-            </button>
+            </Boton>
             <div className="flex-1">
               <BotonPrimario type="submit" cargando={enviando}>
                 {enviando ? "Guardando..." : "Confirmar"}

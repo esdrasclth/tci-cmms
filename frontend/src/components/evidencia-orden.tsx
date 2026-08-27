@@ -93,9 +93,7 @@ export function EvidenciaOrden({
       {error && <Alerta>{error}</Alerta>}
 
       {adjuntos.length === 0 ? (
-        <p className="text-sm text-tci-gris">
-          Sin evidencia adjunta todavia.
-        </p>
+        <p className="text-sm text-tci-gris">Sin evidencia adjunta todavia.</p>
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {adjuntos.map((adjunto) => (
@@ -195,11 +193,15 @@ function TarjetaAdjunto({
       </a>
 
       <figcaption className="space-y-0.5 p-2">
-        <p className="truncate text-xs font-bold text-tci-negro" title={adjunto.nombreArchivo}>
+        <p
+          className="truncate text-xs font-bold text-tci-negro"
+          title={adjunto.nombreArchivo}
+        >
           {adjunto.nombreArchivo}
         </p>
         <p className="text-xs text-tci-gris">
-          {ETIQUETA_ADJUNTO[adjunto.tipo]} · {formatearTamano(adjunto.tamanoBytes)}
+          {ETIQUETA_ADJUNTO[adjunto.tipo]} ·{" "}
+          {formatearTamano(adjunto.tamanoBytes)}
         </p>
         <p className="truncate text-xs text-tci-gris">{adjunto.usuario.name}</p>
       </figcaption>

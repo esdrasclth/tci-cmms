@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { Alerta } from "@/components/form";
+import { Boton, EncabezadoPagina, clasesBoton } from "@/components/ui";
 import { ApiError } from "@/lib/api";
 import { ETIQUETA_ESTADO, ETIQUETA_PRIORIDAD } from "@/lib/ordenes";
 import type { Estado, Prioridad } from "@/lib/ordenes";
@@ -93,32 +94,27 @@ export function TableroReportes() {
 
   return (
     <section>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="tci-display text-2xl font-semibold text-tci-negro">
-            Reportes
-          </h1>
-          <p className="mt-1 text-sm text-tci-gris">
-            Indicadores del periodo y desempeño del equipo.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => void exportar("csv")}
-            disabled={exportando !== null}
-            className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm font-semibold text-tci-negro hover:bg-tci-humo disabled:opacity-50"
-          >
-            {exportando === "csv" ? "Generando..." : "Exportar CSV"}
-          </button>
-          <button
-            onClick={() => void exportar("pdf")}
-            disabled={exportando !== null}
-            className="rounded-lg bg-tci-rojo px-4 py-2.5 text-sm font-semibold text-white hover:bg-tci-rojo-hover disabled:opacity-50"
-          >
-            {exportando === "pdf" ? "Generando..." : "Exportar PDF"}
-          </button>
-        </div>
-      </div>
+      <EncabezadoPagina
+        titulo="Reportes"
+        descripcion="Indicadores del periodo y desempeño del equipo."
+        acciones={
+          <>
+            <button
+              onClick={() => void exportar("csv")}
+              disabled={exportando !== null}
+              className={clasesBoton({ variante: "secundario" })}
+            >
+              {exportando === "csv" ? "Generando..." : "Exportar CSV"}
+            </button>
+            <Boton
+              onClick={() => void exportar("pdf")}
+              disabled={exportando !== null}
+            >
+              {exportando === "pdf" ? "Generando..." : "Exportar PDF"}
+            </Boton>
+          </>
+        }
+      />
 
       <FiltrosPeriodo periodo={periodo} onCambiar={cambiarPeriodo} />
 
@@ -262,18 +258,12 @@ function FiltrosPeriodo({
           className="rounded-lg border border-tci-borde px-3 py-2 text-sm text-tci-negro focus:border-tci-rojo focus:outline-none"
         />
       </div>
-      <button
-        onClick={() => onCambiar(mesActual())}
-        className="rounded-lg border border-tci-borde px-3 py-2 text-sm font-semibold text-tci-negro hover:bg-tci-humo"
-      >
+      <Boton onClick={() => onCambiar(mesActual())} variante="secundario">
         Este mes
-      </button>
-      <button
-        onClick={() => onCambiar({})}
-        className="rounded-lg border border-tci-borde px-3 py-2 text-sm font-semibold text-tci-negro hover:bg-tci-humo"
-      >
+      </Boton>
+      <Boton onClick={() => onCambiar({})} variante="secundario">
         Todo el historial
-      </button>
+      </Boton>
     </div>
   );
 }
@@ -329,7 +319,12 @@ function Panel({
 function Barras({
   filas,
 }: {
-  filas: { clave: string; etiqueta: string; valor: number; marca?: string | null }[];
+  filas: {
+    clave: string;
+    etiqueta: string;
+    valor: number;
+    marca?: string | null;
+  }[];
 }) {
   if (filas.length === 0) {
     return (
@@ -367,7 +362,9 @@ function Barras({
           >
             <div
               className="h-full rounded-full bg-tci-grafito"
-              style={{ width: `${maximo > 0 ? (fila.valor / maximo) * 100 : 0}%` }}
+              style={{
+                width: `${maximo > 0 ? (fila.valor / maximo) * 100 : 0}%`,
+              }}
             />
           </div>
         </li>
@@ -448,10 +445,7 @@ function TablaTecnicos({ tecnicos }: { tecnicos: FilaTecnico[] }) {
               <Dato etiqueta="Total" valor={String(fila.total)} />
               <Dato etiqueta="Abiertas" valor={String(fila.abiertas)} />
               <Dato etiqueta="Cerradas" valor={String(fila.completadas)} />
-              <Dato
-                etiqueta="Horas"
-                valor={formatearNumero(fila.horas, 1)}
-              />
+              <Dato etiqueta="Horas" valor={formatearNumero(fila.horas, 1)} />
               <Dato
                 etiqueta="Tiempo prom."
                 valor={formatearDuracion(fila.diasPromedioResolucion)}

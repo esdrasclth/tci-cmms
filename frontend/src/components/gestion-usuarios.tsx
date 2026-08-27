@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo, CampoContrasena } from "@/components/form";
+import { Boton, EncabezadoPagina, Vacio } from "@/components/ui";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 import { ApiError } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
@@ -88,21 +89,15 @@ export function GestionUsuarios() {
 
   return (
     <section>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-tci-negro">Usuarios</h1>
-          <p className="mt-1 text-sm text-tci-gris">
-            Las cuentas solo se crean desde aqui: el registro publico esta
-            cerrado.
-          </p>
-        </div>
-        <button
-          onClick={() => setDialogo({ tipo: "nuevo" })}
-          className="rounded-lg bg-tci-rojo px-4 py-2.5 text-sm font-bold text-white hover:bg-tci-rojo-hover"
-        >
-          Nuevo usuario
-        </button>
-      </div>
+      <EncabezadoPagina
+        titulo="Usuarios"
+        descripcion="Las cuentas solo se crean desde aqui: el registro publico esta cerrado."
+        acciones={
+          <Boton onClick={() => setDialogo({ tipo: "nuevo" })}>
+            Nuevo usuario
+          </Boton>
+        }
+      />
 
       {error && (
         <div className="mt-4">
@@ -121,9 +116,7 @@ export function GestionUsuarios() {
             ))}
           </div>
         ) : usuarios.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-tci-borde bg-white p-8 text-center text-sm text-tci-grafito">
-            No hay usuarios.
-          </p>
+          <Vacio>No hay usuarios.</Vacio>
         ) : (
           <>
             {/* Tabla en escritorio, tarjetas en movil (TCI-44): la tabla con
@@ -232,8 +225,6 @@ export function GestionUsuarios() {
     </section>
   );
 }
-
-
 
 /**
  * Piezas de una fila de usuario, compartidas por la tabla de escritorio y las
@@ -497,21 +488,18 @@ function DialogoContrasena({
             <strong>{usuario.name}</strong> se cierran en un plazo de hasta un
             minuto y tendra que volver a entrar.
           </p>
-          <button
-            onClick={onCerrar}
-            className="w-full rounded-lg border border-tci-borde px-4 py-3 text-sm font-bold text-tci-negro hover:bg-tci-humo"
-          >
+          <Boton onClick={onCerrar} variante="secundario" className="w-full">
             Cerrar
-          </button>
+          </Boton>
         </div>
       ) : (
         <form onSubmit={alEnviar} className="mt-5 space-y-4" noValidate>
           {error && <Alerta>{error}</Alerta>}
 
           <p className="text-sm text-tci-grafito">
-            Se asignara una contrasena nueva a{" "}
-            <strong>{usuario.name}</strong> ({usuario.email}). Comuniquesela por
-            un medio seguro y pidale que la cambie.
+            Se asignara una contrasena nueva a <strong>{usuario.name}</strong> (
+            {usuario.email}). Comuniquesela por un medio seguro y pidale que la
+            cambie.
           </p>
           <p className="rounded-lg bg-tci-humo px-4 py-3 text-xs text-tci-gris">
             Esta es la via provisional mientras no exista la recuperacion por
@@ -536,4 +524,3 @@ function DialogoContrasena({
     </Modal>
   );
 }
-

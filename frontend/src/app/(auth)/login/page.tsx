@@ -49,6 +49,7 @@ export default function LoginPage() {
         {error && <Alerta>{error}</Alerta>}
 
         <Campo
+          tamano="lg"
           etiqueta="Correo electrónico"
           name="email"
           type="email"
@@ -58,6 +59,7 @@ export default function LoginPage() {
         />
 
         <CampoContrasena
+          tamano="lg"
           etiqueta="Contraseña"
           name="password"
           autoComplete="current-password"

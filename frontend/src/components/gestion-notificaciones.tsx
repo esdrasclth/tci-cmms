@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
+import { EncabezadoPagina, clasesControl } from "@/components/ui";
+
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 import { ApiError } from "@/lib/api";
 import {
@@ -97,7 +99,9 @@ export function GestionNotificaciones() {
         ),
       );
       setError(
-        e instanceof ApiError ? e.message : "No se pudo cambiar la preferencia.",
+        e instanceof ApiError
+          ? e.message
+          : "No se pudo cambiar la preferencia.",
       );
     }
   }
@@ -114,7 +118,9 @@ export function GestionNotificaciones() {
   /** Los pares evento/rol que existen. Los que no, no se pintan. */
   const filas = EVENTOS.flatMap((evento) =>
     (["ADMIN", "TECNICO"] as const)
-      .filter((rol) => preferencias.some((p) => p.evento === evento && p.rol === rol))
+      .filter((rol) =>
+        preferencias.some((p) => p.evento === evento && p.rol === rol),
+      )
       .map((rol) => ({ evento, rol })),
   );
 
@@ -124,14 +130,10 @@ export function GestionNotificaciones() {
 
   return (
     <section>
-      <div>
-        <h1 className="tci-display text-2xl font-semibold text-tci-negro">
-          Notificaciones
-        </h1>
-        <p className="mt-1 text-sm text-tci-gris">
-          Qué avisa el sistema, a quién y por dónde.
-        </p>
-      </div>
+      <EncabezadoPagina
+        titulo="Notificaciones"
+        descripcion="Qué avisa el sistema, a quién y por dónde."
+      />
 
       {correoApagado && (
         <div className="mt-4 rounded-xl border border-tci-borde bg-tci-humo px-4 py-3 text-sm text-tci-grafito">
@@ -284,7 +286,8 @@ function Casilla({
       />
       {conEtiqueta && ETIQUETA_CANAL[preferencia.canal]}
       <span className="sr-only">
-        {ETIQUETA_CANAL[preferencia.canal]} para {ETIQUETA_EVENTO[preferencia.evento]}
+        {ETIQUETA_CANAL[preferencia.canal]} para{" "}
+        {ETIQUETA_EVENTO[preferencia.evento]}
       </span>
     </label>
   );
@@ -301,7 +304,9 @@ function BotonPlantilla({
 }) {
   const plantilla = plantillas.find((p) => p.evento === evento);
   if (!plantilla) return <span className="text-tci-gris">—</span>;
-  return <BotonFila onClick={() => onEditar(plantilla)}>Editar texto</BotonFila>;
+  return (
+    <BotonFila onClick={() => onEditar(plantilla)}>Editar texto</BotonFila>
+  );
 }
 
 /**
@@ -371,7 +376,7 @@ function DialogoPlantilla({
             rows={4}
             maxLength={2000}
             required
-            className="w-full rounded-lg border border-tci-borde px-4 py-2.5 text-sm text-tci-negro focus:border-tci-rojo focus:outline-none"
+            className={clasesControl("w-full")}
           />
         </div>
 

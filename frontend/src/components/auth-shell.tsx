@@ -1,4 +1,5 @@
 import Image from "next/image";
+
 import type { ReactNode } from "react";
 
 /**
@@ -61,7 +62,9 @@ export function AuthShell({
               <h2 className="tci-display text-[2rem] font-semibold text-tci-negro">
                 {titulo}
               </h2>
-              <p className="mt-2 text-[0.9375rem] leading-6 text-tci-gris">{subtitulo}</p>
+              <p className="mt-2 text-[0.9375rem] leading-6 text-tci-gris">
+                {subtitulo}
+              </p>
 
               <div className="mt-8">{children}</div>
             </div>
@@ -90,7 +93,10 @@ function Logo() {
 /** Fondo de marca con una capa oscura que mantiene legible el contenido. */
 function FondoLogin() {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+    >
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: "url('/background.jpg')" }}

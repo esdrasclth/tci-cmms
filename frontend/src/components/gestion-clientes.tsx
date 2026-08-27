@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
+import {
+  Boton,
+  EncabezadoPagina,
+  Vacio,
+  clasesBoton,
+  clasesControl,
+} from "@/components/ui";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
+
 import { ApiError } from "@/lib/api";
 import { useDebounce } from "@/lib/hooks";
 import {
@@ -92,22 +100,17 @@ export function GestionClientes() {
 
   return (
     <section>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-tci-negro">Clientes</h1>
-          <p className="mt-1 text-sm text-tci-gris">
-            Empresas atendidas y sus sedes.
-          </p>
-        </div>
-        <button
-          onClick={() => setDialogo({ tipo: "nuevo" })}
-          className="rounded-lg bg-tci-rojo px-4 py-2.5 text-sm font-bold text-white hover:bg-tci-rojo-hover"
-        >
-          Nuevo cliente
-        </button>
-      </div>
+      <EncabezadoPagina
+        titulo="Clientes"
+        descripcion="Empresas atendidas y sus sedes."
+        acciones={
+          <Boton onClick={() => setDialogo({ tipo: "nuevo" })}>
+            Nuevo cliente
+          </Boton>
+        }
+      />
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <label htmlFor="buscar-cliente" className="sr-only">
           Buscar cliente
         </label>
@@ -117,7 +120,7 @@ export function GestionClientes() {
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Buscar por nombre, RTN o contacto..."
-          className="w-full max-w-sm rounded-lg border border-tci-borde px-4 py-2.5 text-sm text-tci-negro placeholder:text-tci-gris/70 focus:border-tci-rojo focus:outline-none"
+          className={clasesControl("w-full max-w-sm")}
         />
         <label htmlFor="filtro-activo" className="sr-only">
           Filtrar por estado
@@ -128,7 +131,7 @@ export function GestionClientes() {
           onChange={(e) =>
             setFiltroActivo(e.target.value as "" | "true" | "false")
           }
-          className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro"
+          className={clasesControl()}
         >
           <option value="">Activos y desactivados</option>
           <option value="true">Solo activos</option>
@@ -151,11 +154,11 @@ export function GestionClientes() {
         {cargando && clientes.length === 0 ? (
           <Esqueleto />
         ) : clientes.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-tci-borde bg-white p-8 text-center text-sm text-tci-grafito">
+          <Vacio>
             {busqueda || filtroActivo
               ? "Ningun cliente coincide."
               : "No hay clientes."}
-          </p>
+          </Vacio>
         ) : (
           <div className={cargando ? "opacity-50" : ""}>
             {/* Tabla en escritorio, tarjetas en movil (TCI-44): con scroll
@@ -479,7 +482,9 @@ function DialogoSedes({
       }
       formulario.reset();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "No se pudo guardar la sede.");
+      setError(
+        e instanceof ApiError ? e.message : "No se pudo guardar la sede.",
+      );
     } finally {
       setGuardando(false);
     }
@@ -491,7 +496,9 @@ function DialogoSedes({
       await eliminarSede(sede.id);
       setSedes((lista) => lista.filter((s) => s.id !== sede.id));
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "No se pudo borrar la sede.");
+      setError(
+        e instanceof ApiError ? e.message : "No se pudo borrar la sede.",
+      );
     }
   }
 
@@ -517,12 +524,15 @@ function DialogoSedes({
                     {sede.nombre}
                   </p>
                   <p className="text-xs text-tci-gris">
-                    {[sede.direccion, sede.ciudad].filter(Boolean).join(" · ") ||
-                      "Sin direccion"}
+                    {[sede.direccion, sede.ciudad]
+                      .filter(Boolean)
+                      .join(" · ") || "Sin direccion"}
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-2">
-                  <BotonFila onClick={() => setEditando(sede)}>Editar</BotonFila>
+                  <BotonFila onClick={() => setEditando(sede)}>
+                    Editar
+                  </BotonFila>
                   <BotonFila peligro onClick={() => void borrar(sede)}>
                     Borrar
                   </BotonFila>
@@ -565,27 +575,23 @@ function DialogoSedes({
               <button
                 type="button"
                 onClick={() => setEditando(null)}
-                className="flex-1 rounded-lg border border-tci-borde px-4 py-2.5 text-sm font-bold text-tci-negro hover:bg-tci-humo"
+                className={clasesBoton({
+                  variante: "secundario",
+                  className: "flex-1",
+                })}
               >
                 Cancelar
               </button>
             )}
-            <button
-              type="submit"
-              disabled={guardando}
-              className="flex-1 rounded-lg bg-tci-rojo px-4 py-2.5 text-sm font-bold text-white hover:bg-tci-rojo-hover disabled:opacity-50"
-            >
+            <Boton type="submit" disabled={guardando} className="flex-1">
               {guardando ? "Guardando..." : editando ? "Guardar" : "Agregar"}
-            </button>
+            </Boton>
           </div>
         </form>
 
-        <button
-          onClick={onCerrar}
-          className="w-full rounded-lg border border-tci-borde px-4 py-3 text-sm font-bold text-tci-negro hover:bg-tci-humo"
-        >
+        <Boton onClick={onCerrar} variante="secundario" className="w-full">
           Cerrar
-        </button>
+        </Boton>
       </div>
     </Modal>
   );
@@ -632,20 +638,21 @@ function DialogoBorrar({
           </p>
         )}
         <div className="flex gap-3">
-          <button
+          <Boton
             onClick={onCerrar}
             disabled={borrando}
-            className="flex-1 rounded-lg border border-tci-borde px-4 py-3 text-sm font-bold text-tci-negro hover:bg-tci-humo disabled:opacity-50"
+            variante="secundario"
+            className="flex-1"
           >
             Cancelar
-          </button>
-          <button
+          </Boton>
+          <Boton
             onClick={() => void borrar()}
             disabled={borrando}
-            className="flex-1 rounded-lg bg-tci-rojo px-4 py-3 text-sm font-bold text-white hover:bg-tci-rojo-hover disabled:opacity-50"
+            className="flex-1"
           >
             {borrando ? "Borrando..." : "Borrar"}
-          </button>
+          </Boton>
         </div>
       </div>
     </Modal>

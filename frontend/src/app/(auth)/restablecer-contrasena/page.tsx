@@ -92,6 +92,7 @@ function Formulario() {
         {error && <Alerta>{error}</Alerta>}
 
         <CampoContrasena
+          tamano="lg"
           etiqueta="Nueva contraseña"
           name="password"
           autoComplete="new-password"
@@ -101,6 +102,7 @@ function Formulario() {
         />
 
         <CampoContrasena
+          tamano="lg"
           etiqueta="Repita la contraseña"
           name="repetir"
           autoComplete="new-password"

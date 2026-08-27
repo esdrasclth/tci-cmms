@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
+import { Boton, EncabezadoPagina, Vacio, clasesControl } from "@/components/ui";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 import { ApiError } from "@/lib/api";
 import { useDebounce } from "@/lib/hooks";
@@ -57,7 +58,9 @@ export function GestionTipos() {
       .catch((e: unknown) => {
         if (!cancelado) {
           setError(
-            e instanceof ApiError ? e.message : "No se pudo cargar el catalogo.",
+            e instanceof ApiError
+              ? e.message
+              : "No se pudo cargar el catalogo.",
           );
         }
       })
@@ -88,24 +91,17 @@ export function GestionTipos() {
 
   return (
     <section>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-tci-negro">
-            Tipos de mantenimiento
-          </h1>
-          <p className="mt-1 text-sm text-tci-gris">
-            Clasificacion que se elige al levantar una orden de trabajo.
-          </p>
-        </div>
-        <button
-          onClick={() => setDialogo({ tipo: "nuevo" })}
-          className="rounded-lg bg-tci-rojo px-4 py-2.5 text-sm font-bold text-white hover:bg-tci-rojo-hover"
-        >
-          Nuevo tipo
-        </button>
-      </div>
+      <EncabezadoPagina
+        titulo="Tipos de mantenimiento"
+        descripcion="Clasificacion que se elige al levantar una orden de trabajo."
+        acciones={
+          <Boton onClick={() => setDialogo({ tipo: "nuevo" })}>
+            Nuevo tipo
+          </Boton>
+        }
+      />
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <label htmlFor="buscar-tipo" className="sr-only">
           Buscar tipo de mantenimiento
         </label>
@@ -115,7 +111,7 @@ export function GestionTipos() {
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Buscar por codigo o nombre..."
-          className="w-full max-w-sm rounded-lg border border-tci-borde px-4 py-2.5 text-sm text-tci-negro placeholder:text-tci-gris/70 focus:border-tci-rojo focus:outline-none"
+          className={clasesControl("w-full max-w-sm")}
         />
         <label htmlFor="filtro-tipo-activo" className="sr-only">
           Filtrar por estado
@@ -126,7 +122,7 @@ export function GestionTipos() {
           onChange={(e) =>
             setFiltroActivo(e.target.value as "" | "true" | "false")
           }
-          className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro"
+          className={clasesControl()}
         >
           <option value="">Activos y desactivados</option>
           <option value="true">Solo activos</option>
@@ -149,11 +145,11 @@ export function GestionTipos() {
         {cargando && tipos.length === 0 ? (
           <Esqueleto />
         ) : tipos.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-tci-borde bg-white p-8 text-center text-sm text-tci-grafito">
+          <Vacio>
             {busqueda || filtroActivo
               ? "Ningun tipo coincide."
               : "No hay tipos de mantenimiento."}
-          </p>
+          </Vacio>
         ) : (
           <div className={cargando ? "opacity-50" : ""}>
             {/* Tabla en escritorio, tarjetas en movil (TCI-44). */}
@@ -214,9 +210,13 @@ export function GestionTipos() {
                   <div className="mt-3">
                     <Acciones
                       tipo={tipo}
-                      onEditar={() => setDialogo({ tipo: "editar", item: tipo })}
+                      onEditar={() =>
+                        setDialogo({ tipo: "editar", item: tipo })
+                      }
                       onAlternar={() => void alternarActivo(tipo)}
-                      onBorrar={() => setDialogo({ tipo: "borrar", item: tipo })}
+                      onBorrar={() =>
+                        setDialogo({ tipo: "borrar", item: tipo })
+                      }
                     />
                   </div>
                 </li>

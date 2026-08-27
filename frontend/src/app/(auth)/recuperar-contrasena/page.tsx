@@ -79,6 +79,7 @@ export default function RecuperarContrasenaPage() {
         {error && <Alerta>{error}</Alerta>}
 
         <Campo
+          tamano="lg"
           etiqueta="Correo electrónico"
           name="email"
           type="email"
@@ -115,9 +116,9 @@ function Aviso() {
         El envío de correo aún no está activo
       </p>
       <p className="mt-1">
-        Está pendiente de configurar el dominio de TCI. Mientras tanto, cualquier
-        administrador puede asignarle una contraseña nueva desde el panel de
-        usuarios; es cuestión de minutos.
+        Está pendiente de configurar el dominio de TCI. Mientras tanto,
+        cualquier administrador puede asignarle una contraseña nueva desde el
+        panel de usuarios; es cuestión de minutos.
       </p>
       <p className="mt-2">
         <a

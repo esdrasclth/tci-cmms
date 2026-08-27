@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
+import { Boton, EncabezadoPagina, Vacio, clasesControl } from "@/components/ui";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
+
 import { ApiError } from "@/lib/api";
 import {
   listarTiposEquipoActivos,
@@ -113,28 +115,25 @@ export function GestionEquipos() {
 
   return (
     <section>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-tci-negro">Equipos</h1>
-          <p className="mt-1 text-sm text-tci-gris">
-            Activos de cada cliente sobre los que se abren ordenes.
-          </p>
-        </div>
-        <button
-          onClick={() => setDialogo({ tipo: "nuevo" })}
-          disabled={clientesActivos.length === 0}
-          title={
-            clientesActivos.length === 0
-              ? "Registre primero un cliente activo"
-              : undefined
-          }
-          className="rounded-lg bg-tci-rojo px-4 py-2.5 text-sm font-bold text-white hover:bg-tci-rojo-hover disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Nuevo equipo
-        </button>
-      </div>
+      <EncabezadoPagina
+        titulo="Equipos"
+        descripcion="Activos de cada cliente sobre los que se abren ordenes."
+        acciones={
+          <Boton
+            onClick={() => setDialogo({ tipo: "nuevo" })}
+            disabled={clientesActivos.length === 0}
+            title={
+              clientesActivos.length === 0
+                ? "Registre primero un cliente activo"
+                : undefined
+            }
+          >
+            Nuevo equipo
+          </Boton>
+        }
+      />
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <label htmlFor="filtro-cliente" className="sr-only">
           Filtrar por cliente
         </label>
@@ -146,7 +145,7 @@ export function GestionEquipos() {
             // La sede elegida es de otro cliente: deja de tener sentido.
             setFiltroSede("");
           }}
-          className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro"
+          className={clasesControl()}
         >
           <option value="">Todos los clientes</option>
           {clientes.map((c) => (
@@ -164,7 +163,7 @@ export function GestionEquipos() {
           value={filtroSede}
           onChange={(e) => setFiltroSede(e.target.value)}
           disabled={!filtroCliente || sedesDelFiltro.length === 0}
-          className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro disabled:bg-tci-humo disabled:text-tci-gris"
+          className={clasesControl()}
         >
           <option value="">
             {!filtroCliente
@@ -189,7 +188,7 @@ export function GestionEquipos() {
           onChange={(e) =>
             setFiltroActivo(e.target.value as "" | "true" | "false")
           }
-          className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro"
+          className={clasesControl()}
         >
           <option value="">Activos y desactivados</option>
           <option value="true">Solo activos</option>
@@ -205,7 +204,7 @@ export function GestionEquipos() {
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Codigo, nombre, marca, modelo o serie..."
-          className="w-full max-w-xs rounded-lg border border-tci-borde px-4 py-2.5 text-sm text-tci-negro placeholder:text-tci-gris/70 focus:border-tci-rojo focus:outline-none"
+          className={clasesControl("w-full max-w-xs")}
         />
 
         {!cargando && (
@@ -232,11 +231,11 @@ export function GestionEquipos() {
             ))}
           </div>
         ) : equipos.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-tci-borde bg-white p-8 text-center text-sm text-tci-grafito">
+          <Vacio>
             {busqueda || filtroCliente || filtroSede || filtroActivo
               ? "Ningun equipo coincide."
               : "No hay equipos registrados."}
-          </p>
+          </Vacio>
         ) : (
           <div className={cargando ? "opacity-50" : ""}>
             {/* Tabla en escritorio, tarjetas en movil (TCI-44). */}
@@ -391,7 +390,9 @@ function Ubicacion({ equipo }: { equipo: Equipo }) {
     <>
       {equipo.cliente.nombre}
       {equipo.sede && (
-        <span className="block text-xs text-tci-gris">{equipo.sede.nombre}</span>
+        <span className="block text-xs text-tci-gris">
+          {equipo.sede.nombre}
+        </span>
       )}
     </>
   );
@@ -458,7 +459,8 @@ function DialogoEquipo({
   }, []);
 
   const sedes =
-    clientes.find((c) => c.id === clienteId)?.sedes.filter((s) => s.activo) ?? [];
+    clientes.find((c) => c.id === clienteId)?.sedes.filter((s) => s.activo) ??
+    [];
 
   async function alEnviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -520,7 +522,7 @@ function DialogoEquipo({
               id="tipoEquipoId"
               name="tipoEquipoId"
               defaultValue={equipo?.tipoEquipo?.id ?? ""}
-              className="w-full rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro"
+              className={clasesControl("w-full")}
             >
               <option value="">Sin tipo</option>
               {tiposEquipo.map((tipo) => (
@@ -678,24 +680,28 @@ function DialogoBorrar({
       <div className="mt-5 space-y-4">
         {error && <Alerta>{error}</Alerta>}
         <p className="text-sm text-tci-grafito">
-          Se borrara <strong>{equipo.codigo} — {equipo.nombre}</strong>. Esta
-          accion no se deshace desde la interfaz.
+          Se borrara{" "}
+          <strong>
+            {equipo.codigo} — {equipo.nombre}
+          </strong>
+          . Esta accion no se deshace desde la interfaz.
         </p>
         <div className="flex gap-3">
-          <button
+          <Boton
             onClick={onCerrar}
             disabled={borrando}
-            className="flex-1 rounded-lg border border-tci-borde px-4 py-3 text-sm font-bold text-tci-negro hover:bg-tci-humo disabled:opacity-50"
+            variante="secundario"
+            className="flex-1"
           >
             Cancelar
-          </button>
-          <button
+          </Boton>
+          <Boton
             onClick={() => void borrar()}
             disabled={borrando}
-            className="flex-1 rounded-lg bg-tci-rojo px-4 py-3 text-sm font-bold text-white hover:bg-tci-rojo-hover disabled:opacity-50"
+            className="flex-1"
           >
             {borrando ? "Borrando..." : "Borrar"}
-          </button>
+          </Boton>
         </div>
       </div>
     </Modal>

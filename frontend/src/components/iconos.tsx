@@ -18,7 +18,10 @@ type Props = {
   className?: string;
 };
 
-function Icono({ className = "h-5 w-5", children }: Props & { children: React.ReactNode }) {
+function Icono({
+  className = "h-5 w-5",
+  children,
+}: Props & { children: React.ReactNode }) {
   return (
     <svg
       aria-hidden

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta } from "@/components/form";
+import { Boton } from "@/components/ui";
 import { BotonFila } from "@/components/modal";
 import { ApiError } from "@/lib/api";
 import {
@@ -97,7 +98,8 @@ export function RepuestosOrden({
   }
 
   const total = lineas.reduce(
-    (suma, linea) => suma + Number(linea.cantidad) * Number(linea.costoUnitario),
+    (suma, linea) =>
+      suma + Number(linea.cantidad) * Number(linea.costoUnitario),
     0,
   );
 
@@ -254,22 +256,17 @@ function Linea({
               className="w-32 rounded-lg border border-tci-borde px-3 py-2 text-sm text-tci-negro focus:border-tci-rojo focus:outline-none"
             />
           </div>
-          <button
-            type="submit"
-            className="rounded-lg bg-tci-rojo px-4 py-2 text-sm font-semibold text-white hover:bg-tci-rojo-hover"
-          >
-            Guardar
-          </button>
-          <button
+          <Boton type="submit">Guardar</Boton>
+          <Boton
             type="button"
             onClick={() => {
               setCantidad(String(Number(linea.cantidad)));
               setCorrigiendo(false);
             }}
-            className="rounded-lg border border-tci-borde px-4 py-2 text-sm font-semibold text-tci-negro hover:bg-tci-humo"
+            variante="secundario"
           >
             Cancelar
-          </button>
+          </Boton>
         </form>
       )}
     </li>
@@ -354,13 +351,9 @@ function FormularioImputar({
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={!repuestoId || ocupado}
-        className="rounded-lg bg-tci-rojo px-4 py-2 text-sm font-semibold text-white hover:bg-tci-rojo-hover disabled:opacity-50"
-      >
+      <Boton type="submit" disabled={!repuestoId || ocupado}>
         {ocupado ? "Guardando..." : "Imputar"}
-      </button>
+      </Boton>
     </form>
   );
 }

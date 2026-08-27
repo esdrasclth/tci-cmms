@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-
-import { BotonPrimario } from "@/components/form";
+import { Boton } from "@/components/ui";
 
 /**
  * Marco de dialogo compartido por las pantallas de gestion.
@@ -43,13 +42,21 @@ export function Modal({
         aria-label={titulo}
         className="max-h-full w-full overflow-y-auto rounded-t-2xl bg-white p-6 sm:max-w-lg sm:rounded-2xl"
       >
-        <h2 className="text-xl font-bold text-tci-negro">{titulo}</h2>
+        <h2 className="tci-display text-xl font-semibold text-tci-negro">
+          {titulo}
+        </h2>
         {children}
       </div>
     </div>
   );
 }
 
+/**
+ * Cancelar / Guardar al pie de un dialogo.
+ *
+ * Los dos botones van al 50% y no dimensionados por su texto: en un dialogo el
+ * par de acciones es una unidad, y con anchos distintos el pie se ve torcido.
+ */
 export function BotonesDialogo({
   onCerrar,
   guardando,
@@ -61,19 +68,18 @@ export function BotonesDialogo({
 }) {
   return (
     <div className="flex gap-3 pt-2">
-      <button
+      <Boton
         type="button"
+        variante="secundario"
         onClick={onCerrar}
         disabled={guardando}
-        className="flex-1 rounded-lg border border-tci-borde px-4 py-3 text-sm font-bold text-tci-negro hover:bg-tci-humo disabled:opacity-50"
+        className="flex-1"
       >
         Cancelar
-      </button>
-      <div className="flex-1">
-        <BotonPrimario type="submit" cargando={guardando}>
-          {guardando ? "Guardando..." : texto}
-        </BotonPrimario>
-      </div>
+      </Boton>
+      <Boton type="submit" cargando={guardando} className="flex-1">
+        {guardando ? "Guardando..." : texto}
+      </Boton>
     </div>
   );
 }
@@ -93,17 +99,14 @@ export function BotonFila({
   peligro?: boolean;
 }) {
   return (
-    <button
+    <Boton
+      tamano="xs"
+      variante={peligro ? "peligro" : "secundario"}
       onClick={onClick}
       disabled={disabled}
       title={titulo}
-      className={`rounded-lg border px-3 py-1.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 ${
-        peligro
-          ? "border-tci-rojo/40 text-tci-rojo hover:bg-tci-rojo/5"
-          : "border-tci-borde text-tci-negro hover:bg-tci-humo"
-      }`}
     >
       {children}
-    </button>
+    </Boton>
   );
 }

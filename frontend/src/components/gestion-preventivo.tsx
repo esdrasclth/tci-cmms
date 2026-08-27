@@ -4,6 +4,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
+import {
+  Boton,
+  EncabezadoPagina,
+  Vacio,
+  clasesBoton,
+  clasesControl,
+} from "@/components/ui";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 import { ApiError } from "@/lib/api";
 import { listarClientesAdmin, type Cliente } from "@/lib/clientes";
@@ -59,7 +66,9 @@ export function GestionPreventivo() {
   const [intento, setIntento] = useState(0);
   const [dialogo, setDialogo] = useState<Dialogo>(null);
   const [generando, setGenerando] = useState(false);
-  const [generacion, setGeneracion] = useState<ResultadoGeneracion | null>(null);
+  const [generacion, setGeneracion] = useState<ResultadoGeneracion | null>(
+    null,
+  );
   const [avisos, setAvisos] = useState<AvisoPreventivo[]>([]);
 
   useEffect(() => {
@@ -75,7 +84,9 @@ export function GestionPreventivo() {
       .catch((e: unknown) => {
         if (!cancelado) {
           setError(
-            e instanceof ApiError ? e.message : "No se pudieron cargar los planes.",
+            e instanceof ApiError
+              ? e.message
+              : "No se pudieron cargar los planes.",
           );
         }
       })
@@ -109,7 +120,9 @@ export function GestionPreventivo() {
       recargar();
     } catch (e) {
       setError(
-        e instanceof ApiError ? e.message : "No se pudieron generar las ordenes.",
+        e instanceof ApiError
+          ? e.message
+          : "No se pudieron generar las ordenes.",
       );
     } finally {
       setGenerando(false);
@@ -130,44 +143,39 @@ export function GestionPreventivo() {
 
   return (
     <section>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="tci-display text-2xl font-semibold text-tci-negro">
-            Mantenimiento preventivo
-          </h1>
-          <p className="mt-1 text-sm text-tci-gris">
-            Cada cuánto le toca mantenimiento a cada tipo de equipo.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/panel/preventivo/calendario"
-            className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm font-semibold text-tci-negro hover:bg-tci-humo"
-          >
-            Ver calendario
-          </Link>
-          <button
-            onClick={() => void generar()}
-            disabled={generando || planes.length === 0}
-            title="Crea ahora las órdenes de los equipos vencidos, sin esperar al horario diario"
-            className="rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm font-semibold text-tci-negro hover:bg-tci-humo disabled:opacity-50"
-          >
-            {generando ? "Generando..." : "Generar órdenes ahora"}
-          </button>
-          <button
-            onClick={() => setDialogo({ tipo: "nuevo" })}
-            disabled={tiposEquipo.length === 0}
-          title={
-            tiposEquipo.length === 0
-              ? "Cree primero un tipo de equipo: el plan cuelga de él"
-              : undefined
-          }
-            className="rounded-lg bg-tci-rojo px-4 py-2.5 text-sm font-semibold text-white hover:bg-tci-rojo-hover disabled:opacity-50"
-          >
-            Nuevo plan
-          </button>
-        </div>
-      </div>
+      <EncabezadoPagina
+        titulo="Mantenimiento preventivo"
+        descripcion="Cada cuánto le toca mantenimiento a cada tipo de equipo."
+        acciones={
+          <>
+            <Link
+              href="/panel/preventivo/calendario"
+              className={clasesBoton({ variante: "secundario" })}
+            >
+              Ver calendario
+            </Link>
+            <button
+              onClick={() => void generar()}
+              disabled={generando || planes.length === 0}
+              title="Crea ahora las órdenes de los equipos vencidos, sin esperar al horario diario"
+              className={clasesBoton({ variante: "secundario" })}
+            >
+              {generando ? "Generando..." : "Generar órdenes ahora"}
+            </button>
+            <Boton
+              onClick={() => setDialogo({ tipo: "nuevo" })}
+              disabled={tiposEquipo.length === 0}
+              title={
+                tiposEquipo.length === 0
+                  ? "Cree primero un tipo de equipo: el plan cuelga de él"
+                  : undefined
+              }
+            >
+              Nuevo plan
+            </Boton>
+          </>
+        }
+      />
 
       {avisos.length > 0 && <AvisoAnticipado avisos={avisos} />}
 
@@ -201,9 +209,7 @@ export function GestionPreventivo() {
         {cargando && planes.length === 0 ? (
           <Esqueleto />
         ) : planes.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-tci-borde bg-white p-8 text-center text-sm text-tci-grafito">
-            No hay planes de mantenimiento definidos.
-          </p>
+          <Vacio>No hay planes de mantenimiento definidos.</Vacio>
         ) : (
           <ul className={`space-y-3 ${cargando ? "opacity-50" : ""}`}>
             {planes.map((plan) => (
@@ -237,12 +243,12 @@ export function GestionPreventivo() {
                       Aviso {plan.diasAnticipacion} días antes
                     </p>
                   </div>
-                  <button
+                  <Boton
                     onClick={() => setDialogo({ tipo: "alcance", item: plan })}
-                    className="shrink-0 rounded-lg border border-tci-borde px-3 py-1.5 text-sm font-semibold text-tci-negro hover:bg-tci-humo"
+                    variante="secundario"
                   >
                     {plan.equipos} {plan.equipos === 1 ? "equipo" : "equipos"}
-                  </button>
+                  </Boton>
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -290,10 +296,7 @@ export function GestionPreventivo() {
       )}
 
       {dialogo?.tipo === "alcance" && (
-        <DialogoAlcance
-          plan={dialogo.item}
-          onCerrar={() => setDialogo(null)}
-        />
+        <DialogoAlcance plan={dialogo.item} onCerrar={() => setDialogo(null)} />
       )}
 
       {dialogo?.tipo === "borrar" && (
@@ -343,9 +346,7 @@ function AvisoAnticipado({ avisos }: { avisos: AvisoPreventivo[] }) {
         ))}
       </ul>
       {avisos.length > 6 && (
-        <p className="mt-1 text-amber-800">
-          y {avisos.length - 6} más.
-        </p>
+        <p className="mt-1 text-amber-800">y {avisos.length - 6} más.</p>
       )}
       <p className="mt-2 text-xs text-amber-800">
         &quot;Generar órdenes ahora&quot; crea las órdenes de los que ya
@@ -434,7 +435,9 @@ function DialogoPlan({
 }) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tiposMantenimiento, setTiposMantenimiento] = useState<TipoActivo[]>([]);
+  const [tiposMantenimiento, setTiposMantenimiento] = useState<TipoActivo[]>(
+    [],
+  );
   const [clientes, setClientes] = useState<Cliente[]>([]);
 
   useEffect(() => {
@@ -515,7 +518,7 @@ function DialogoPlan({
             // dejar colgadas las ordenes que ya genero.
             disabled={existente !== undefined}
             required
-            className="w-full rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro disabled:bg-tci-humo disabled:text-tci-gris"
+            className={clasesControl("w-full")}
           >
             {!existente && <option value="">Elija un tipo...</option>}
             {tiposEquipo.map((tipo) => (
@@ -557,7 +560,7 @@ function DialogoPlan({
               id="frecuenciaUnidad"
               name="frecuenciaUnidad"
               defaultValue={existente?.frecuenciaUnidad ?? "MESES"}
-              className="w-full rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro"
+              className={clasesControl("w-full")}
             >
               {UNIDADES.map((u) => (
                 <option key={u.valor} value={u.valor}>
@@ -580,7 +583,7 @@ function DialogoPlan({
             name="tipoMantenimientoId"
             defaultValue={existente?.tipoMantenimiento.id}
             required
-            className="w-full rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro"
+            className={clasesControl("w-full")}
           >
             <option value="">Elija un tipo...</option>
             {tiposMantenimiento.map((tipo) => (
@@ -603,7 +606,7 @@ function DialogoPlan({
               id="clienteId"
               name="clienteId"
               defaultValue={existente?.cliente?.id ?? ""}
-              className="w-full rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro"
+              className={clasesControl("w-full")}
             >
               <option value="">Todos los clientes</option>
               {clientes.map((cliente) => (
@@ -624,13 +627,15 @@ function DialogoPlan({
               id="prioridad"
               name="prioridad"
               defaultValue={existente?.prioridad ?? "MEDIA"}
-              className="w-full rounded-lg border border-tci-borde bg-white px-4 py-2.5 text-sm text-tci-negro"
+              className={clasesControl("w-full")}
             >
-              {(["BAJA", "MEDIA", "ALTA", "URGENTE"] as Prioridad[]).map((p) => (
-                <option key={p} value={p}>
-                  {ETIQUETA_PRIORIDAD[p]}
-                </option>
-              ))}
+              {(["BAJA", "MEDIA", "ALTA", "URGENTE"] as Prioridad[]).map(
+                (p) => (
+                  <option key={p} value={p}>
+                    {ETIQUETA_PRIORIDAD[p]}
+                  </option>
+                ),
+              )}
             </select>
           </div>
         </div>
@@ -679,7 +684,9 @@ function DialogoTipoEquipo({
 
   async function alEnviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
-    const nombre = String(new FormData(evento.currentTarget).get("nombre")).trim();
+    const nombre = String(
+      new FormData(evento.currentTarget).get("nombre"),
+    ).trim();
 
     setGuardando(true);
     setError(null);
@@ -693,7 +700,11 @@ function DialogoTipoEquipo({
   }
 
   return (
-    <Modal titulo="Nuevo tipo de equipo" onCerrar={onCerrar} bloqueado={guardando}>
+    <Modal
+      titulo="Nuevo tipo de equipo"
+      onCerrar={onCerrar}
+      bloqueado={guardando}
+    >
       <form onSubmit={alEnviar} className="mt-5 space-y-4" noValidate>
         {error && <Alerta>{error}</Alerta>}
         <Campo
@@ -793,12 +804,9 @@ function DialogoAlcance({
           </ul>
         )}
 
-        <button
-          onClick={onCerrar}
-          className="mt-5 w-full rounded-lg border border-tci-borde px-4 py-3 text-sm font-bold text-tci-negro hover:bg-tci-humo"
-        >
+        <Boton onClick={onCerrar} variante="secundario" className="mt-5 w-full">
           Cerrar
-        </button>
+        </Boton>
       </div>
     </Modal>
   );
@@ -807,7 +815,11 @@ function DialogoAlcance({
 function Estado({
   equipo,
 }: {
-  equipo: { vencido: boolean; porVencer: boolean; proximoVencimiento: string | null };
+  equipo: {
+    vencido: boolean;
+    porVencer: boolean;
+    proximoVencimiento: string | null;
+  };
 }) {
   if (equipo.vencido) {
     return (
@@ -864,22 +876,23 @@ function DialogoBorrar({
           sin perder el rastro.
         </p>
         <div className="flex gap-3 pt-2">
-          <button
+          <Boton
             type="button"
             onClick={onCerrar}
             disabled={borrando}
-            className="flex-1 rounded-lg border border-tci-borde px-4 py-3 text-sm font-bold text-tci-negro hover:bg-tci-humo disabled:opacity-50"
+            variante="secundario"
+            className="flex-1"
           >
             Cancelar
-          </button>
-          <button
+          </Boton>
+          <Boton
             type="button"
             onClick={() => void borrar()}
             disabled={borrando}
-            className="flex-1 rounded-lg bg-tci-rojo px-4 py-3 text-sm font-bold text-white hover:bg-tci-rojo-hover disabled:opacity-50"
+            className="flex-1"
           >
             {borrando ? "Borrando..." : "Borrar"}
-          </button>
+          </Boton>
         </div>
       </div>
     </Modal>

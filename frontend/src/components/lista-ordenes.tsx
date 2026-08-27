@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { ApiError } from "@/lib/api";
+import { Boton } from "@/components/ui";
 import {
   COLOR_ESTADO,
   COLOR_PRIORIDAD,
@@ -138,12 +139,9 @@ export function ListaOrdenes({ esAdmin }: { esAdmin: boolean }) {
         {error ? (
           <Aviso>
             <p className="text-tci-rojo">{error}</p>
-            <button
-              onClick={recargar}
-              className="mt-3 rounded-lg border border-tci-borde px-4 py-2 text-sm font-bold text-tci-negro hover:bg-tci-humo"
-            >
+            <Boton onClick={recargar} variante="secundario" className="mt-3">
               Reintentar
-            </button>
+            </Boton>
           </Aviso>
         ) : cargando ? (
           <Esqueleto />
@@ -169,7 +167,9 @@ export function ListaOrdenes({ esAdmin }: { esAdmin: boolean }) {
                     <th className="px-4 py-3 font-bold">Cliente</th>
                     <th className="px-4 py-3 font-bold">Estado</th>
                     <th className="px-4 py-3 font-bold">Prioridad</th>
-                    {esAdmin && <th className="px-4 py-3 font-bold">Técnico</th>}
+                    {esAdmin && (
+                      <th className="px-4 py-3 font-bold">Técnico</th>
+                    )}
                     <th className="px-4 py-3 font-bold">Programada</th>
                   </tr>
                 </thead>
@@ -234,24 +234,26 @@ export function ListaOrdenes({ esAdmin }: { esAdmin: boolean }) {
                     href={`/panel/ordenes/${orden.id}`}
                     className="block rounded-xl border border-tci-borde bg-white p-4 hover:border-tci-gris"
                   >
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="font-mono text-xs text-tci-gris">
-                      {orden.numero}
-                    </span>
-                    <InsigniaEstado estado={orden.estado} />
-                  </div>
-                  <p className="mt-2 font-bold text-tci-negro">{orden.titulo}</p>
-                  <p className="text-sm text-tci-grafito">
-                    {orden.cliente.nombre}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-tci-gris">
-                    <span className={COLOR_PRIORIDAD[orden.prioridad]}>
-                      {ETIQUETA_PRIORIDAD[orden.prioridad]}
-                    </span>
-                    <span>{formatearFecha(orden.fechaProgramada)}</span>
-                    {esAdmin && (
-                      <span>{orden.tecnico?.name ?? "Sin asignar"}</span>
-                    )}
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="font-mono text-xs text-tci-gris">
+                        {orden.numero}
+                      </span>
+                      <InsigniaEstado estado={orden.estado} />
+                    </div>
+                    <p className="mt-2 font-bold text-tci-negro">
+                      {orden.titulo}
+                    </p>
+                    <p className="text-sm text-tci-grafito">
+                      {orden.cliente.nombre}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-tci-gris">
+                      <span className={COLOR_PRIORIDAD[orden.prioridad]}>
+                        {ETIQUETA_PRIORIDAD[orden.prioridad]}
+                      </span>
+                      <span>{formatearFecha(orden.fechaProgramada)}</span>
+                      {esAdmin && (
+                        <span>{orden.tecnico?.name ?? "Sin asignar"}</span>
+                      )}
                     </div>
                   </Link>
                 </li>
