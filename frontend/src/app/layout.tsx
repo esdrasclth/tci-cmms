@@ -40,6 +40,18 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   /*
+   * Sin esto Next resuelve las URL relativas de metadatos contra
+   * `localhost:3000` y la vista previa al compartir apunta a una direccion que
+   * solo existe en la maquina de quien compilo.
+   *
+   * Se lee en tiempo de ejecucion y no como `NEXT_PUBLIC_*`: los metadatos se
+   * evaluan en el servidor, asi que no hace falta hornearla en el paquete ni
+   * recompilar para cambiar de dominio — que es justo lo que va a pasar cuando
+   * esto se mude al dominio de TCI.
+   */
+  metadataBase: new URL(process.env.SITE_URL ?? "http://localhost:3000"),
+
+  /*
    * El titulo por defecto lleva el nombre completo porque es lo que se ve en
    * la pestana y en el marcador, donde "CMMS TCI" a secas no dice de quien es.
    * Las paginas internas usan la plantilla, que antepone su propio nombre y

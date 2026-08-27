@@ -119,6 +119,12 @@ services:
         # reconstruir la imagen, no solo a reiniciar el contenedor.
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?falta NEXT_PUBLIC_API_URL}
     restart: always
+    environment:
+      # En ejecucion y no como argumento de compilacion: los metadatos se
+      # evaluan en el servidor, asi que cambiar de dominio no obliga a
+      # reconstruir la imagen. Es la misma URL publica que ya se declara para
+      # CORS, y por eso se reutiliza en vez de pedir una variable mas.
+      SITE_URL: ${CORS_ORIGIN}
     depends_on:
       backend:
         condition: service_healthy
