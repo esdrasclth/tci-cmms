@@ -56,3 +56,28 @@ body {
   outline: 2px solid var(--color-tci-rojo);
   outline-offset: 2px;
 }
+
+/*
+ * Entrada de la hoja inferior en movil (`hoja-inferior.tsx`). En CSS y no en
+ * estado de React: asi la corre el compositor y no depende del ciclo de
+ * renderizado.
+ */
+@keyframes tci-subir {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes tci-aparecer {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Quien pide menos movimiento no recibe ninguno. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[tci-subir_250ms_ease-out\],
+  .animate-\[tci-aparecer_200ms_ease-out\] {
+    animation: none;
+  }
+}

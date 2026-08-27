@@ -5,8 +5,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { BarraLateral, destinosDe } from "@/components/barra-lateral";
-import { IconoCerrar, IconoMenu } from "@/components/iconos";
+import {
+  BarraLateral,
+  MenuMovil,
+  destinosDe,
+} from "@/components/barra-lateral";
+import { CampanaNotificaciones } from "@/components/campana-notificaciones";
+import { HojaInferior } from "@/components/hoja-inferior";
+import { IconoMenu, IconoUsuarios } from "@/components/iconos";
 import { signOut, useSession } from "@/lib/auth-client";
 
 /**
@@ -17,31 +23,23 @@ import { signOut, useSession } from "@/lib/auth-client";
  * compartan host. Cuando el despliegue fije los dominios (TCI-70) esto puede
  * pasar a un middleware.
  *
- * La barra es fija en escritorio y un cajon sobre el contenido en movil, donde
- * 256px de navegacion permanente no dejarian sitio para trabajar (TCI-44).
+ * En escritorio la navegacion es una columna fija. En movil no se reaprovecha
+ * esa columna: se sube a una hoja desde el borde inferior, porque la
+ * hamburguesa esta arriba a la izquierda —el punto mas lejano para el pulgar de
+ * quien sostiene el telefono con una mano— y en planta esto se usa con guantes
+ * (TCI-44). Ver `hoja-inferior.tsx`.
  */
 export default function PanelLayout({ children }: LayoutProps<"/panel">) {
   const router = useRouter();
   const ruta = usePathname();
   const { data: sesion, isPending } = useSession();
-  const [cajonAbierto, setCajonAbierto] = useState(false);
+  const [hojaAbierta, setHojaAbierta] = useState(false);
 
   useEffect(() => {
     if (!isPending && !sesion) {
       router.replace("/login");
     }
   }, [isPending, sesion, router]);
-
-  // Escape cierra el cajon: es un panel modal y debe poder abandonarse sin
-  // apuntar al boton, que en movil queda arriba del todo.
-  useEffect(() => {
-    if (!cajonAbierto) return;
-    const alPulsar = (evento: KeyboardEvent) => {
-      if (evento.key === "Escape") setCajonAbierto(false);
-    };
-    document.addEventListener("keydown", alPulsar);
-    return () => document.removeEventListener("keydown", alPulsar);
-  }, [cajonAbierto]);
 
   if (isPending || !sesion) {
     return (
@@ -53,6 +51,8 @@ export default function PanelLayout({ children }: LayoutProps<"/panel">) {
 
   const esAdmin = sesion.user.rol === "ADMIN";
   const destinos = destinosDe(esAdmin);
+  // El tecnico solo tiene un destino, asi que no hay menu que abrir.
+  const hayNavegacion = destinos.length > 1;
   const usuario = {
     nombre: sesion.user.name,
     correo: sesion.user.email,
@@ -77,8 +77,10 @@ export default function PanelLayout({ children }: LayoutProps<"/panel">) {
         />
       </aside>
 
-      {/* Movil: barra superior minima, solo marca y acceso a la navegacion. */}
-      <header className="sticky top-0 z-20 flex items-center justify-between gap-4 bg-tci-negro px-4 py-3 lg:hidden">
+      {/* Movil: barra superior minima. La campana va aqui y no dentro del
+          menu: es lo unico que puede llegar mientras se trabaja, y no debe
+          costar un toque de mas. */}
+      <header className="sticky top-0 z-20 flex items-center justify-between gap-2 bg-tci-negro px-4 py-2 lg:hidden">
         <Link href="/panel" aria-label="Ir al listado de ordenes">
           <Image
             src="/logo-tci.png"
@@ -89,48 +91,42 @@ export default function PanelLayout({ children }: LayoutProps<"/panel">) {
             className="h-10 w-auto"
           />
         </Link>
-        <button
-          type="button"
-          onClick={() => setCajonAbierto(true)}
-          aria-expanded={cajonAbierto}
-          aria-controls="cajon-navegacion"
-          className="rounded-lg border border-white/25 p-2.5 text-white transition-colors hover:bg-white/10"
-        >
-          <span className="sr-only">Abrir navegación</span>
-          <IconoMenu />
-        </button>
-      </header>
-
-      {cajonAbierto && (
-        <div className="fixed inset-0 z-40 lg:hidden">
+        <div className="flex items-center gap-1">
+          <CampanaNotificaciones compacto />
           <button
             type="button"
-            aria-label="Cerrar navegación"
-            onClick={() => setCajonAbierto(false)}
-            className="absolute inset-0 h-full w-full bg-black/50"
-          />
-          <div
-            id="cajon-navegacion"
-            className="absolute inset-y-0 left-0 w-72 max-w-[85vw] shadow-2xl"
+            onClick={() => setHojaAbierta(true)}
+            aria-expanded={hojaAbierta}
+            aria-haspopup="dialog"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-white/80 transition-colors active:bg-white/10"
           >
-            <BarraLateral
-              destinos={destinos}
-              ruta={ruta}
-              usuario={usuario}
-              onSalir={() => void salir()}
-              onNavegar={() => setCajonAbierto(false)}
-            />
-            <button
-              type="button"
-              onClick={() => setCajonAbierto(false)}
-              className="absolute top-6 right-3 rounded-lg p-2 text-white/65 transition-colors hover:bg-white/10 hover:text-white"
-            >
-              <span className="sr-only">Cerrar navegación</span>
-              <IconoCerrar />
-            </button>
-          </div>
+            {/* Con un solo destino no hay nada que navegar: el boton deja de
+                ser un menu y pasa a ser el acceso a la cuenta. */}
+            <span className="sr-only">
+              {hayNavegacion ? "Abrir menú" : "Su cuenta"}
+            </span>
+            {hayNavegacion ? (
+              <IconoMenu />
+            ) : (
+              <IconoUsuarios className="h-5 w-5" />
+            )}
+          </button>
         </div>
-      )}
+      </header>
+
+      <HojaInferior
+        abierta={hojaAbierta}
+        onCerrar={() => setHojaAbierta(false)}
+        etiqueta={hayNavegacion ? "Menú" : "Su cuenta"}
+      >
+        <MenuMovil
+          destinos={destinos}
+          ruta={ruta}
+          usuario={usuario}
+          onSalir={() => void salir()}
+          onNavegar={() => setHojaAbierta(false)}
+        />
+      </HojaInferior>
 
       <div className="lg:pl-64">
         <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">

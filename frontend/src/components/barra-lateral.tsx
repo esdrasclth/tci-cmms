@@ -179,3 +179,80 @@ export function BarraLateral({
     </div>
   );
 }
+
+/**
+ * Contenido del menu en movil, dentro de la hoja inferior.
+ *
+ * En rejilla de dos columnas y no en lista: los nueve destinos del
+ * administrador caben sin desplazar, y cada tarjeta da un objetivo de ~96px
+ * frente a los 44px de una fila. Con guantes puestos esa diferencia se nota.
+ *
+ * Cuando solo hay un destino —el caso del tecnico— la rejilla no se dibuja:
+ * un menu de navegacion con un unico enlace no es un menu, y la hoja pasa a
+ * ser lo que de verdad es, la ficha de la cuenta.
+ */
+export function MenuMovil({
+  destinos,
+  ruta,
+  usuario,
+  onSalir,
+  onNavegar,
+}: {
+  destinos: Destino[];
+  ruta: string;
+  usuario: { nombre: string; correo: string; esAdmin: boolean };
+  onSalir: () => void;
+  onNavegar: () => void;
+}) {
+  return (
+    <>
+      {destinos.length > 1 && (
+        <nav className="px-4 pb-2" aria-label="Secciones del panel">
+          <div className="grid grid-cols-2 gap-2">
+            {destinos.map((destino) => {
+              const activo = destino.exacto
+                ? ruta === destino.href
+                : ruta.startsWith(destino.href);
+              const Icono = destino.icono;
+              return (
+                <Link
+                  key={destino.href}
+                  href={destino.href}
+                  onClick={onNavegar}
+                  aria-current={activo ? "page" : undefined}
+                  className={`flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl px-2 text-center text-xs leading-tight font-semibold transition-colors ${
+                    activo
+                      ? "bg-white/12 text-white ring-1 ring-tci-rojo"
+                      : "bg-white/5 text-white/70 active:bg-white/10"
+                  }`}
+                >
+                  <Icono className="h-6 w-6" />
+                  {destino.etiqueta}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
+
+      <div className="mt-2 border-t border-white/10 px-4 pt-3 pb-4">
+        <p className="truncate text-sm font-semibold text-white">
+          {usuario.nombre}
+        </p>
+        <p className="truncate text-xs text-white/50">{usuario.correo}</p>
+        <p className="mt-1 text-[0.6875rem] font-semibold tracking-wide text-white/40 uppercase">
+          {usuario.esAdmin ? "Administrador" : "Técnico"}
+        </p>
+
+        <button
+          type="button"
+          onClick={onSalir}
+          className="mt-3 flex min-h-12 w-full items-center gap-3 rounded-xl bg-white/5 px-4 text-sm font-semibold text-white/80 transition-colors active:bg-white/10"
+        >
+          <IconoSalir className="h-5 w-5" />
+          Cerrar sesión
+        </button>
+      </div>
+    </>
+  );
+}

@@ -27,7 +27,16 @@ const INTERVALO = 60_000;
  * global por usuario es otra cosa y no la pedia ningun work item; un sondeo de
  * un minuto es suficiente para un aviso que no es urgente al segundo.
  */
-export function CampanaNotificaciones() {
+/**
+ * `compacto` la dibuja como icono suelto para la barra superior de movil.
+ * Sin eso la campana solo se alcanzaba abriendo el menu, que es un toque de
+ * mas para lo unico que puede llegar mientras se trabaja.
+ */
+export function CampanaNotificaciones({
+  compacto = false,
+}: {
+  compacto?: boolean;
+} = {}) {
   const [abierta, setAbierta] = useState(false);
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [noLeidas, setNoLeidas] = useState(0);
@@ -118,19 +127,37 @@ export function CampanaNotificaciones() {
             ? `Notificaciones, ${noLeidas} sin leer`
             : "Notificaciones"
         }
-        className="relative flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm text-white/65 transition-colors hover:bg-white/5 hover:text-white"
+        className={
+          compacto
+            ? "relative flex h-11 w-11 items-center justify-center rounded-lg text-white/80 transition-colors active:bg-white/10"
+            : "relative flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm text-white/65 transition-colors hover:bg-white/5 hover:text-white"
+        }
       >
         <IconoCampana className="h-5 w-5" />
-        Notificaciones
-        {noLeidas > 0 && (
-          <span className="ml-auto rounded-full bg-tci-rojo px-2 py-0.5 text-xs font-bold text-white">
-            {noLeidas > 99 ? "99+" : noLeidas}
-          </span>
-        )}
+        {!compacto && "Notificaciones"}
+        {noLeidas > 0 &&
+          (compacto ? (
+            // Sobre el icono y no al lado: en la barra superior no hay ancho
+            // que gastar en una fila.
+            <span className="absolute top-1 right-1 min-w-4 rounded-full bg-tci-rojo px-1 text-[0.625rem] leading-4 font-bold text-white">
+              {noLeidas > 9 ? "9+" : noLeidas}
+            </span>
+          ) : (
+            <span className="ml-auto rounded-full bg-tci-rojo px-2 py-0.5 text-xs font-bold text-white">
+              {noLeidas > 99 ? "99+" : noLeidas}
+            </span>
+          ))}
       </button>
 
       {abierta && (
-        <div className="absolute bottom-full left-0 z-50 mb-2 max-h-96 w-80 overflow-y-auto rounded-xl border border-tci-borde bg-white shadow-2xl">
+        <div
+          className={`absolute z-50 max-h-96 w-[min(20rem,calc(100vw-1.5rem))] overflow-y-auto rounded-xl border border-tci-borde bg-white shadow-2xl ${
+            // En la barra superior despliega hacia abajo y pegada a la
+            // derecha; en la columna lateral, hacia arriba, que es donde tiene
+            // sitio.
+            compacto ? "top-full right-0 mt-2" : "bottom-full left-0 mb-2"
+          }`}
+        >
           <div className="flex items-center justify-between border-b border-tci-borde px-4 py-3">
             <p className="text-sm font-semibold text-tci-negro">
               Notificaciones
