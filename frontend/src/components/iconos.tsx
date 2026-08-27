@@ -165,10 +165,14 @@ export function IconoCerrar(props: Props) {
 
 /* --- Acciones de fila ------------------------------------------------------
  *
- * A diferencia de los de navegacion, estos van SOLOS dentro del boton, sin
- * etiqueta al lado. Siguen marcados `aria-hidden`: el nombre accesible lo pone
- * el `aria-label` del boton, no el icono. Un `<title>` dentro del svg daria dos
- * nombres para el mismo control.
+ * Solo estos dos. A diferencia de los de navegacion van SOLOS dentro del boton,
+ * sin etiqueta al lado, y eso solo funciona con simbolos que no hay que
+ * aprender: el lapiz y la papelera. Las demas acciones de fila conservan su
+ * nombre escrito —ver `BotonFila` en `modal.tsx` para el porque—.
+ *
+ * Siguen marcados `aria-hidden`: el nombre accesible lo pone el `aria-label`
+ * del boton, no el icono. Un `<title>` dentro del svg daria dos nombres para el
+ * mismo control.
  */
 
 export function IconoEditar(props: Props) {
@@ -187,86 +191,6 @@ export function IconoBorrar(props: Props) {
       <path d="M8.5 6V4.5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1V6" />
       <path d="M18.5 6l-.8 13a2 2 0 0 1-2 1.9H8.3a2 2 0 0 1-2-1.9L5.5 6" />
       <path d="M10 10.5v6M14 10.5v6" />
-    </Icono>
-  );
-}
-
-/** Estado activo: se puede desactivar. */
-export function IconoDesactivar(props: Props) {
-  return (
-    <Icono {...props}>
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M6 6l12 12" />
-    </Icono>
-  );
-}
-
-/** Estado desactivado: se puede volver a activar. */
-export function IconoActivar(props: Props) {
-  return (
-    <Icono {...props}>
-      <path d="M20.5 11.2V12a8.5 8.5 0 1 1-5-7.8" />
-      <path d="M9 11.5l3 3 8.5-8.5" />
-    </Icono>
-  );
-}
-
-export function IconoSede(props: Props) {
-  return (
-    <Icono {...props}>
-      <path d="M19.5 10.5c0 5.5-7.5 11-7.5 11s-7.5-5.5-7.5-11a7.5 7.5 0 0 1 15 0Z" />
-      <circle cx="12" cy="10.5" r="2.75" />
-    </Icono>
-  );
-}
-
-export function IconoLlave(props: Props) {
-  return (
-    <Icono {...props}>
-      <circle cx="7.5" cy="15.5" r="3.75" />
-      <path d="M10.2 12.8 20 3" />
-      <path d="M16.5 6.5l2.5 2.5" />
-      <path d="M14 9l2 2" />
-    </Icono>
-  );
-}
-
-export function IconoEntrada(props: Props) {
-  return (
-    <Icono {...props}>
-      <path d="M12 3v10" />
-      <path d="M8 9.5l4 4 4-4" />
-      <path d="M4 16.5v2a2.5 2.5 0 0 0 2.5 2.5h11a2.5 2.5 0 0 0 2.5-2.5v-2" />
-    </Icono>
-  );
-}
-
-export function IconoSalida(props: Props) {
-  return (
-    <Icono {...props}>
-      <path d="M12 14V4" />
-      <path d="M8 8l4-4 4 4" />
-      <path d="M4 16.5v2a2.5 2.5 0 0 0 2.5 2.5h11a2.5 2.5 0 0 0 2.5-2.5v-2" />
-    </Icono>
-  );
-}
-
-export function IconoHistorial(props: Props) {
-  return (
-    <Icono {...props}>
-      <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1L3.5 8.4" />
-      <path d="M3.5 4v4.5H8" />
-      <path d="M12 8v4.3l2.8 1.7" />
-    </Icono>
-  );
-}
-
-/** Quitar de una lista, que no es lo mismo que borrar el registro. */
-export function IconoQuitar(props: Props) {
-  return (
-    <Icono {...props}>
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M8.5 12h7" />
     </Icono>
   );
 }

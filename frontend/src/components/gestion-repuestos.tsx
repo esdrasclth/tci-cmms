@@ -4,15 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
-import {
-  IconoActivar,
-  IconoBorrar,
-  IconoDesactivar,
-  IconoEditar,
-  IconoEntrada,
-  IconoHistorial,
-  IconoSalida,
-} from "@/components/iconos";
+import { IconoBorrar, IconoEditar } from "@/components/iconos";
 import {
   Boton,
   EncabezadoPagina,
@@ -377,18 +369,15 @@ function Acciones({
   return (
     <div className="flex flex-wrap gap-2 md:flex-nowrap">
       <BotonFila
-        icono={IconoEntrada}
-        etiqueta="Registrar entrada"
+        etiqueta="Entrada"
         onClick={() => setDialogo({ tipo: "entrada", item: repuesto })}
       />
       <BotonFila
-        icono={IconoSalida}
-        etiqueta="Registrar salida"
+        etiqueta="Salida"
         onClick={() => setDialogo({ tipo: "salida", item: repuesto })}
       />
       <BotonFila
-        icono={IconoHistorial}
-        etiqueta="Ver movimientos"
+        etiqueta="Movimientos"
         onClick={() => setDialogo({ tipo: "libro", item: repuesto })}
       />
       <BotonFila
@@ -397,7 +386,6 @@ function Acciones({
         onClick={() => setDialogo({ tipo: "editar", item: repuesto })}
       />
       <BotonFila
-        icono={repuesto.activo ? IconoDesactivar : IconoActivar}
         etiqueta={repuesto.activo ? "Desactivar" : "Activar"}
         onClick={onAlternar}
       />

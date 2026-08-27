@@ -85,15 +85,20 @@ export function BotonesDialogo({
 }
 
 /**
- * Accion de una fila de tabla, solo icono.
+ * Accion de una fila de tabla.
  *
- * Con texto, tres acciones por fila desbordaban la columna y "Borrar" saltaba
- * de linea en todas: cada fila crecia ~30% sin necesidad. En icono ocupan un
- * tercio y la fila queda a su altura natural.
+ * Va en icono solo cuando el simbolo se reconoce sin haberlo aprendido: el
+ * lapiz y la papelera. Son 15 de los 27 botones, o sea casi toda la ganancia
+ * de espacio, y nadie tiene que adivinar que hacen.
  *
- * `etiqueta` es obligatoria y no decorativa: es el nombre accesible del boton
- * —el icono va `aria-hidden`— y ademas el tooltip para quien no reconozca el
- * simbolo. Sin ella el control seria mudo para un lector de pantalla.
+ * El resto conservan su nombre escrito. Un circulo tachado no dice si activa o
+ * desactiva, y una flecha no distingue "entrada de almacen" de "salida": ahi el
+ * icono ahorra ancho a cambio de una duda, y esto lo usa gente que entra a la
+ * aplicacion de vez en cuando, no a diario. El tooltip tampoco rescata el caso,
+ * porque en una tablet no hay donde posar el cursor.
+ *
+ * `etiqueta` es obligatoria en los dos modos: con icono es el nombre accesible
+ * —el icono va `aria-hidden`— y sin el es el texto visible.
  */
 export function BotonFila({
   icono: Icono,
@@ -103,18 +108,34 @@ export function BotonFila({
   titulo,
   peligro = false,
 }: {
-  icono: (props: { className?: string }) => ReactNode;
+  icono?: (props: { className?: string }) => ReactNode;
   etiqueta: string;
   onClick: () => void;
   disabled?: boolean;
-  /** Motivo cuando esta deshabilitado. Sustituye al tooltip por defecto. */
+  /** Motivo cuando esta deshabilitado. */
   titulo?: string;
   peligro?: boolean;
 }) {
+  const variante = peligro ? "peligro" : "secundario";
+
+  if (!Icono) {
+    return (
+      <Boton
+        tamano="xs"
+        variante={variante}
+        onClick={onClick}
+        disabled={disabled}
+        title={titulo}
+      >
+        {etiqueta}
+      </Boton>
+    );
+  }
+
   return (
     <Boton
       tamano="icono"
-      variante={peligro ? "peligro" : "secundario"}
+      variante={variante}
       onClick={onClick}
       disabled={disabled}
       aria-label={etiqueta}

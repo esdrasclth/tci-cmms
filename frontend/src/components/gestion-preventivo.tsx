@@ -4,12 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
-import {
-  IconoActivar,
-  IconoBorrar,
-  IconoDesactivar,
-  IconoEditar,
-} from "@/components/iconos";
+import { IconoBorrar, IconoEditar } from "@/components/iconos";
 import {
   Boton,
   EncabezadoPagina,
@@ -264,7 +259,6 @@ export function GestionPreventivo() {
                     onClick={() => setDialogo({ tipo: "editar", item: plan })}
                   />
                   <BotonFila
-                    icono={plan.activo ? IconoDesactivar : IconoActivar}
                     etiqueta={plan.activo ? "Desactivar" : "Activar"}
                     onClick={() => void alternarActivo(plan)}
                   />

@@ -4,12 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
-import {
-  IconoActivar,
-  IconoBorrar,
-  IconoDesactivar,
-  IconoEditar,
-} from "@/components/iconos";
+import { IconoBorrar, IconoEditar } from "@/components/iconos";
 import { Boton, EncabezadoPagina, Vacio, clasesControl } from "@/components/ui";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 
@@ -421,7 +416,6 @@ function Acciones({
         onClick={() => setDialogo({ tipo: "editar", equipo })}
       />
       <BotonFila
-        icono={equipo.activo ? IconoDesactivar : IconoActivar}
         etiqueta={equipo.activo ? "Desactivar" : "Activar"}
         onClick={onAlternar}
       />

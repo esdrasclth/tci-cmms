@@ -3,13 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
-import {
-  IconoActivar,
-  IconoBorrar,
-  IconoDesactivar,
-  IconoEditar,
-  IconoSede,
-} from "@/components/iconos";
+import { IconoBorrar, IconoEditar } from "@/components/iconos";
 import {
   Boton,
   EncabezadoPagina,
@@ -340,12 +334,10 @@ function Acciones({
         onClick={() => setDialogo({ tipo: "editar", cliente })}
       />
       <BotonFila
-        icono={IconoSede}
         etiqueta={`Sedes (${cliente.sedes.length})`}
         onClick={() => setDialogo({ tipo: "sedes", cliente })}
       />
       <BotonFila
-        icono={cliente.activo ? IconoDesactivar : IconoActivar}
         etiqueta={cliente.activo ? "Desactivar" : "Activar"}
         onClick={onAlternar}
       />

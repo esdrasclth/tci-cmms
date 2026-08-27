@@ -3,12 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo, CampoContrasena } from "@/components/form";
-import {
-  IconoActivar,
-  IconoDesactivar,
-  IconoEditar,
-  IconoLlave,
-} from "@/components/iconos";
+import { IconoEditar } from "@/components/iconos";
 import { Boton, EncabezadoPagina, Vacio } from "@/components/ui";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 import { ApiError } from "@/lib/api";
@@ -304,12 +299,10 @@ function Acciones({
         onClick={() => setDialogo({ tipo: "editar", usuario })}
       />
       <BotonFila
-        icono={IconoLlave}
-        etiqueta="Cambiar contrasena"
+        etiqueta="Contrasena"
         onClick={() => setDialogo({ tipo: "contrasena", usuario })}
       />
       <BotonFila
-        icono={usuario.activo ? IconoDesactivar : IconoActivar}
         etiqueta={usuario.activo ? "Desactivar" : "Activar"}
         onClick={onAlternar}
         // El backend lo rechazaria igual; deshabilitarlo evita ofrecer algo

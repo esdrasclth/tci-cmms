@@ -3,12 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
-import {
-  IconoActivar,
-  IconoBorrar,
-  IconoDesactivar,
-  IconoEditar,
-} from "@/components/iconos";
+import { IconoBorrar, IconoEditar } from "@/components/iconos";
 import { Boton, EncabezadoPagina, Vacio, clasesControl } from "@/components/ui";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 import { ApiError } from "@/lib/api";
@@ -306,7 +301,6 @@ function Acciones({
     <div className="flex flex-wrap gap-2 md:flex-nowrap">
       <BotonFila icono={IconoEditar} etiqueta="Editar" onClick={onEditar} />
       <BotonFila
-        icono={tipo.activo ? IconoDesactivar : IconoActivar}
         etiqueta={tipo.activo ? "Desactivar" : "Activar"}
         onClick={onAlternar}
       />

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta } from "@/components/form";
-import { IconoEditar, IconoQuitar } from "@/components/iconos";
+import { IconoEditar } from "@/components/iconos";
 import { Boton } from "@/components/ui";
 import { BotonFila } from "@/components/modal";
 import { ApiError } from "@/lib/api";
@@ -229,8 +229,7 @@ function Linea({
             onClick={() => setCorrigiendo(true)}
           />
           <BotonFila
-            icono={IconoQuitar}
-            etiqueta="Retirar de la orden"
+            etiqueta="Retirar"
             peligro
             onClick={() => void onRetirar()}
           />
