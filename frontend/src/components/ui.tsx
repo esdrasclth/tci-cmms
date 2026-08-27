@@ -269,3 +269,50 @@ export function Girador() {
     </svg>
   );
 }
+
+/**
+ * Controles de pagina. Vivian dentro de `lista-ordenes`, que era el unico
+ * listado paginado; ahora lo son tambien clientes, equipos y repuestos.
+ *
+ * Muestra el total y no solo "pagina 2 de 7": saber que hay 1.243 clientes es
+ * la mitad de la informacion que se busca al abrir la pantalla.
+ */
+export function Paginacion({
+  meta,
+  onCambiar,
+  deshabilitado = false,
+  nombre,
+}: {
+  meta: { total: number; page: number; totalPages: number };
+  onCambiar: (n: number) => void;
+  deshabilitado?: boolean;
+  /** Plural de lo que se lista: "clientes", "equipos". */
+  nombre: string;
+}) {
+  const { page, totalPages, total } = meta;
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <Boton
+        tamano="sm"
+        variante="secundario"
+        onClick={() => onCambiar(page - 1)}
+        disabled={deshabilitado || page <= 1}
+      >
+        Anterior
+      </Boton>
+      <span className="text-sm text-tci-gris">
+        Pagina {page} de {totalPages} · {total} {nombre}
+      </span>
+      <Boton
+        tamano="sm"
+        variante="secundario"
+        onClick={() => onCambiar(page + 1)}
+        disabled={deshabilitado || page >= totalPages}
+      >
+        Siguiente
+      </Boton>
+    </div>
+  );
+}

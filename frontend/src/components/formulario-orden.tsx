@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, BotonPrimario, Campo } from "@/components/form";
-import { SelectorBuscable } from "@/components/selector-buscable";
 import { EncabezadoPagina, clasesArea } from "@/components/ui";
+import { SelectorBuscable } from "@/components/selector-buscable";
 import { ApiError } from "@/lib/api";
 import {
   actualizarOrden,

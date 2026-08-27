@@ -1,4 +1,7 @@
-import { Transform, Type } from 'class-transformer';
+import {
+  Transform,
+  Type,
+} from 'class-transformer';
 import {
   IsBoolean,
   IsInt,
@@ -135,16 +138,18 @@ export class FiltrarEquiposDto {
   )
   @IsBoolean()
   activo?: boolean;
-  /**
-   * Tope de resultados. Lo usa el selector con buscador: pide las primeras
-   * coincidencias mientras se escribe, no el catalogo entero. Sin tope, buscar
-   * "a" con mil clientes devuelve casi mil registros para pintar veinte.
-   */
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page: number = 1;
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(100)
-  limite?: number;
+  perPage: number = 20;
 
 }

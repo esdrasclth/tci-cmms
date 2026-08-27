@@ -6,6 +6,7 @@ import { Alerta, Campo } from "@/components/form";
 import {
   Boton,
   EncabezadoPagina,
+  Paginacion,
   Vacio,
   clasesBoton,
   clasesControl,
@@ -13,7 +14,7 @@ import {
 import { IconoBorrar, IconoEditar } from "@/components/iconos";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 
-import { ApiError } from "@/lib/api";
+import { ApiError, type Pagina } from "@/lib/api";
 import { useDebounce } from "@/lib/hooks";
 import {
   actualizarCliente,
@@ -46,6 +47,8 @@ type Dialogo =
  */
 export function GestionClientes() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [meta, setMeta] = useState<Pagina<Cliente>["meta"] | null>(null);
+  const [page, setPage] = useState(1);
   const [busqueda, setBusqueda] = useState("");
   const [filtroActivo, setFiltroActivo] = useState<"" | "true" | "false">("");
   const [cargando, setCargando] = useState(true);
@@ -61,10 +64,12 @@ export function GestionClientes() {
     listarClientesAdmin({
       q: busquedaDiferida,
       activo: filtroActivo === "" ? undefined : filtroActivo === "true",
+      page,
     })
-      .then((lista) => {
+      .then((r) => {
         if (cancelado) return;
-        setClientes(lista);
+        setClientes(r.data);
+        setMeta(r.meta);
         setError(null);
       })
       .catch((e: unknown) => {
@@ -80,7 +85,7 @@ export function GestionClientes() {
     return () => {
       cancelado = true;
     };
-  }, [intento, busquedaDiferida, filtroActivo]);
+  }, [intento, busquedaDiferida, filtroActivo, page]);
 
   const recargar = useCallback(() => {
     setCargando(true);
@@ -119,7 +124,10 @@ export function GestionClientes() {
           id="buscar-cliente"
           type="search"
           value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          onChange={(e) => {
+            setBusqueda(e.target.value);
+            setPage(1);
+          }}
           placeholder="Buscar por nombre, RTN o contacto..."
           className={clasesControl("w-full max-w-sm")}
         />
@@ -129,9 +137,10 @@ export function GestionClientes() {
         <select
           id="filtro-activo"
           value={filtroActivo}
-          onChange={(e) =>
-            setFiltroActivo(e.target.value as "" | "true" | "false")
-          }
+          onChange={(e) => {
+            setFiltroActivo(e.target.value as "" | "true" | "false");
+            setPage(1);
+          }}
           className={clasesControl()}
         >
           <option value="">Activos y desactivados</option>
@@ -140,7 +149,7 @@ export function GestionClientes() {
         </select>
         {!cargando && (
           <p className="text-sm text-tci-gris">
-            {clientes.length} {clientes.length === 1 ? "cliente" : "clientes"}
+            {meta?.total ?? 0} {meta?.total === 1 ? "cliente" : "clientes"}
           </p>
         )}
       </div>
@@ -234,6 +243,14 @@ export function GestionClientes() {
               ))}
             </ul>
           </div>
+        )}
+        {meta && (
+          <Paginacion
+            meta={meta}
+            onCambiar={setPage}
+            deshabilitado={cargando}
+            nombre="clientes"
+          />
         )}
       </div>
 

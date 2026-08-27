@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { ApiError } from "@/lib/api";
-import { Boton } from "@/components/ui";
+import { Boton, Paginacion } from "@/components/ui";
 import {
   COLOR_ESTADO,
   COLOR_PRIORIDAD,
@@ -277,7 +277,8 @@ export function ListaOrdenes({ esAdmin }: { esAdmin: boolean }) {
 
             {pagina.meta.totalPages > 1 && (
               <Paginacion
-                pagina={pagina}
+                nombre="ordenes"
+                meta={pagina.meta}
                 onCambiar={irAPagina}
                 deshabilitado={cargando}
               />
@@ -296,43 +297,6 @@ function InsigniaEstado({ estado }: { estado: OrdenListada["estado"] }) {
     >
       {ETIQUETA_ESTADO[estado]}
     </span>
-  );
-}
-
-function Paginacion({
-  pagina,
-  onCambiar,
-  deshabilitado,
-}: {
-  pagina: PaginaOrdenes;
-  onCambiar: (n: number) => void;
-  deshabilitado: boolean;
-}) {
-  const { page, totalPages } = pagina.meta;
-  const clases =
-    "rounded-lg border border-tci-borde px-3 py-1.5 text-sm font-bold text-tci-negro " +
-    "hover:bg-tci-humo disabled:cursor-not-allowed disabled:opacity-40";
-
-  return (
-    <div className="mt-4 flex items-center justify-between gap-4">
-      <button
-        onClick={() => onCambiar(page - 1)}
-        disabled={deshabilitado || page <= 1}
-        className={clases}
-      >
-        Anterior
-      </button>
-      <span className="text-sm text-tci-gris">
-        Pagina {page} de {totalPages}
-      </span>
-      <button
-        onClick={() => onCambiar(page + 1)}
-        disabled={deshabilitado || page >= totalPages}
-        className={clases}
-      >
-        Siguiente
-      </button>
-    </div>
   );
 }
 

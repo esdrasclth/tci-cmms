@@ -4,11 +4,17 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
-import { Boton, EncabezadoPagina, Vacio, clasesControl } from "@/components/ui";
+import {
+  Boton,
+  EncabezadoPagina,
+  Paginacion,
+  Vacio,
+  clasesControl,
+} from "@/components/ui";
 import { IconoBorrar, IconoEditar } from "@/components/iconos";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 
-import { ApiError } from "@/lib/api";
+import { ApiError, type Pagina } from "@/lib/api";
 import {
   listarTiposEquipoActivos,
   type TipoEquipoActivo,
@@ -38,6 +44,8 @@ type Dialogo =
  */
 export function GestionEquipos() {
   const [equipos, setEquipos] = useState<Equipo[]>([]);
+  const [meta, setMeta] = useState<Pagina<Equipo>["meta"] | null>(null);
+  const [page, setPage] = useState(1);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [filtroCliente, setFiltroCliente] = useState("");
   const [filtroSede, setFiltroSede] = useState("");
@@ -50,9 +58,9 @@ export function GestionEquipos() {
 
   useEffect(() => {
     let cancelado = false;
-    listarClientesAdmin()
-      .then((lista) => {
-        if (!cancelado) setClientes(lista);
+    listarClientesAdmin({ perPage: 100 })
+      .then((r) => {
+        if (!cancelado) setClientes(r.data);
       })
       .catch(() => {
         if (!cancelado) setClientes([]);
@@ -72,10 +80,12 @@ export function GestionEquipos() {
       sedeId: filtroSede || undefined,
       activo: filtroActivo === "" ? undefined : filtroActivo === "true",
       q: busquedaDiferida,
+      page,
     })
-      .then((lista) => {
+      .then((r) => {
         if (cancelado) return;
-        setEquipos(lista);
+        setEquipos(r.data);
+        setMeta(r.meta);
         setError(null);
       })
       .catch((e: unknown) => {
@@ -91,7 +101,14 @@ export function GestionEquipos() {
     return () => {
       cancelado = true;
     };
-  }, [intento, filtroCliente, filtroSede, filtroActivo, busquedaDiferida]);
+  }, [
+    intento,
+    filtroCliente,
+    filtroSede,
+    filtroActivo,
+    busquedaDiferida,
+    page,
+  ]);
 
   const recargar = useCallback(() => {
     setCargando(true);
@@ -145,6 +162,7 @@ export function GestionEquipos() {
             setFiltroCliente(e.target.value);
             // La sede elegida es de otro cliente: deja de tener sentido.
             setFiltroSede("");
+            setPage(1);
           }}
           className={clasesControl()}
         >
@@ -162,7 +180,10 @@ export function GestionEquipos() {
         <select
           id="filtro-sede"
           value={filtroSede}
-          onChange={(e) => setFiltroSede(e.target.value)}
+          onChange={(e) => {
+            setFiltroSede(e.target.value);
+            setPage(1);
+          }}
           disabled={!filtroCliente || sedesDelFiltro.length === 0}
           className={clasesControl()}
         >
@@ -186,9 +207,10 @@ export function GestionEquipos() {
         <select
           id="filtro-activo"
           value={filtroActivo}
-          onChange={(e) =>
-            setFiltroActivo(e.target.value as "" | "true" | "false")
-          }
+          onChange={(e) => {
+            setFiltroActivo(e.target.value as "" | "true" | "false");
+            setPage(1);
+          }}
           className={clasesControl()}
         >
           <option value="">Activos y desactivados</option>
@@ -203,14 +225,17 @@ export function GestionEquipos() {
           id="buscar-equipo"
           type="search"
           value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          onChange={(e) => {
+            setBusqueda(e.target.value);
+            setPage(1);
+          }}
           placeholder="Codigo, nombre, marca, modelo o serie..."
           className={clasesControl("w-full max-w-xs")}
         />
 
         {!cargando && (
           <p className="text-sm text-tci-gris">
-            {equipos.length} {equipos.length === 1 ? "equipo" : "equipos"}
+            {meta?.total ?? 0} {meta?.total === 1 ? "equipo" : "equipos"}
           </p>
         )}
       </div>
@@ -310,6 +335,14 @@ export function GestionEquipos() {
               ))}
             </ul>
           </div>
+        )}
+        {meta && (
+          <Paginacion
+            meta={meta}
+            onCambiar={setPage}
+            deshabilitado={cargando}
+            nombre="equipos"
+          />
         )}
       </div>
 

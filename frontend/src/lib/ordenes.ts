@@ -1,5 +1,5 @@
 import type { Adjunto } from "./adjuntos";
-import { apiGet, apiPatch, apiPost } from "./api";
+import { apiGet, apiPatch, apiPost, type Pagina } from "./api";
 
 /**
  * Espejo de lo que devuelve `GET /api/ordenes` (INCLUDE_LISTA en
@@ -268,9 +268,9 @@ export interface EquipoDeCliente {
   sedeId: string | null;
 }
 
-export function listarClientes() {
-  const params = new URLSearchParams({ activo: "true" });
-  return apiGet<ClienteConSedes[]>("/clientes", params);
+export async function listarClientes() {
+  const params = new URLSearchParams({ activo: "true", perPage: "100" });
+  return (await apiGet<Pagina<ClienteConSedes>>("/clientes", params)).data;
 }
 
 /**
@@ -280,10 +280,10 @@ export function listarClientes() {
  * descargarlos todos para llenar un desplegable del que se usa uno es trabajo
  * tirado, y elegir pasa a ser desplazar hasta encontrar.
  */
-export function buscarClientes(q: string) {
-  const params = new URLSearchParams({ activo: "true", limite: "20" });
+export async function buscarClientes(q: string) {
+  const params = new URLSearchParams({ activo: "true", perPage: "20" });
   if (q.trim()) params.set("q", q.trim());
-  return apiGet<ClienteConSedes[]>("/clientes", params);
+  return (await apiGet<Pagina<ClienteConSedes>>("/clientes", params)).data;
 }
 
 /** Un cliente con sus sedes. Al elegirlo hace falta saber donde puede estar. */
@@ -292,21 +292,21 @@ export function obtenerCliente(id: string) {
 }
 
 /** Equipos de un cliente que casen con la busqueda. Mismo tope. */
-export function buscarEquipos(clienteId: string, q: string) {
+export async function buscarEquipos(clienteId: string, q: string) {
   const params = new URLSearchParams({
     clienteId,
     activo: "true",
-    limite: "20",
+    perPage: "20",
   });
   if (q.trim()) params.set("q", q.trim());
-  return apiGet<EquipoDeCliente[]>("/equipos", params);
+  return (await apiGet<Pagina<EquipoDeCliente>>("/equipos", params)).data;
 }
 
-export function listarEquipos(clienteId: string) {
+export async function listarEquipos(clienteId: string) {
   // Solo los activos: un equipo dado de baja no debe poder recibir ordenes
   // nuevas, aunque siga apareciendo en su historial (TCI-37).
-  const params = new URLSearchParams({ clienteId, activo: "true" });
-  return apiGet<EquipoDeCliente[]>("/equipos", params);
+  const params = new URLSearchParams({ clienteId, activo: "true", perPage: "100" });
+  return (await apiGet<Pagina<EquipoDeCliente>>("/equipos", params)).data;
 }
 
 export interface DatosOrden {

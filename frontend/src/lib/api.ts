@@ -141,3 +141,16 @@ function mensajeDeError(status: number): string {
       return "Ocurrio un error al consultar la API.";
   }
 }
+
+/**
+ * Envoltorio de un listado paginado. Lo devuelven los endpoints de catalogo
+ * —clientes, equipos, repuestos— y el de ordenes, que ya lo hacia.
+ *
+ * Se paginan en el servidor y no en el navegador porque el problema no es
+ * pintar mil filas, es traerlas: con mil clientes eran mil registros con sus
+ * sedes y sus contadores en cada carga de la pantalla.
+ */
+export interface Pagina<T> {
+  data: T[];
+  meta: { total: number; page: number; perPage: number; totalPages: number };
+}

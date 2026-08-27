@@ -54,17 +54,33 @@ export class ClientesService {
       ];
     }
 
-    return this.prisma.cliente.findMany({
-      where,
-      include: {
-        sedes: SEDES_VISIBLES,
-        // Sirve para avisar en la interfaz de que un cliente no se puede borrar.
-        _count: { select: { ordenes: true, equipos: true } },
+    // El conteo va en la misma transaccion que la pagina: si no, entre las dos
+    // consultas puede darse de alta un cliente y el total no cuadrar con lo
+    // que se esta mostrando.
+    const [total, data] = await this.prisma.$transaction([
+      this.prisma.cliente.count({ where }),
+      this.prisma.cliente.findMany({
+        where,
+        include: {
+          sedes: SEDES_VISIBLES,
+          // Avisa en la interfaz de que un cliente no se puede borrar.
+          _count: { select: { ordenes: true, equipos: true } },
+        },
+        orderBy: { nombre: 'asc' },
+        skip: (filtros.page - 1) * filtros.perPage,
+        take: filtros.perPage,
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page: filtros.page,
+        perPage: filtros.perPage,
+        totalPages: Math.ceil(total / filtros.perPage),
       },
-      orderBy: { nombre: 'asc' },
-      // Solo cuando lo piden: los listados de pantalla siguen trayendo todo.
-      ...(filtros.limite ? { take: filtros.limite } : {}),
-    });
+    };
   }
 
   async obtener(id: string) {

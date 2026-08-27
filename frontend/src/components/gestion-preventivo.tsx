@@ -443,10 +443,13 @@ function DialogoPlan({
   const [clientes, setClientes] = useState<Cliente[]>([]);
 
   useEffect(() => {
-    Promise.all([listarTiposActivos(), listarClientesAdmin({ activo: true })])
-      .then(([tipos, lista]) => {
+    Promise.all([
+      listarTiposActivos(),
+      listarClientesAdmin({ activo: true, perPage: 100 }),
+    ])
+      .then(([tipos, clientes]) => {
         setTiposMantenimiento(tipos);
-        setClientes(lista);
+        setClientes(clientes.data);
       })
       .catch(() => setError("No se pudieron cargar los catálogos."));
   }, []);

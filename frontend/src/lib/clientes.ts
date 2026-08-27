@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
+import { apiDelete, apiGet, apiPatch, apiPost, type Pagina } from "./api";
 
 /** Espejo de lo que devuelve backend/src/clientes/clientes.service.ts. */
 export interface Sede {
@@ -31,13 +31,20 @@ export type DatosCliente = {
 };
 
 export function listarClientesAdmin(
-  filtros: { q?: string; activo?: boolean } = {},
+  filtros: {
+    q?: string;
+    activo?: boolean;
+    page?: number;
+    perPage?: number;
+  } = {},
 ) {
   const params = new URLSearchParams();
   if (filtros.q?.trim()) params.set("q", filtros.q.trim());
   if (filtros.activo !== undefined)
     params.set("activo", String(filtros.activo));
-  return apiGet<Cliente[]>("/clientes", params);
+  if (filtros.page) params.set("page", String(filtros.page));
+  if (filtros.perPage) params.set("perPage", String(filtros.perPage));
+  return apiGet<Pagina<Cliente>>("/clientes", params);
 }
 
 export function crearCliente(datos: DatosCliente) {

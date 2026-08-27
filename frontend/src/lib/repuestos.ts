@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
+import { apiDelete, apiGet, apiPatch, apiPost, type Pagina } from "./api";
 
 /**
  * Inventario y repuestos — TCI-45, TCI-46 y TCI-47.
@@ -100,18 +100,28 @@ export type DatosRepuesto = {
 // ---------------------------------------------------------------------------
 
 export function listarDisponibles() {
+  // `GET /repuestos` sirve `disponibles()`, que no esta paginado: es la lista
+  // corta para imputar consumo a una orden, no el catalogo de administracion.
   return apiGet<RepuestoDisponible[]>("/repuestos");
 }
 
 export function listarRepuestosAdmin(
-  filtros: { q?: string; activo?: boolean; bajoMinimo?: boolean } = {},
+  filtros: {
+    q?: string;
+    activo?: boolean;
+    bajoMinimo?: boolean;
+    page?: number;
+    perPage?: number;
+  } = {},
 ) {
   const params = new URLSearchParams();
   if (filtros.q?.trim()) params.set("q", filtros.q.trim());
   if (filtros.activo !== undefined)
     params.set("activo", String(filtros.activo));
   if (filtros.bajoMinimo) params.set("bajoMinimo", "true");
-  return apiGet<Repuesto[]>("/repuestos/admin", params);
+  if (filtros.page) params.set("page", String(filtros.page));
+  if (filtros.perPage) params.set("perPage", String(filtros.perPage));
+  return apiGet<Pagina<Repuesto>>("/repuestos/admin", params);
 }
 
 export function crearRepuesto(datos: DatosRepuesto) {

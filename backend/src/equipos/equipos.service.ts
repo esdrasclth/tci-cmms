@@ -33,7 +33,7 @@ const INCLUDE = {
 export class EquiposService {
   constructor(private readonly prisma: PrismaService) {}
 
-  listar(filtros: FiltrarEquiposDto) {
+  async listar(filtros: FiltrarEquiposDto) {
     const where: Prisma.EquipoWhereInput = { deletedAt: null };
     if (filtros.clienteId) where.clienteId = filtros.clienteId;
     if (filtros.sedeId) where.sedeId = filtros.sedeId;
@@ -49,13 +49,26 @@ export class EquiposService {
       ];
     }
 
-    return this.prisma.equipo.findMany({
-      where,
-      include: INCLUDE,
-      orderBy: { codigo: 'asc' },
-      // Solo cuando lo piden: los listados de pantalla siguen trayendo todo.
-      ...(filtros.limite ? { take: filtros.limite } : {}),
-    });
+    const [total, data] = await this.prisma.$transaction([
+      this.prisma.equipo.count({ where }),
+      this.prisma.equipo.findMany({
+        where,
+        include: INCLUDE,
+        orderBy: { codigo: 'asc' },
+        skip: (filtros.page - 1) * filtros.perPage,
+        take: filtros.perPage,
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page: filtros.page,
+        perPage: filtros.perPage,
+        totalPages: Math.ceil(total / filtros.perPage),
+      },
+    };
   }
 
   async obtener(id: string) {

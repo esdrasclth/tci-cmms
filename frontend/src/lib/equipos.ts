@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
+import { apiDelete, apiGet, apiPatch, apiPost, type Pagina } from "./api";
 
 /** Espejo de lo que devuelve backend/src/equipos/equipos.service.ts. */
 export interface Equipo {
@@ -23,6 +23,7 @@ export interface FiltrosEquipos {
   sedeId?: string;
   q?: string;
   activo?: boolean;
+  page?: number;
 }
 
 export type DatosEquipo = {
@@ -44,7 +45,8 @@ export function listarEquiposAdmin(filtros: FiltrosEquipos = {}) {
   if (filtros.q?.trim()) params.set("q", filtros.q.trim());
   if (filtros.activo !== undefined)
     params.set("activo", String(filtros.activo));
-  return apiGet<Equipo[]>("/equipos", params);
+  if (filtros.page) params.set("page", String(filtros.page));
+  return apiGet<Pagina<Equipo>>("/equipos", params);
 }
 
 export function obtenerEquipo(id: string) {

@@ -95,24 +95,39 @@ export class InventarioService {
       ];
     }
 
-    const repuestos = await this.prisma.repuesto.findMany({
-      where,
-      select: { ...CAMPOS, _count: { select: { consumos: true } } },
-      orderBy: [{ activo: 'desc' }, { nombre: 'asc' }],
-    });
+    // "Bajo minimo" compara dos columnas de la misma fila. Antes se resolvia
+    // en memoria, despues de traerlo todo; con la pagina hecha en SQL eso daria
+    // paginas incompletas y un total que no cuadra. Prisma sabe referenciar
+    // otra columna con `fields`, asi que la condicion baja a la consulta.
+    if (filtros.bajoMinimo) {
+      where.stockMinimo = { gt: 0 };
+      where.stockActual = { lte: this.prisma.repuesto.fields.stockMinimo };
+    }
 
-    return (
-      repuestos
-        .map(({ _count, ...repuesto }) => ({
-          ...repuesto,
-          ordenes: _count.consumos,
-          bajoMinimo: this.estaBajoMinimo(repuesto),
-        }))
-        // El filtro de minimos se aplica aqui y no en SQL porque compara dos
-        // columnas de la misma fila, algo que el `where` de Prisma no expresa.
-        // El catalogo de TCI son decenas de filas, no miles.
-        .filter((repuesto) => !filtros.bajoMinimo || repuesto.bajoMinimo)
-    );
+    const [total, repuestos] = await this.prisma.$transaction([
+      this.prisma.repuesto.count({ where }),
+      this.prisma.repuesto.findMany({
+        where,
+        select: { ...CAMPOS, _count: { select: { consumos: true } } },
+        orderBy: [{ activo: 'desc' }, { nombre: 'asc' }],
+        skip: (filtros.page - 1) * filtros.perPage,
+        take: filtros.perPage,
+      }),
+    ]);
+
+    return {
+      data: repuestos.map(({ _count, ...repuesto }) => ({
+        ...repuesto,
+        ordenes: _count.consumos,
+        bajoMinimo: this.estaBajoMinimo(repuesto),
+      })),
+      meta: {
+        total,
+        page: filtros.page,
+        perPage: filtros.perPage,
+        totalPages: Math.ceil(total / filtros.perPage),
+      },
+    };
   }
 
   /**

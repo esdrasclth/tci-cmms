@@ -39,8 +39,8 @@ export function LibroInventario() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    listarRepuestosAdmin()
-      .then(setRepuestos)
+    listarRepuestosAdmin({ perPage: 100 })
+      .then((r) => setRepuestos(r.data))
       .catch(() => setRepuestos([]));
   }, []);
 

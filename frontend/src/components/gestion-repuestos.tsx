@@ -7,6 +7,7 @@ import { Alerta, Campo } from "@/components/form";
 import {
   Boton,
   EncabezadoPagina,
+  Paginacion,
   Vacio,
   clasesBoton,
   clasesControl,
@@ -14,7 +15,7 @@ import {
 import { IconoBorrar, IconoEditar } from "@/components/iconos";
 
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
-import { ApiError } from "@/lib/api";
+import { ApiError, type Pagina } from "@/lib/api";
 import { useDebounce } from "@/lib/hooks";
 import {
   actualizarRepuesto,
@@ -49,6 +50,8 @@ type Dialogo =
  */
 export function GestionRepuestos() {
   const [repuestos, setRepuestos] = useState<Repuesto[]>([]);
+  const [meta, setMeta] = useState<Pagina<Repuesto>["meta"] | null>(null);
+  const [page, setPage] = useState(1);
   const [busqueda, setBusqueda] = useState("");
   const [filtroActivo, setFiltroActivo] = useState<"" | "true" | "false">("");
   const [soloBajoMinimo, setSoloBajoMinimo] = useState(false);
@@ -65,10 +68,12 @@ export function GestionRepuestos() {
       q: busquedaDiferida,
       activo: filtroActivo === "" ? undefined : filtroActivo === "true",
       bajoMinimo: soloBajoMinimo,
+      page,
     })
-      .then((lista) => {
+      .then((r) => {
         if (cancelado) return;
-        setRepuestos(lista);
+        setRepuestos(r.data);
+        setMeta(r.meta);
         setError(null);
       })
       .catch((e: unknown) => {
@@ -86,7 +91,7 @@ export function GestionRepuestos() {
     return () => {
       cancelado = true;
     };
-  }, [intento, busquedaDiferida, filtroActivo, soloBajoMinimo]);
+  }, [intento, busquedaDiferida, filtroActivo, soloBajoMinimo, page]);
 
   const recargar = useCallback(() => {
     setCargando(true);
@@ -133,7 +138,10 @@ export function GestionRepuestos() {
           una pantalla aparte que habria que acordarse de visitar. */}
       {enAviso > 0 && !soloBajoMinimo && (
         <button
-          onClick={() => setSoloBajoMinimo(true)}
+          onClick={() => {
+            setSoloBajoMinimo(true);
+            setPage(1);
+          }}
           className="mt-4 flex w-full items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-left text-sm text-amber-900 transition-colors hover:bg-amber-100"
         >
           <span className="font-semibold">
@@ -152,7 +160,10 @@ export function GestionRepuestos() {
           id="buscar-repuesto"
           type="search"
           value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          onChange={(e) => {
+            setBusqueda(e.target.value);
+            setPage(1);
+          }}
           placeholder="Buscar por código o nombre..."
           className={clasesControl("w-full max-w-sm")}
         />
@@ -162,9 +173,10 @@ export function GestionRepuestos() {
         <select
           id="filtro-repuesto-activo"
           value={filtroActivo}
-          onChange={(e) =>
-            setFiltroActivo(e.target.value as "" | "true" | "false")
-          }
+          onChange={(e) => {
+            setFiltroActivo(e.target.value as "" | "true" | "false");
+            setPage(1);
+          }}
           className={clasesControl()}
         >
           <option value="">Activos y desactivados</option>
@@ -172,14 +184,18 @@ export function GestionRepuestos() {
           <option value="false">Solo desactivados</option>
         </select>
         {soloBajoMinimo && (
-          <Boton onClick={() => setSoloBajoMinimo(false)}>
+          <Boton
+            onClick={() => {
+              setSoloBajoMinimo(false);
+              setPage(1);
+            }}
+          >
             Solo bajo mínimo ✕
           </Boton>
         )}
         {!cargando && (
           <p className="text-sm text-tci-gris">
-            {repuestos.length}{" "}
-            {repuestos.length === 1 ? "repuesto" : "repuestos"}
+            {meta?.total ?? 0} {meta?.total === 1 ? "repuesto" : "repuestos"}
           </p>
         )}
       </div>
@@ -273,6 +289,14 @@ export function GestionRepuestos() {
               ))}
             </ul>
           </div>
+        )}
+        {meta && (
+          <Paginacion
+            meta={meta}
+            onCambiar={setPage}
+            deshabilitado={cargando}
+            nombre="repuestos"
+          />
         )}
       </div>
 
