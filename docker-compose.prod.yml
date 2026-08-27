@@ -118,12 +118,13 @@ services:
         # en el paquete que descarga el navegador. Cambiar el dominio obliga a
         # reconstruir la imagen, no solo a reiniciar el contenedor.
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?falta NEXT_PUBLIC_API_URL}
+        # La URL publica del sitio, para `metadataBase`. Reutiliza CORS_ORIGIN,
+        # que ya declara esa misma direccion.
+        SITE_URL: ${CORS_ORIGIN}
     restart: always
     environment:
-      # En ejecucion y no como argumento de compilacion: los metadatos se
-      # evaluan en el servidor, asi que cambiar de dominio no obliga a
-      # reconstruir la imagen. Es la misma URL publica que ya se declara para
-      # CORS, y por eso se reutiliza en vez de pedir una variable mas.
+      # Tambien en ejecucion: las paginas dinamicas resuelven sus metadatos al
+      # servir, no al compilar.
       SITE_URL: ${CORS_ORIGIN}
     depends_on:
       backend:

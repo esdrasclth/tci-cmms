@@ -21,6 +21,13 @@ COPY . .
 ARG NEXT_PUBLIC_API_URL=http://localhost:3001
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
+# La URL publica del propio sitio, para `metadataBase`. Va en la COMPILACION
+# aunque no sea `NEXT_PUBLIC_*`: las paginas estaticas —el login entre ellas—
+# generan su HTML aqui dentro, con sus metadatos ya resueltos. Pasarla solo al
+# arrancar la deja fuera de ese HTML, y `og:image` sale apuntando a localhost.
+ARG SITE_URL=http://localhost:3000
+ENV SITE_URL=$SITE_URL
+
 # Sin telemetria: es una compilacion desatendida en un servidor ajeno.
 ENV NEXT_TELEMETRY_DISABLED=1
 
