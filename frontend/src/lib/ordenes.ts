@@ -106,6 +106,21 @@ export const COLOR_PRIORIDAD: Record<Prioridad, string> = {
   URGENTE: "text-tci-rojo font-bold",
 };
 
+/**
+ * Color del punto de la insignia de prioridad.
+ *
+ * `COLOR_PRIORIDAD` son colores de texto y no valen como fondo. El punto lleva
+ * el color y el texto se queda oscuro: sobre una insignia pequena, texto
+ * naranja o rojo sobre blanco no llega a AA, y la prioridad no es el sitio
+ * donde arriesgar legibilidad.
+ */
+export const PUNTO_PRIORIDAD: Record<Prioridad, string> = {
+  BAJA: "bg-tci-borde",
+  MEDIA: "bg-tci-gris",
+  ALTA: "bg-orange-500",
+  URGENTE: "bg-tci-rojo",
+};
+
 export function formatearFecha(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("es-HN", {
@@ -305,7 +320,11 @@ export async function buscarEquipos(clienteId: string, q: string) {
 export async function listarEquipos(clienteId: string) {
   // Solo los activos: un equipo dado de baja no debe poder recibir ordenes
   // nuevas, aunque siga apareciendo en su historial (TCI-37).
-  const params = new URLSearchParams({ clienteId, activo: "true", perPage: "100" });
+  const params = new URLSearchParams({
+    clienteId,
+    activo: "true",
+    perPage: "100",
+  });
   return (await apiGet<Pagina<EquipoDeCliente>>("/equipos", params)).data;
 }
 

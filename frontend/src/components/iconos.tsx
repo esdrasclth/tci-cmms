@@ -194,3 +194,20 @@ export function IconoBorrar(props: Props) {
     </Icono>
   );
 }
+
+export function IconoCamara(props: Props) {
+  return (
+    <Icono {...props}>
+      <path d="M4 8.5h2.6a1 1 0 0 0 .83-.45l1.14-1.7a1 1 0 0 1 .83-.45h5.2a1 1 0 0 1 .83.45l1.14 1.7a1 1 0 0 0 .83.45H20a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 18v-8A1.5 1.5 0 0 1 4 8.5Z" />
+      <circle cx="12" cy="13.5" r="3.25" />
+    </Icono>
+  );
+}
+
+export function IconoAdjuntar(props: Props) {
+  return (
+    <Icono {...props}>
+      <path d="M20 11.5 12 19.5a4.95 4.95 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.67 4.67l-8.5 8.5a1.65 1.65 0 0 1-2.34-2.34l7.8-7.8" />
+    </Icono>
+  );
+}

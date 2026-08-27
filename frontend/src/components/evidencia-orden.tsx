@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Alerta } from "@/components/form";
+import { IconoAdjuntar, IconoCamara } from "@/components/iconos";
+import { Boton } from "@/components/ui";
 import {
   ACCEPT,
   ETIQUETA_ADJUNTO,
@@ -48,27 +50,71 @@ export function EvidenciaOrden({
   const [tipo, setTipo] = useState<TipoAdjunto>("EVIDENCIA_DESPUES");
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * Lo elegido pero aun no subido.
+   *
+   * Antes habia que clasificar primero y la foto se subia sola al elegirla:
+   * el orden estaba invertido —se decide "antes o despues" cuando se tiene la
+   * foto delante, no antes de tomarla— y ademas no habia forma de ver que se
+   * estaba mandando ni de arrepentirse.
+   */
+  const [pendientes, setPendientes] = useState<
+    { archivo: File; url: string | null }[]
+  >([]);
+  const camara = useRef<HTMLInputElement>(null);
   const entrada = useRef<HTMLInputElement>(null);
 
-  async function alElegirArchivos(archivos: FileList | null) {
+  // Los object URL de las miniaturas se liberan al soltar la cola, o el
+  // navegador se queda con los blobs hasta recargar la pagina.
+  useEffect(() => {
+    return () => {
+      for (const p of pendientes) if (p.url) URL.revokeObjectURL(p.url);
+    };
+  }, [pendientes]);
+
+  function encolar(archivos: FileList | null) {
     if (!archivos?.length) return;
+    setError(null);
+    setPendientes((cola) => [
+      ...cola,
+      ...Array.from(archivos).map((archivo) => ({
+        archivo,
+        url: esImagen(archivo.type) ? URL.createObjectURL(archivo) : null,
+      })),
+    ]);
+  }
+
+  function quitarPendiente(indice: number) {
+    setPendientes((cola) => {
+      const fuera = cola[indice];
+      if (fuera?.url) URL.revokeObjectURL(fuera.url);
+      return cola.filter((_, i) => i !== indice);
+    });
+  }
+
+  async function subirCola() {
+    if (pendientes.length === 0) return;
 
     setSubiendo(true);
     setError(null);
     try {
       // De uno en uno: el backend acepta un archivo por peticion, y en campo
       // conviene que un fallo no arrastre a los demas.
-      for (const archivo of Array.from(archivos)) {
+      for (const { archivo } of pendientes) {
         await subirAdjunto(ordenId, await reducirImagen(archivo), tipo);
       }
+      for (const p of pendientes) if (p.url) URL.revokeObjectURL(p.url);
+      setPendientes([]);
       await onCambio();
     } catch (e: unknown) {
+      // La cola se conserva: si fallo la tercera de cinco, rehacer las fotos
+      // en campo no es una opcion razonable.
       setError(
         e instanceof ApiError ? e.message : "No se pudo subir el archivo.",
       );
     } finally {
       setSubiendo(false);
-      // Permite volver a elegir el mismo archivo tras un fallo.
+      if (camara.current) camara.current.value = "";
       if (entrada.current) entrada.current.value = "";
     }
   }
@@ -110,44 +156,131 @@ export function EvidenciaOrden({
 
       {puedeEditar && (
         <div className="space-y-3 rounded-lg bg-tci-humo p-4">
-          <fieldset>
-            <legend className="text-xs font-bold text-tci-gris uppercase">
-              Clasificar como
-            </legend>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {TIPOS_ADJUNTO.map((valor) => (
-                <button
-                  key={valor}
-                  type="button"
-                  onClick={() => setTipo(valor)}
-                  aria-pressed={tipo === valor}
-                  className={`rounded-full px-3 py-1.5 text-sm font-bold transition-colors ${
-                    tipo === valor
-                      ? "bg-tci-rojo text-white"
-                      : "bg-white text-tci-grafito hover:bg-tci-borde"
-                  }`}
-                >
-                  {ETIQUETA_ADJUNTO[valor]}
-                </button>
-              ))}
-            </div>
-          </fieldset>
+          {/*
+            Los dos campos van ocultos y se disparan desde botones normales:
+            el control nativo de archivo no se puede estilar ni dice "Tomar
+            foto", y aqui la accion importa mas que el mecanismo.
 
+            `capture="environment"` es lo que abre la camara trasera directa
+            en el telefono. En escritorio el atributo se ignora y queda un
+            selector de archivos, que es el comportamiento razonable.
+          */}
+          <input
+            ref={camara}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => encolar(e.target.files)}
+          />
           <input
             ref={entrada}
             type="file"
             accept={ACCEPT}
             multiple
-            disabled={subiendo}
-            onChange={(e) => void alElegirArchivos(e.target.files)}
-            className="block w-full text-sm text-tci-grafito file:mr-3 file:rounded-lg file:border-0 file:bg-tci-rojo file:px-4 file:py-2.5 file:text-sm file:font-bold file:text-white hover:file:bg-tci-rojo-hover disabled:opacity-50"
+            className="hidden"
+            onChange={(e) => encolar(e.target.files)}
           />
 
-          <p className="text-xs text-tci-gris">
-            {subiendo
-              ? "Subiendo..."
-              : "Fotos (JPG, PNG, WEBP) o PDF, hasta 10 MB. Las fotos se reducen antes de subirlas para gastar menos datos."}
-          </p>
+          <div className="flex flex-wrap gap-2">
+            <Boton
+              type="button"
+              onClick={() => camara.current?.click()}
+              disabled={subiendo}
+            >
+              <IconoCamara className="h-4 w-4" />
+              Tomar foto
+            </Boton>
+            <Boton
+              type="button"
+              variante="secundario"
+              onClick={() => entrada.current?.click()}
+              disabled={subiendo}
+            >
+              <IconoAdjuntar className="h-4 w-4" />
+              Adjuntar archivo
+            </Boton>
+          </div>
+
+          {pendientes.length === 0 ? (
+            <p className="text-xs text-tci-gris">
+              Fotos (JPG, PNG, WEBP) o PDF, hasta 10 MB. Las fotos se reducen
+              antes de subirlas para gastar menos datos.
+            </p>
+          ) : (
+            <div className="space-y-3 border-t border-tci-borde pt-3">
+              <ul className="flex flex-wrap gap-2">
+                {pendientes.map((p, i) => (
+                  <li key={i} className="relative">
+                    {p.url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.url}
+                        alt={p.archivo.name}
+                        className="h-20 w-20 rounded-lg border border-tci-borde object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-20 w-20 items-center justify-center rounded-lg border border-tci-borde bg-white p-1 text-center text-[0.625rem] break-all text-tci-gris">
+                        {p.archivo.name}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => quitarPendiente(i)}
+                      disabled={subiendo}
+                      aria-label={`Quitar ${p.archivo.name}`}
+                      className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-tci-negro text-white transition-colors hover:bg-tci-rojo disabled:opacity-50"
+                    >
+                      <span aria-hidden>&times;</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+
+              {/*
+                La clasificacion aparece aqui y no antes: se decide "antes o
+                despues" con la foto delante, que es cuando se sabe.
+              */}
+              <fieldset>
+                <legend className="text-xs font-bold text-tci-gris uppercase">
+                  {pendientes.length === 1
+                    ? "Esta foto es de"
+                    : "Estas fotos son de"}
+                </legend>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {TIPOS_ADJUNTO.map((valor) => (
+                    <button
+                      key={valor}
+                      type="button"
+                      onClick={() => setTipo(valor)}
+                      aria-pressed={tipo === valor}
+                      disabled={subiendo}
+                      className={`h-9 rounded-full px-4 text-sm font-semibold transition-colors md:h-8 ${
+                        tipo === valor
+                          ? "bg-tci-rojo text-white"
+                          : "bg-white text-tci-grafito hover:bg-tci-borde"
+                      }`}
+                    >
+                      {ETIQUETA_ADJUNTO[valor]}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+
+              <Boton
+                type="button"
+                onClick={() => void subirCola()}
+                cargando={subiendo}
+                className="w-full sm:w-auto"
+              >
+                {subiendo
+                  ? "Subiendo..."
+                  : pendientes.length === 1
+                    ? "Subir 1 archivo"
+                    : `Subir ${pendientes.length} archivos`}
+              </Boton>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -316,3 +316,35 @@ export function Paginacion({
     </div>
   );
 }
+
+/**
+ * Insignia de estado o etiqueta.
+ *
+ * Altura fija, por el mismo motivo que los botones: varias insignias juntas
+ * tienen que alinear aunque una lleve punto y otra no. Antes el estado y la
+ * prioridad se apilaban en columna con formas distintas —una pastilla y un
+ * texto suelto— y se leian como dos cosas sin relacion en vez de como el
+ * estado de una misma orden.
+ */
+export function Insignia({
+  tono = "bg-tci-humo text-tci-grafito",
+  punto,
+  children,
+}: {
+  /** Clases de fondo y texto. Vienen de los mapas de color del dominio. */
+  tono?: string;
+  /** Clase de fondo del punto. Sin el, la insignia va sin punto. */
+  punto?: string;
+  children: ReactNode;
+}) {
+  return (
+    <span
+      className={`inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-semibold whitespace-nowrap ${tono}`}
+    >
+      {punto && (
+        <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${punto}`} />
+      )}
+      {children}
+    </span>
+  );
+}

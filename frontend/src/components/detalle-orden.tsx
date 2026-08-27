@@ -4,32 +4,32 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { DialogoAccion, useDialogoAccion } from "@/components/dialogo-accion";
+import { EvidenciaOrden } from "@/components/evidencia-orden";
+import { RepuestosOrden } from "@/components/repuestos-orden";
 import {
   Boton,
   EncabezadoPagina,
+  Insignia,
   clasesArea,
   clasesBoton,
 } from "@/components/ui";
-
-import { EvidenciaOrden } from "@/components/evidencia-orden";
-import { RepuestosOrden } from "@/components/repuestos-orden";
 import { API, ApiError } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
 import {
   COLOR_ESTADO,
-  COLOR_PRIORIDAD,
   CONFIG_ACCION,
   ETIQUETA_ESTADO,
   ETIQUETA_PRIORIDAD,
+  PUNTO_PRIORIDAD,
   type Accion,
   type AsientoHistorial,
   type OrdenDetalle,
   type Tecnico,
   comentarOrden,
   ejecutarAccion,
+  formatearDinero,
   formatearFecha,
   formatearFechaHora,
-  formatearDinero,
   listarTecnicos,
   obtenerOrden,
 } from "@/lib/ordenes";
@@ -177,67 +177,101 @@ export function DetalleOrden({ id }: { id: string }) {
           </>
         }
         acciones={
-          <div className="flex flex-col items-end gap-2">
+          // Estado y prioridad en fila y con la misma forma: son el estado de
+          // una misma orden y deben leerse como un bloque, no como dos datos
+          // sueltos apilados.
+          <div className="flex flex-col items-start gap-1.5 sm:items-end">
+            <div className="flex flex-wrap items-center gap-2">
+              <Insignia tono={COLOR_ESTADO[orden.estado]}>
+                {ETIQUETA_ESTADO[orden.estado]}
+              </Insignia>
+              <Insignia
+                tono="border border-tci-borde bg-white text-tci-grafito"
+                punto={PUNTO_PRIORIDAD[orden.prioridad]}
+              >
+                Prioridad {ETIQUETA_PRIORIDAD[orden.prioridad]}
+              </Insignia>
+            </div>
+            {/* No es estado de la orden sino de esta pantalla, asi que va
+                debajo y en gris: informa sin competir con lo anterior. */}
             <span
-              className={`rounded-full px-3 py-1 text-sm font-bold ${COLOR_ESTADO[orden.estado]}`}
-            >
-              {ETIQUETA_ESTADO[orden.estado]}
-            </span>
-            <span className={`text-xs ${COLOR_PRIORIDAD[orden.prioridad]}`}>
-              Prioridad {ETIQUETA_PRIORIDAD[orden.prioridad]}
-            </span>
-            <span
-              className={`text-xs ${conexionEnVivo ? "text-emerald-700" : "text-tci-gris"}`}
+              className="flex items-center gap-1.5 text-xs text-tci-gris"
               aria-live="polite"
             >
-              {conexionEnVivo
-                ? "Cambios en vivo"
-                : "Reconectando cambios en vivo..."}
+              <span
+                aria-hidden
+                className={`h-1.5 w-1.5 rounded-full ${conexionEnVivo ? "bg-emerald-500" : "bg-tci-borde"}`}
+              />
+              {conexionEnVivo ? "Cambios en vivo" : "Reconectando..."}
             </span>
           </div>
         }
       />
 
-      <div className="flex flex-wrap gap-2 md:flex-nowrap">
-        {/* Editar es solo-admin y el backend lo rechaza en estado final. */}
-        {esAdmin &&
-          orden.estado !== "COMPLETADA" &&
-          orden.estado !== "CANCELADA" && (
-            <Link
-              href={`/panel/ordenes/${orden.id}/editar`}
-              className={clasesBoton({ variante: "secundario" })}
-            >
-              Editar datos
-            </Link>
-          )}
-      </div>
+      {/*
+        Una sola barra y no tres filas. Antes "Editar datos" tenia su propia
+        linea y las acciones de estado otra, asi que la pantalla empezaba con
+        tres bloques de controles apilados antes del primer dato de la orden.
 
-      {orden.accionesDisponibles.length > 0 ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {orden.accionesDisponibles.map((accion) => {
-            const config = CONFIG_ACCION[accion];
-            return (
-              <button
-                key={accion}
-                onClick={() => abrirAccion(accion)}
-                className={`rounded-lg px-4 py-2.5 text-sm font-bold transition-colors ${
-                  config.destacada
-                    ? "bg-tci-rojo text-white hover:bg-tci-rojo-hover"
-                    : config.destructiva
-                      ? "border border-tci-rojo/40 text-tci-rojo hover:bg-tci-rojo/5"
-                      : "border border-tci-borde bg-white text-tci-negro hover:bg-tci-humo"
-                }`}
+        Dentro, el orden no es casual: primero lo que se hace habitualmente,
+        y lo destructivo empujado al extremo contrario. "Cancelar orden" y
+        "Completar" pegados es como se cancela una orden sin querer.
+      */}
+      {(() => {
+        const acciones = orden.accionesDisponibles.map((a) => ({
+          accion: a,
+          ...CONFIG_ACCION[a],
+        }));
+        const normales = acciones.filter((a) => !a.destructiva);
+        const destructivas = acciones.filter((a) => a.destructiva);
+        const puedeEditar =
+          esAdmin &&
+          orden.estado !== "COMPLETADA" &&
+          orden.estado !== "CANCELADA";
+
+        if (acciones.length === 0 && !puedeEditar) {
+          return (
+            <p className="rounded-lg bg-tci-humo px-4 py-3 text-sm text-tci-gris">
+              No hay acciones disponibles para usted en este estado.
+            </p>
+          );
+        }
+
+        return (
+          <div className="flex flex-wrap items-center gap-2">
+            {normales.map((a) => (
+              <Boton
+                key={a.accion}
+                variante={a.destacada ? "primario" : "secundario"}
+                onClick={() => abrirAccion(a.accion)}
               >
-                {config.etiqueta}
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        <p className="mt-5 rounded-lg bg-tci-humo px-4 py-3 text-sm text-tci-gris">
-          No hay acciones disponibles para usted en este estado.
-        </p>
-      )}
+                {a.etiqueta}
+              </Boton>
+            ))}
+            {puedeEditar && (
+              <Link
+                href={`/panel/ordenes/${orden.id}/editar`}
+                className={clasesBoton({ variante: "secundario" })}
+              >
+                Editar datos
+              </Link>
+            )}
+            {destructivas.length > 0 && (
+              <div className="flex w-full gap-2 sm:ml-auto sm:w-auto">
+                {destructivas.map((a) => (
+                  <Boton
+                    key={a.accion}
+                    variante="peligro"
+                    onClick={() => abrirAccion(a.accion)}
+                  >
+                    {a.etiqueta}
+                  </Boton>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6">
