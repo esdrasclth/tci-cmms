@@ -255,6 +255,9 @@ export { listarTiposActivos as listarTiposMantenimiento } from "./tipos-mantenim
 export interface ClienteConSedes {
   id: string;
   nombre: string;
+  /** Se muestra bajo el nombre en el buscador: dos clientes pueden llamarse
+   *  parecido, pero el RTN es unico. */
+  rtn: string | null;
   sedes: { id: string; nombre: string; ciudad: string | null }[];
 }
 
@@ -268,6 +271,35 @@ export interface EquipoDeCliente {
 export function listarClientes() {
   const params = new URLSearchParams({ activo: "true" });
   return apiGet<ClienteConSedes[]>("/clientes", params);
+}
+
+/**
+ * Busca clientes por nombre, RTN o contacto, con tope.
+ *
+ * Sustituye a `listarClientes` en el formulario de alta: con mil clientes,
+ * descargarlos todos para llenar un desplegable del que se usa uno es trabajo
+ * tirado, y elegir pasa a ser desplazar hasta encontrar.
+ */
+export function buscarClientes(q: string) {
+  const params = new URLSearchParams({ activo: "true", limite: "20" });
+  if (q.trim()) params.set("q", q.trim());
+  return apiGet<ClienteConSedes[]>("/clientes", params);
+}
+
+/** Un cliente con sus sedes. Al elegirlo hace falta saber donde puede estar. */
+export function obtenerCliente(id: string) {
+  return apiGet<ClienteConSedes>(`/clientes/${id}`);
+}
+
+/** Equipos de un cliente que casen con la busqueda. Mismo tope. */
+export function buscarEquipos(clienteId: string, q: string) {
+  const params = new URLSearchParams({
+    clienteId,
+    activo: "true",
+    limite: "20",
+  });
+  if (q.trim()) params.set("q", q.trim());
+  return apiGet<EquipoDeCliente[]>("/equipos", params);
 }
 
 export function listarEquipos(clienteId: string) {

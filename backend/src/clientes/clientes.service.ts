@@ -62,6 +62,8 @@ export class ClientesService {
         _count: { select: { ordenes: true, equipos: true } },
       },
       orderBy: { nombre: 'asc' },
+      // Solo cuando lo piden: los listados de pantalla siguen trayendo todo.
+      ...(filtros.limite ? { take: filtros.limite } : {}),
     });
   }
 

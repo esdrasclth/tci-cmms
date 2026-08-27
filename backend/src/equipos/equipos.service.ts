@@ -53,6 +53,8 @@ export class EquiposService {
       where,
       include: INCLUDE,
       orderBy: { codigo: 'asc' },
+      // Solo cuando lo piden: los listados de pantalla siguen trayendo todo.
+      ...(filtros.limite ? { take: filtros.limite } : {}),
     });
   }
 

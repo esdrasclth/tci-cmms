@@ -1,12 +1,15 @@
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEmail,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   Length,
   Matches,
+  Max,
+  Min,
 } from 'class-validator';
 
 /** TCI-36 — alta de cliente. */
@@ -80,6 +83,18 @@ export class FiltrarClientesDto {
   )
   @IsBoolean()
   activo?: boolean;
+  /**
+   * Tope de resultados. Lo usa el selector con buscador: pide las primeras
+   * coincidencias mientras se escribe, no el catalogo entero. Sin tope, buscar
+   * "a" con mil clientes devuelve casi mil registros para pintar veinte.
+   */
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limite?: number;
+
 }
 
 /** TCI-36 — sedes. Cuelgan siempre de un cliente. */

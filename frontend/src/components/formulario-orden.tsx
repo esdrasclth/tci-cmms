@@ -2,24 +2,25 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, BotonPrimario, Campo } from "@/components/form";
+import { SelectorBuscable } from "@/components/selector-buscable";
 import { EncabezadoPagina, clasesArea } from "@/components/ui";
 import { ApiError } from "@/lib/api";
 import {
-  ETIQUETA_PRIORIDAD,
-  PRIORIDADES,
+  actualizarOrden,
   aDatetimeLocal,
   aIso,
-  actualizarOrden,
+  buscarClientes,
+  buscarEquipos,
   crearOrden,
-  listarClientes,
-  listarEquipos,
+  ETIQUETA_PRIORIDAD,
   listarTiposMantenimiento,
+  obtenerCliente,
   obtenerOrden,
+  PRIORIDADES,
   type ClienteConSedes,
-  type EquipoDeCliente,
   type OrdenDetalle,
   type TipoMantenimiento,
 } from "@/lib/ordenes";
@@ -41,8 +42,14 @@ export function FormularioOrden({ id }: { id?: string }) {
 
   const [orden, setOrden] = useState<OrdenDetalle | null>(null);
   const [tipos, setTipos] = useState<TipoMantenimiento[]>([]);
-  const [clientes, setClientes] = useState<ClienteConSedes[]>([]);
-  const [equipos, setEquipos] = useState<EquipoDeCliente[]>([]);
+  // El cliente elegido, no el catalogo entero: con mil clientes traerlos
+  // todos para llenar un desplegable es trabajo tirado. Se busca en el
+  // servidor y solo se guarda el que se escoge, con sus sedes.
+  const [clienteCargado, setClienteCargado] = useState<ClienteConSedes | null>(
+    null,
+  );
+  // El texto del equipo elegido. Sin lista completa, no hay de donde deducirlo.
+  const [equipoTexto, setEquipoTexto] = useState("");
 
   const [clienteId, setClienteId] = useState("");
   const [tipoId, setTipoId] = useState("");
@@ -58,19 +65,22 @@ export function FormularioOrden({ id }: { id?: string }) {
     let cancelado = false;
     Promise.all([
       listarTiposMantenimiento(),
-      listarClientes(),
       id ? obtenerOrden(id) : Promise.resolve(null),
     ])
-      .then(([tiposApi, clientesApi, ordenApi]) => {
+      .then(([tiposApi, ordenApi]) => {
         if (cancelado) return;
         setTipos(tiposApi);
-        setClientes(clientesApi);
         if (ordenApi) {
           setOrden(ordenApi);
           setClienteId(ordenApi.cliente.id);
           setTipoId(ordenApi.tipoMantenimiento.id);
           setSedeId(ordenApi.sede?.id ?? "");
           setEquipoId(ordenApi.equipo?.id ?? "");
+          setEquipoTexto(
+            ordenApi.equipo
+              ? `${ordenApi.equipo.codigo} — ${ordenApi.equipo.nombre}`
+              : "",
+          );
         }
         setError(null);
       })
@@ -91,34 +101,60 @@ export function FormularioOrden({ id }: { id?: string }) {
     };
   }, [id]);
 
-  // Los equipos dependen del cliente elegido. El efecto solo pide datos: vaciar
-  // la lista lo hace el propio cambio de cliente, mas abajo, porque un setState
-  // sincrono dentro de un efecto es lo que React desaconseja.
+  // Las sedes cuelgan del cliente, asi que hay que traerlo al elegirlo. Vale
+  // igual para el alta y para la edicion, donde el cliente ya viene puesto.
   useEffect(() => {
     if (!clienteId) return;
     let cancelado = false;
-    listarEquipos(clienteId)
-      .then((lista) => {
-        if (!cancelado) setEquipos(lista);
+    obtenerCliente(clienteId)
+      .then((c) => {
+        if (!cancelado) setClienteCargado(c);
       })
       .catch(() => {
-        if (!cancelado) setEquipos([]);
+        if (!cancelado) setClienteCargado(null);
       });
     return () => {
       cancelado = true;
     };
   }, [clienteId]);
 
-  const cliente = clientes.find((c) => c.id === clienteId);
+  // Se compara el id en vez de limpiar el estado al cambiar de cliente: asi no
+  // hay un `setState` sincrono en el efecto, y de paso nunca se ven las sedes
+  // del cliente anterior en el instante entre elegir y que llegue el nuevo.
+  const cliente = clienteCargado?.id === clienteId ? clienteCargado : null;
+
   const tipo = tipos.find((t) => t.id === tipoId);
   const exigeEquipo = tipo?.requiereEquipo ?? false;
 
-  // Una sede o un equipo de otro cliente no son elegibles.
+  // Una sede de otro cliente no es elegible.
   const sedesVisibles = cliente?.sedes ?? [];
-  const equiposDelCliente = clienteId ? equipos : [];
-  const equiposVisibles = sedeId
-    ? equiposDelCliente.filter((e) => e.sedeId === null || e.sedeId === sedeId)
-    : equiposDelCliente;
+
+  const buscarOpcionesCliente = useCallback(
+    async (consulta: string) =>
+      (await buscarClientes(consulta)).map((c) => ({
+        valor: c.id,
+        texto: c.nombre,
+        detalle: c.rtn ? `RTN ${c.rtn}` : undefined,
+      })),
+    [],
+  );
+
+  const buscarOpcionesEquipo = useCallback(
+    async (consulta: string) => {
+      if (!clienteId) return [];
+      const lista = await buscarEquipos(clienteId, consulta);
+      // Un equipo de otra sede del mismo cliente no es elegible; los que no
+      // tienen sede valen para cualquiera.
+      const visibles = sedeId
+        ? lista.filter((e) => e.sedeId === null || e.sedeId === sedeId)
+        : lista;
+      return visibles.map((e) => ({
+        valor: e.id,
+        texto: `${e.codigo} — ${e.nombre}`,
+      }));
+    },
+    [clienteId, sedeId],
+  );
 
   async function alEnviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -229,20 +265,21 @@ export function FormularioOrden({ id }: { id?: string }) {
         </div>
 
         <div>
-          <Selector
+          <SelectorBuscable
             id="clienteId"
             etiqueta="Cliente"
             valor={clienteId}
+            textoSeleccionado={cliente?.nombre}
             onCambio={(v) => {
               setClienteId(v);
               // Sede y equipo pertenecen al cliente anterior: se limpian.
               setSedeId("");
               setEquipoId("");
-              setEquipos([]);
+              setEquipoTexto("");
             }}
             deshabilitado={editando}
-            opciones={clientes.map((c) => ({ valor: c.id, texto: c.nombre }))}
-            placeholder="Elija un cliente"
+            buscar={buscarOpcionesCliente}
+            placeholder="Busque por nombre, RTN o contacto..."
           />
           {editando && (
             <p className="mt-1 text-xs text-tci-gris">
@@ -280,22 +317,21 @@ export function FormularioOrden({ id }: { id?: string }) {
           placeholder="Elija un tipo"
         />
 
-        <Selector
+        <SelectorBuscable
           id="equipoId"
           etiqueta={exigeEquipo ? "Equipo" : "Equipo (opcional)"}
           valor={equipoId}
-          onCambio={setEquipoId}
-          deshabilitado={!clienteId || equiposVisibles.length === 0}
-          opciones={equiposVisibles.map((e) => ({
-            valor: e.id,
-            texto: `${e.codigo} — ${e.nombre}`,
-          }))}
+          textoSeleccionado={equipoTexto}
+          onCambio={(v, texto) => {
+            setEquipoId(v);
+            setEquipoTexto(texto);
+          }}
+          deshabilitado={!clienteId}
+          buscar={buscarOpcionesEquipo}
           placeholder={
-            !clienteId
-              ? "Elija primero un cliente"
-              : equiposVisibles.length === 0
-                ? "El cliente no tiene equipos registrados"
-                : "Sin equipo"
+            clienteId
+              ? "Busque por codigo, nombre, marca o serie..."
+              : "Elija primero un cliente"
           }
         />
 
