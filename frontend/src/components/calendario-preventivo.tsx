@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Alerta } from "@/components/form";
 import { Boton, EncabezadoPagina, Vacio } from "@/components/ui";
+import { DIAS_SEMANA, celdasDelMes, claveDia } from "@/lib/calendario";
 import { ApiError } from "@/lib/api";
 import { ETIQUETA_ESTADO } from "@/lib/ordenes";
 import {
@@ -138,7 +139,7 @@ export function CalendarioPreventivo() {
         aria-label="Mantenimientos del mes"
       >
         <div className="grid grid-cols-7 gap-px rounded-t-xl border border-tci-borde bg-tci-borde text-center text-xs font-semibold text-tci-gris uppercase">
-          {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((dia) => (
+          {DIAS_SEMANA.map((dia) => (
             <div key={dia} className="bg-tci-humo py-2">
               {dia}
             </div>
@@ -360,33 +361,8 @@ function Detalle({ evento }: { evento: EventoCalendario }) {
 }
 
 /** `YYYY-MM-DD` en hora local, que es como se agrupa por dia en la pantalla. */
-function claveDia(fecha: Date): string {
-  return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(
-    fecha.getDate(),
-  ).padStart(2, "0")}`;
-}
 
 /**
  * Las celdas del mes, completando la primera y la ultima semana con los dias
  * vecinos. La semana empieza en lunes, que es como se planifica el trabajo.
  */
-function celdasDelMes(mes: Date): { fecha: Date; delMes: boolean }[] {
-  const primero = new Date(mes.getFullYear(), mes.getMonth(), 1);
-  // getDay() da 0 para domingo; se rota para que lunes sea 0.
-  const desplazamiento = (primero.getDay() + 6) % 7;
-
-  const inicio = new Date(primero);
-  inicio.setDate(primero.getDate() - desplazamiento);
-
-  const celdas: { fecha: Date; delMes: boolean }[] = [];
-  for (let i = 0; i < 42; i++) {
-    const fecha = new Date(inicio);
-    fecha.setDate(inicio.getDate() + i);
-    celdas.push({ fecha, delMes: fecha.getMonth() === mes.getMonth() });
-    // Seis semanas solo si hacen falta: con cinco basta en la mayoria de meses.
-    if (i >= 34 && fecha.getMonth() !== mes.getMonth() && (i + 1) % 7 === 0) {
-      break;
-    }
-  }
-  return celdas;
-}

@@ -55,6 +55,12 @@ export interface FiltrosOrdenes {
   clienteId?: string;
   page?: number;
   perPage?: number;
+  /**
+   * Rango sobre `fechaProgramada`. Lo usa la vista de calendario para pedir
+   * solo el mes que se esta mirando en vez del listado entero.
+   */
+  desde?: string;
+  hasta?: string;
 }
 
 export function listarOrdenes(filtros: FiltrosOrdenes = {}) {
@@ -63,6 +69,8 @@ export function listarOrdenes(filtros: FiltrosOrdenes = {}) {
   if (filtros.estado?.length) params.set("estado", filtros.estado.join(","));
   if (filtros.equipoId) params.set("equipoId", filtros.equipoId);
   if (filtros.clienteId) params.set("clienteId", filtros.clienteId);
+  if (filtros.desde) params.set("desde", filtros.desde);
+  if (filtros.hasta) params.set("hasta", filtros.hasta);
   if (filtros.page) params.set("page", String(filtros.page));
   if (filtros.perPage) params.set("perPage", String(filtros.perPage));
 
