@@ -208,7 +208,9 @@ export function MenuMovil({
     <>
       {destinos.length > 1 && (
         <nav className="px-4 pb-2" aria-label="Secciones del panel">
-          <div className="grid grid-cols-2 gap-2">
+          {/* Con un numero impar de destinos la ultima tarjeta quedaria sola
+              ocupando media fila. Se estira para cerrar la rejilla. */}
+          <div className="grid grid-cols-2 gap-2 [&>*:last-child:nth-child(odd)]:col-span-2">
             {destinos.map((destino) => {
               const activo = destino.exacto
                 ? ruta === destino.href

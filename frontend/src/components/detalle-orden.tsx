@@ -193,7 +193,7 @@ export function DetalleOrden({ id }: { id: string }) {
         }
       />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 md:flex-nowrap">
         {/* Editar es solo-admin y el backend lo rechaza en estado final. */}
         {esAdmin &&
           orden.estado !== "COMPLETADA" &&

@@ -150,7 +150,7 @@ export function GestionUsuarios() {
                       <td className="px-4 py-3">
                         <EtiquetaEstado usuario={usuario} />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="w-px px-4 py-3">
                         <Acciones
                           usuario={usuario}
                           esUsted={usuario.id === sesion?.user.id}
@@ -291,7 +291,7 @@ function Acciones({
   onAlternar: () => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2 md:flex-nowrap">
       <BotonFila onClick={() => setDialogo({ tipo: "editar", usuario })}>
         Editar
       </BotonFila>

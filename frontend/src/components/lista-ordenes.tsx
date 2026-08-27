@@ -96,7 +96,7 @@ export function ListaOrdenes({ esAdmin }: { esAdmin: boolean }) {
           de gestion. Aqui el recuento acompana a los filtros, que es lo que
           modifica: al pulsar un estado, el numero de al lado cambia. */}
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 md:flex-nowrap">
           {ESTADOS.map((estado) => {
             const activo = estados.includes(estado);
             return (

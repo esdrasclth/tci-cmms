@@ -233,7 +233,7 @@ export function GestionRepuestos() {
                       <td className="px-4 py-3 text-tci-grafito">
                         {repuesto.ordenes}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="w-px px-4 py-3">
                         <Acciones
                           repuesto={repuesto}
                           setDialogo={setDialogo}
@@ -366,7 +366,7 @@ function Acciones({
   onAlternar: () => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2 md:flex-nowrap">
       <BotonFila
         onClick={() => setDialogo({ tipo: "entrada", item: repuesto })}
       >

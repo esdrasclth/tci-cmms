@@ -193,7 +193,7 @@ export function GestionClientes() {
                       <td className="px-4 py-3 text-tci-grafito">
                         {cliente._count.ordenes}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="w-px px-4 py-3">
                         <Acciones
                           cliente={cliente}
                           setDialogo={setDialogo}
@@ -326,7 +326,7 @@ function Acciones({
   onAlternar: () => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2 md:flex-nowrap">
       <BotonFila onClick={() => setDialogo({ tipo: "editar", cliente })}>
         Editar
       </BotonFila>

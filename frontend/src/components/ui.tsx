@@ -160,7 +160,7 @@ export function EncabezadoPagina({
         </Link>
       )}
       <div
-        className={`flex flex-wrap items-start justify-between gap-x-4 gap-y-3 ${volver ? "mt-3" : ""}`}
+        className={`flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-x-4 ${volver ? "mt-3" : ""}`}
       >
         <div className="min-w-0">
           {encima && (
@@ -173,6 +173,10 @@ export function EncabezadoPagina({
             <p className="mt-1 text-sm text-tci-gris">{descripcion}</p>
           )}
         </div>
+        {/* En movil las acciones bajan SIEMPRE a su propia linea. Con
+            `flex-wrap` bajaban solo cuando el titulo era largo, asi que el
+            boton cambiaba de sitio entre pantallas: justo el salto que se
+            queria quitar. */}
         {acciones && (
           <div className="flex flex-wrap items-center gap-2">{acciones}</div>
         )}

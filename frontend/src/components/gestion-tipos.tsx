@@ -178,7 +178,7 @@ export function GestionTipos() {
                       <td className="px-4 py-3 text-tci-grafito">
                         {tipo.ordenes}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="w-px px-4 py-3">
                         <Acciones
                           tipo={tipo}
                           onEditar={() =>
@@ -297,7 +297,7 @@ function Acciones({
   onBorrar: () => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2 md:flex-nowrap">
       <BotonFila onClick={onEditar}>Editar</BotonFila>
       <BotonFila onClick={onAlternar}>
         {tipo.activo ? "Desactivar" : "Activar"}
