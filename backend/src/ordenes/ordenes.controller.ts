@@ -26,6 +26,7 @@ import {
 import { ActualizarOrdenDto } from './dto/actualizar-orden.dto';
 import { CrearOrdenDto } from './dto/crear-orden.dto';
 import { FiltrarOrdenesDto } from './dto/filtrar-ordenes.dto';
+import { MarcarChecklistDto } from './dto/marcar-checklist.dto';
 import { OrdenesService } from './ordenes.service';
 
 /**
@@ -89,6 +90,27 @@ export class OrdenesController {
     @Session() session: UserSession,
   ) {
     return this.ordenes.comentar(id, dto.comentario, usuarioActual(session));
+  }
+
+  /**
+   * Marca o desmarca una comprobacion de la lista de la orden.
+   *
+   * PATCH y no POST: se cambia el estado de algo que ya existe —la lista se
+   * copio al crear la orden—, no se crea nada.
+   */
+  @Patch(':id/checklist/:itemId')
+  marcarChecklist(
+    @Param('id') id: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: MarcarChecklistDto,
+    @Session() session: UserSession,
+  ) {
+    return this.ordenes.marcarChecklist(
+      id,
+      itemId,
+      { hecho: dto.hecho, nota: dto.nota },
+      usuarioActual(session),
+    );
   }
 
   // --- Transiciones de estado (TCI-78) -------------------------------------

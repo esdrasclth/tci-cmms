@@ -169,6 +169,22 @@ export interface AsientoHistorial {
   usuario: { id: string; name: string };
 }
 
+/**
+ * Una comprobacion de la lista de la orden.
+ *
+ * `texto` es una copia de la plantilla del tipo, hecha al crear la orden: si
+ * manana alguien reescribe la comprobacion, lo que ya se marco no cambia.
+ */
+export interface ItemChecklist {
+  id: string;
+  texto: string;
+  orden: number;
+  hecho: boolean;
+  nota: string | null;
+  marcadoEn: string | null;
+  marcadoPor: { id: string; name: string } | null;
+}
+
 export interface OrdenDetalle extends OrdenListada {
   descripcionProblema: string;
   trabajoRealizado: string | null;
@@ -188,6 +204,7 @@ export interface OrdenDetalle extends OrdenListada {
    * pinta estos botones; nunca decide el si una transicion es valida.
    */
   accionesDisponibles: Accion[];
+  checklist: ItemChecklist[];
 }
 
 export interface Tecnico {
@@ -196,6 +213,11 @@ export interface Tecnico {
   email: string;
   rol: "ADMIN" | "TECNICO";
   activo: boolean;
+  /**
+   * Ordenes abiertas que ya tiene. Solo viene cuando se pide `conCarga`, y
+   * por eso es opcional: la pantalla de usuarios lista lo mismo sin ella.
+   */
+  ordenesAbiertas?: number;
 }
 
 /** Que pide cada accion. Espeja TRANSICIONES de orden-estado.service.ts. */
@@ -231,8 +253,26 @@ export function comentarOrden(id: string, comentario: string) {
   return apiPost<OrdenDetalle>(`/ordenes/${id}/comentarios`, { comentario });
 }
 
+/** Marca o desmarca una comprobacion. Devuelve la orden entera ya releida. */
+export function marcarChecklist(
+  ordenId: string,
+  itemId: string,
+  datos: { hecho: boolean; nota?: string },
+) {
+  return apiPatch<OrdenDetalle>(
+    `/ordenes/${ordenId}/checklist/${itemId}`,
+    datos,
+  );
+}
+
 export function listarTecnicos() {
-  const params = new URLSearchParams({ rol: "TECNICO", activo: "true" });
+  // `conCarga`: al asignar importa saber quien esta cargado. Repartir a ciegas
+  // es como se satura siempre al mismo.
+  const params = new URLSearchParams({
+    rol: "TECNICO",
+    activo: "true",
+    conCarga: "true",
+  });
   return apiGet<Tecnico[]>("/usuarios", params);
 }
 

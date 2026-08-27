@@ -67,6 +67,18 @@ const INCLUDE_DETALLE = {
       usuario: { select: { id: true, name: true } },
     },
   },
+  checklist: {
+    orderBy: { orden: 'asc' },
+    select: {
+      id: true,
+      texto: true,
+      orden: true,
+      hecho: true,
+      nota: true,
+      marcadoEn: true,
+      marcadoPor: { select: { id: true, name: true } },
+    },
+  },
 } satisfies Prisma.OrdenTrabajoInclude;
 
 @Injectable()
@@ -162,6 +174,29 @@ export class OrdenesService {
         },
         select: { id: true },
       });
+
+      /*
+       * La lista de verificacion del tipo se **copia**, no se referencia.
+       *
+       * Es la misma regla que siguen las notificaciones: si manana alguien
+       * reescribe una comprobacion de la plantilla, lo que ya se marco en una
+       * orden cerrada sigue diciendo lo que decia. Una orden cerrada es un
+       * documento, y un documento no cambia solo.
+       */
+      const plantilla = await tx.itemChecklist.findMany({
+        where: { tipoMantenimientoId: dto.tipoMantenimientoId },
+        select: { texto: true, orden: true },
+        orderBy: { orden: 'asc' },
+      });
+      if (plantilla.length > 0) {
+        await tx.checklistOrden.createMany({
+          data: plantilla.map((item) => ({
+            ordenId: creada.id,
+            texto: item.texto,
+            orden: item.orden,
+          })),
+        });
+      }
 
       // Regla 6: el historial arranca con el alta.
       await tx.ordenHistorial.create({
@@ -620,6 +655,66 @@ export class OrdenesService {
    * Se resuelve aqui y no en el servicio de notificaciones porque es una regla
    * de ordenes —quien esta metido en esta orden— y no de notificaciones.
    */
+  /**
+   * Marca o desmarca una comprobacion de la lista.
+   *
+   * Quien puede comentar la orden puede marcar: es la misma autoridad —el
+   * tecnico asignado o un administrador— y se reutiliza esa comprobacion en vez
+   * de inventar una regla nueva.
+   *
+   * Una orden en estado final no admite cambios, igual que su evidencia: lo
+   * marcado en su momento es parte del documento.
+   */
+  async marcarChecklist(
+    ordenId: string,
+    itemId: string,
+    datos: { hecho: boolean; nota?: string },
+    usuario: UsuarioActual,
+  ) {
+    const orden = await this.prisma.ordenTrabajo.findFirst({
+      where: { id: ordenId, deletedAt: null },
+      select: { id: true, estado: true, tecnicoId: true },
+    });
+    if (!orden) {
+      throw new NotFoundException(`No existe la orden ${ordenId}.`);
+    }
+    // Misma regla que para comentar: el admin, o el tecnico asignado.
+    if (usuario.rol !== Rol.ADMIN && orden.tecnicoId !== usuario.id) {
+      throw new ForbiddenException('Esta orden no esta asignada a usted.');
+    }
+
+    if (
+      orden.estado === OrdenEstado.COMPLETADA ||
+      orden.estado === OrdenEstado.CANCELADA
+    ) {
+      throw new UnprocessableEntityException(
+        'Una orden cerrada no admite cambios en su lista de verificacion.',
+      );
+    }
+
+    const item = await this.prisma.checklistOrden.findFirst({
+      where: { id: itemId, ordenId },
+      select: { id: true },
+    });
+    if (!item) {
+      throw new NotFoundException('Esa comprobacion no existe en esta orden.');
+    }
+
+    await this.prisma.checklistOrden.update({
+      where: { id: itemId },
+      data: {
+        hecho: datos.hecho,
+        nota: datos.nota?.trim() || null,
+        // Al desmarcar se borra la firma: si no, la lista diria que alguien la
+        // marco cuando esta sin marcar.
+        marcadoPorId: datos.hecho ? usuario.id : null,
+        marcadoEn: datos.hecho ? new Date() : null,
+      },
+    });
+
+    return this.releer(this.prisma, ordenId);
+  }
+
   private async interesadosEn(
     _ordenId: string,
     tecnicoId: string | null,

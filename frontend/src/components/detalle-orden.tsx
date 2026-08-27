@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
+import { ChecklistOrden } from "@/components/checklist-orden";
 import { DialogoAccion, useDialogoAccion } from "@/components/dialogo-accion";
 import { EvidenciaOrden } from "@/components/evidencia-orden";
 import { RepuestosOrden } from "@/components/repuestos-orden";
+import { NOMBRE_FIRMA } from "@/components/lienzo-firma";
 import {
   Boton,
   EncabezadoPagina,
@@ -14,6 +16,7 @@ import {
   clasesBoton,
 } from "@/components/ui";
 import { API, ApiError } from "@/lib/api";
+import { subirAdjunto } from "@/lib/adjuntos";
 import { useSession } from "@/lib/auth-client";
 import {
   COLOR_ESTADO,
@@ -129,11 +132,29 @@ export function DetalleOrden({ id }: { id: string }) {
     [dialogo, tecnicos.length, cargandoTecnicos],
   );
 
-  async function confirmar(cuerpo: Record<string, unknown>) {
+  async function confirmar(
+    cuerpo: Record<string, unknown>,
+    firma?: Blob | null,
+  ) {
     if (!dialogo.accion) return;
     dialogo.setEnviando(true);
     dialogo.setError(null);
     try {
+      /*
+       * La firma se sube ANTES de completar, y no despues.
+       *
+       * El backend rechaza cambios en la evidencia de una orden en estado
+       * final (responde 422), asi que hacerlo al reves fallaria siempre. Y es
+       * el orden natural: el cliente firma, y con su firma delante el tecnico
+       * cierra.
+       */
+      if (firma) {
+        await subirAdjunto(
+          id,
+          new File([firma], NOMBRE_FIRMA, { type: "image/png" }),
+          "FIRMA",
+        );
+      }
       await ejecutarAccion(id, dialogo.accion, cuerpo);
       await releer();
       dialogo.cerrar();
@@ -164,6 +185,12 @@ export function DetalleOrden({ id }: { id: string }) {
     );
   }
 
+  const vencida =
+    !!orden.fechaLimite &&
+    new Date(orden.fechaLimite) < new Date() &&
+    orden.estado !== "COMPLETADA" &&
+    orden.estado !== "CANCELADA";
+
   return (
     <div>
       <EncabezadoPagina
@@ -185,6 +212,11 @@ export function DetalleOrden({ id }: { id: string }) {
               <Insignia tono={COLOR_ESTADO[orden.estado]}>
                 {ETIQUETA_ESTADO[orden.estado]}
               </Insignia>
+              {/* Solo mientras siga abierta: una orden completada fuera de
+                  plazo ya no es un pendiente, es historia. */}
+              {vencida && (
+                <Insignia tono="bg-tci-rojo text-white">Vencida</Insignia>
+              )}
               <Insignia
                 tono="border border-tci-borde bg-white text-tci-grafito"
                 punto={PUNTO_PRIORIDAD[orden.prioridad]}
@@ -286,6 +318,21 @@ export function DetalleOrden({ id }: { id: string }) {
               <p className="text-sm whitespace-pre-line text-tci-grafito">
                 {orden.trabajoRealizado}
               </p>
+            </Tarjeta>
+          )}
+
+          {/* Antes de la evidencia: la lista guia el trabajo, las fotos lo
+              documentan. Solo aparece si el tipo de mantenimiento tiene una. */}
+          {orden.checklist.length > 0 && (
+            <Tarjeta titulo="Lista de verificacion">
+              <ChecklistOrden
+                ordenId={id}
+                items={orden.checklist}
+                puedeEditar={
+                  orden.estado !== "COMPLETADA" && orden.estado !== "CANCELADA"
+                }
+                onCambio={releer}
+              />
             </Tarjeta>
           )}
 
@@ -408,7 +455,7 @@ export function DetalleOrden({ id }: { id: string }) {
           enviando={dialogo.enviando}
           error={dialogo.error}
           onCerrar={dialogo.cerrar}
-          onConfirmar={(cuerpo) => void confirmar(cuerpo)}
+          onConfirmar={(cuerpo, firma) => void confirmar(cuerpo, firma)}
         />
       )}
     </div>

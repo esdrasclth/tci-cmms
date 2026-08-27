@@ -19,12 +19,19 @@ export const TIPOS_ADJUNTO = [
   "DOCUMENTO",
 ] as const;
 
-export type TipoAdjunto = (typeof TIPOS_ADJUNTO)[number];
+/**
+ * `FIRMA` no esta en `TIPOS_ADJUNTO` a proposito: esa lista es la de tipos que
+ * se pueden **elegir** al subir evidencia, y la firma no se elige — la pone el
+ * sistema al cerrar la orden. Estar en el tipo pero no en la lista es
+ * exactamente esa distincion.
+ */
+export type TipoAdjunto = (typeof TIPOS_ADJUNTO)[number] | "FIRMA";
 
 export const ETIQUETA_ADJUNTO: Record<TipoAdjunto, string> = {
   EVIDENCIA_ANTES: "Antes",
   EVIDENCIA_DESPUES: "Despues",
   DOCUMENTO: "Documento",
+  FIRMA: "Firma del cliente",
 };
 
 export interface Adjunto {

@@ -22,6 +22,7 @@ const CARPETAS: Record<TipoAdjunto, string> = {
   EVIDENCIA_ANTES: 'evidencia-antes',
   EVIDENCIA_DESPUES: 'evidencia-despues',
   DOCUMENTO: 'documentos',
+  FIRMA: 'firmas',
 };
 
 /** Longitud maxima del nombre saneado, sin contar la extension. */

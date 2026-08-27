@@ -56,7 +56,7 @@ export async function apiPost<T>(ruta: string, cuerpo: unknown): Promise<T> {
 }
 
 async function enviar<T>(
-  metodo: "POST" | "PATCH",
+  metodo: "POST" | "PATCH" | "PUT",
   ruta: string,
   cuerpo: unknown,
 ): Promise<T> {
@@ -92,6 +92,11 @@ async function enviar<T>(
 /** PATCH. Mismo tratamiento de errores que el POST. */
 export async function apiPatch<T>(ruta: string, cuerpo: unknown): Promise<T> {
   return enviar<T>("PATCH", ruta, cuerpo);
+}
+
+/** PUT. Reemplaza un recurso entero, frente al PATCH que solo cambia campos. */
+export async function apiPut<T>(ruta: string, cuerpo: unknown): Promise<T> {
+  return enviar<T>("PUT", ruta, cuerpo);
 }
 
 /** DELETE. El backend responde 204 sin cuerpo. */

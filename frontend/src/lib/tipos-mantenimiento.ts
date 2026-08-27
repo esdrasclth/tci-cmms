@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPatch, apiPost } from "./api";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./api";
 
 /**
  * Catálogo de tipos de mantenimiento — TCI-30.
@@ -75,3 +75,30 @@ export const COLORES_SUGERIDOS = [
   "#EF6C00",
   "#6B7280",
 ];
+
+// ---------------------------------------------------------------------------
+// Listas de verificacion (plantilla por tipo)
+// ---------------------------------------------------------------------------
+
+export interface ItemPlantilla {
+  id: string;
+  texto: string;
+  orden: number;
+}
+
+export function listarChecklistTipo(tipoId: string) {
+  return apiGet<ItemPlantilla[]>(`/tipos-mantenimiento/${tipoId}/checklist`);
+}
+
+/**
+ * Reemplaza la lista entera.
+ *
+ * Se manda completa y no item a item porque la pantalla es una lista que se
+ * edita y se reordena en bloque: separarla en altas, bajas y movimientos
+ * obligaria a reconciliar dos ordenes distintos por nada.
+ */
+export function guardarChecklistTipo(tipoId: string, items: string[]) {
+  return apiPut<ItemPlantilla[]>(`/tipos-mantenimiento/${tipoId}/checklist`, {
+    items,
+  });
+}

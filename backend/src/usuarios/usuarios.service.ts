@@ -8,7 +8,7 @@ import { AuthService } from '@thallesp/nestjs-better-auth';
 
 import type { Auth } from '../auth/auth.config';
 import { Prisma } from '../generated/prisma/client';
-import { Rol } from '../generated/prisma/enums';
+import { OrdenEstado, Rol } from '../generated/prisma/enums';
 import type { UsuarioActual } from '../ordenes/ordenes.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -81,11 +81,41 @@ export class UsuariosService {
       ];
     }
 
-    return this.prisma.user.findMany({
+    const usuarios = await this.prisma.user.findMany({
       where,
       select: CAMPOS_PUBLICOS,
       orderBy: { name: 'asc' },
     });
+
+    if (!filtros.conCarga) return usuarios;
+
+    /*
+     * Un solo `groupBy` para todos, y no un `count` por usuario: lo segundo
+     * son tantas consultas como tecnicos, y es el N+1 clasico de este tipo de
+     * pantalla.
+     *
+     * "Abierta" es todo lo que no es un estado final. Se enumeran los finales
+     * en vez de los abiertos porque son dos y no cambian; la lista de estados
+     * intermedios si ha crecido antes.
+     */
+    const cargas = await this.prisma.ordenTrabajo.groupBy({
+      by: ['tecnicoId'],
+      where: {
+        deletedAt: null,
+        tecnicoId: { in: usuarios.map((u) => u.id) },
+        estado: { notIn: [OrdenEstado.COMPLETADA, OrdenEstado.CANCELADA] },
+      },
+      _count: { _all: true },
+    });
+
+    const porTecnico = new Map(
+      cargas.map((c) => [c.tecnicoId, c._count._all]),
+    );
+
+    return usuarios.map((u) => ({
+      ...u,
+      ordenesAbiertas: porTecnico.get(u.id) ?? 0,
+    }));
   }
 
   /** TCI-35 — editar nombre, rol, telefono o dar de baja. */

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Alerta, BotonPrimario, Campo } from "@/components/form";
 import { Boton, clasesArea } from "@/components/ui";
+import { LienzoFirma } from "@/components/lienzo-firma";
 import { CONFIG_ACCION, type Accion, type Tecnico } from "@/lib/ordenes";
 import { useTrampaFoco } from "@/lib/hooks";
 
@@ -29,10 +30,15 @@ export function DialogoAccion({
   enviando: boolean;
   error: string | null;
   onCerrar: () => void;
-  onConfirmar: (cuerpo: Record<string, unknown>) => void;
+  /**
+   * La firma va fuera del cuerpo porque no es un campo del formulario: se sube
+   * como adjunto antes de ejecutar la accion, no viaja en su JSON.
+   */
+  onConfirmar: (cuerpo: Record<string, unknown>, firma?: Blob | null) => void;
 }) {
   const config = CONFIG_ACCION[accion];
   const primerCampo = useRef<HTMLTextAreaElement | HTMLSelectElement>(null);
+  const [firma, setFirma] = useState<Blob | null>(null);
   // La trampa enfoca el primer campo al abrir y devuelve el foco al cerrar.
   // Antes solo hacia lo primero, y con Tab se salia del dialogo.
   const panel = useTrampaFoco<HTMLDivElement>(true, primerCampo);
@@ -59,11 +65,14 @@ export function DialogoAccion({
       case "cierre": {
         const horas = String(datos.get("horasTrabajadas") ?? "").trim();
         const costo = String(datos.get("costoManoObra") ?? "").trim();
-        onConfirmar({
-          trabajoRealizado: String(datos.get("trabajoRealizado")).trim(),
-          ...(horas ? { horasTrabajadas: Number(horas) } : {}),
-          ...(costo ? { costoManoObra: Number(costo) } : {}),
-        });
+        onConfirmar(
+          {
+            trabajoRealizado: String(datos.get("trabajoRealizado")).trim(),
+            ...(horas ? { horasTrabajadas: Number(horas) } : {}),
+            ...(costo ? { costoManoObra: Number(costo) } : {}),
+          },
+          firma,
+        );
         break;
       }
       default: {
@@ -128,7 +137,14 @@ export function DialogoAccion({
                 ) : (
                   tecnicos.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.name} ({t.email})
+                      {t.name}
+                      {t.ordenesAbiertas === undefined
+                        ? ` (${t.email})`
+                        : t.ordenesAbiertas === 0
+                          ? " — sin ordenes abiertas"
+                          : t.ordenesAbiertas === 1
+                            ? " — 1 orden abierta"
+                            : ` — ${t.ordenesAbiertas} ordenes abiertas`}
                     </option>
                   ))
                 )}
@@ -163,6 +179,7 @@ export function DialogoAccion({
                   placeholder="1200.00"
                 />
               </div>
+              <LienzoFirma onCambio={setFirma} deshabilitado={enviando} />
             </>
           )}
 

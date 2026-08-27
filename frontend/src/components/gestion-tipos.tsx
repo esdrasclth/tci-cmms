@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
+import { DialogoChecklist } from "@/components/checklist-plantilla";
 import { Alerta, Campo } from "@/components/form";
 import { Boton, EncabezadoPagina, Vacio, clasesControl } from "@/components/ui";
 import { IconoBorrar, IconoEditar } from "@/components/iconos";
@@ -21,6 +22,7 @@ type Dialogo =
   | { tipo: "nuevo" }
   | { tipo: "editar"; item: TipoMantenimiento }
   | { tipo: "borrar"; item: TipoMantenimiento }
+  | { tipo: "checklist"; item: TipoMantenimiento }
   | null;
 
 /**
@@ -189,6 +191,9 @@ export function GestionTipos() {
                           onBorrar={() =>
                             setDialogo({ tipo: "borrar", item: tipo })
                           }
+                          onChecklist={() =>
+                            setDialogo({ tipo: "checklist", item: tipo })
+                          }
                         />
                       </td>
                     </tr>
@@ -217,6 +222,9 @@ export function GestionTipos() {
                       onAlternar={() => void alternarActivo(tipo)}
                       onBorrar={() =>
                         setDialogo({ tipo: "borrar", item: tipo })
+                      }
+                      onChecklist={() =>
+                        setDialogo({ tipo: "checklist", item: tipo })
                       }
                     />
                   </div>
@@ -248,6 +256,12 @@ export function GestionTipos() {
         />
       )}
 
+      {dialogo?.tipo === "checklist" && (
+        <DialogoChecklist
+          tipo={dialogo.item}
+          onCerrar={() => setDialogo(null)}
+        />
+      )}
       {dialogo?.tipo === "borrar" && (
         <DialogoBorrar
           tipo={dialogo.item}
@@ -291,15 +305,18 @@ function Acciones({
   onEditar,
   onAlternar,
   onBorrar,
+  onChecklist,
 }: {
   tipo: TipoMantenimiento;
   onEditar: () => void;
   onAlternar: () => void;
   onBorrar: () => void;
+  onChecklist: () => void;
 }) {
   return (
     <div className="flex flex-wrap gap-2 md:flex-nowrap">
       <BotonFila icono={IconoEditar} etiqueta="Editar" onClick={onEditar} />
+      <BotonFila etiqueta="Lista" onClick={onChecklist} />
       <BotonFila
         etiqueta={tipo.activo ? "Desactivar" : "Activar"}
         onClick={onAlternar}

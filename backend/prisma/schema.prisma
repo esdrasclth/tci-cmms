@@ -57,6 +57,7 @@ model User {
 
   @@index([rol, activo])
   @@map("users")
+  checklistMarcados ChecklistOrden[] @relation("ChecklistMarcadoPor")
 }
 
 model Session {
@@ -267,6 +268,7 @@ model TipoMantenimiento {
   planes  PlanMantenimiento[]
 
   @@map("tipos_mantenimiento")
+  itemsChecklist ItemChecklist[]
 }
 
 model OrdenTrabajo {
@@ -325,6 +327,7 @@ model OrdenTrabajo {
   @@index([planId])
   @@index([deletedAt])
   @@map("ordenes_trabajo")
+  checklist ChecklistOrden[]
 }
 
 // TCI-29: auditoria solo-append. Nunca se edita ni se borra.
@@ -363,6 +366,10 @@ enum TipoAdjunto {
   EVIDENCIA_ANTES
   EVIDENCIA_DESPUES
   DOCUMENTO
+  /// Conformidad del cliente al cerrar la orden. Se guarda como los demas
+  /// adjuntos —el bucket ya es privado y la descarga ya comprueba permisos—
+  /// en vez de como columna: asi hereda gratis el control de acceso.
+  FIRMA
 }
 
 model OrdenAdjunto {
@@ -571,6 +578,8 @@ enum EventoNotificable {
   ORDEN_COMENTADA
   PREVENTIVO_POR_VENCER
   REPUESTO_BAJO_MINIMO
+  /// La fecha limite paso y la orden sigue abierta.
+  ORDEN_VENCIDA
 }
 
 /// TCI-54. Sin `PUSH`: las notificaciones push del navegador necesitan service
@@ -643,4 +652,57 @@ model Notificacion {
   @@index([usuarioId, leidaEn])
   @@index([usuarioId, createdAt])
   @@map("notificaciones")
+}
+
+/**
+ * Plantilla de verificacion de un tipo de mantenimiento.
+ *
+ * Un preventivo de tablero electrico son siempre las mismas doce
+ * comprobaciones. Hasta ahora cabian en el campo de texto libre del trabajo
+ * realizado, que es donde se pierden.
+ */
+model ItemChecklist {
+  id                  String @id @default(cuid())
+  tipoMantenimientoId String @map("tipo_mantenimiento_id")
+  texto               String
+  /// Posicion en la lista. Se reordena sin borrar ni recrear.
+  orden               Int
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tipoMantenimiento TipoMantenimiento @relation(fields: [tipoMantenimientoId], references: [id], onDelete: Cascade)
+
+  @@index([tipoMantenimientoId, orden])
+  @@map("items_checklist")
+}
+
+/**
+ * La lista de una orden concreta.
+ *
+ * **El texto se copia de la plantilla al crear la orden**, no se referencia.
+ * Es la misma regla que siguen las notificaciones: si manana alguien reescribe
+ * la comprobacion, lo que ya se firmo sigue diciendo lo que decia. Una orden
+ * cerrada es un documento, y un documento no cambia solo.
+ */
+model ChecklistOrden {
+  id      String  @id @default(cuid())
+  ordenId String  @map("orden_id")
+  texto   String
+  orden   Int
+  hecho   Boolean @default(false)
+  /// Observacion opcional de quien la marco: "se cambio el fusible".
+  nota    String?
+
+  marcadoPorId String?   @map("marcado_por_id")
+  marcadoEn    DateTime? @map("marcado_en")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  ordenTrabajo OrdenTrabajo @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+  marcadoPor   User?        @relation("ChecklistMarcadoPor", fields: [marcadoPorId], references: [id], onDelete: SetNull)
+
+  @@index([ordenId, orden])
+  @@map("checklist_orden")
 }

@@ -170,4 +170,56 @@ export class CatalogosService {
       );
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Listas de verificacion por tipo de mantenimiento
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Las comprobaciones de un tipo, en orden.
+   *
+   * Es la plantilla, no lo marcado: lo que una orden concreta lleva se copia al
+   * crearla y vive en `checklist_orden`. Editar aqui no reescribe ordenes ya
+   * levantadas, que es justo lo que se quiere.
+   */
+  listarChecklist(tipoMantenimientoId: string) {
+    return this.prisma.itemChecklist.findMany({
+      where: { tipoMantenimientoId },
+      orderBy: { orden: 'asc' },
+      select: { id: true, texto: true, orden: true },
+    });
+  }
+
+  /**
+   * Reemplaza la lista entera de un tipo.
+   *
+   * Se guarda todo de golpe en vez de item a item porque la pantalla es una
+   * lista que se reordena y se edita en bloque: mandar altas, bajas y cambios
+   * de posicion por separado obligaria a reconciliar dos ordenes distintos y a
+   * que la interfaz se preocupara de identificadores que no le importan.
+   */
+  async guardarChecklist(tipoMantenimientoId: string, textos: string[]) {
+    const tipo = await this.prisma.tipoMantenimiento.findUnique({
+      where: { id: tipoMantenimientoId },
+      select: { id: true },
+    });
+    if (!tipo) {
+      throw new NotFoundException('Ese tipo de mantenimiento no existe.');
+    }
+
+    const limpios = textos.map((x) => x.trim()).filter(Boolean);
+
+    await this.prisma.$transaction([
+      this.prisma.itemChecklist.deleteMany({ where: { tipoMantenimientoId } }),
+      this.prisma.itemChecklist.createMany({
+        data: limpios.map((texto, i) => ({
+          tipoMantenimientoId,
+          texto,
+          orden: i,
+        })),
+      }),
+    ]);
+
+    return this.listarChecklist(tipoMantenimientoId);
+  }
 }
