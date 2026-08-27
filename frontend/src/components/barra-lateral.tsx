@@ -97,7 +97,10 @@ export function BarraLateral({
 }) {
   return (
     <div className="flex h-full flex-col bg-tci-negro">
-      <div className="px-5 py-6">
+      {/* `shrink-0`: la marca y el pie no se comprimen. Sin esto, cuando la
+          barra no cabe, flexbox encoge lo que puede y el pie —donde vive
+          "Cerrar sesion"— es lo primero que desaparece. */}
+      <div className="shrink-0 px-5 py-6">
         <Link
           href="/panel"
           onClick={onNavegar}
@@ -117,7 +120,21 @@ export function BarraLateral({
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3" aria-label="Secciones del panel">
+      {/*
+        `min-h-0` es la pieza que falta y la que no se ve venir: un elemento
+        flexible trae `min-height: auto`, que le impide encogerse por debajo de
+        su contenido. Con eso puesto, `overflow-y-auto` no llega a activarse
+        nunca —la lista sigue creciendo y empuja el pie fuera de la pantalla—.
+        Ponerlo a cero es lo que le permite encogerse y, entonces, desplazarse.
+
+        Importa de verdad: con nueve destinos la barra mide unos 700px, y un
+        portatil de 1366x768 deja unos 640 de viewport. El pie se cortaba al
+        100% de zoom en la resolucion de portatil mas comun.
+      */}
+      <nav
+        className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3"
+        aria-label="Secciones del panel"
+      >
         {destinos.map((destino) => {
           const activo = destino.exacto
             ? ruta === destino.href
@@ -152,7 +169,7 @@ export function BarraLateral({
         })}
       </nav>
 
-      <div className="border-t border-white/10 p-3">
+      <div className="shrink-0 border-t border-white/10 p-3">
         {/* TCI-53. Encima del bloque de usuario y no en la cabecera: aqui esta
             en la misma columna que la navegacion y se ve desde cualquier
             pantalla, tambien con el cajon abierto en movil. */}

@@ -71,6 +71,15 @@ export function SelectorBuscable<T = undefined>({
   const [consulta, setConsulta] = useState("");
   const [activo, setActivo] = useState(0);
   /**
+   * Hacia donde se despliega la lista y cuanto puede medir.
+   *
+   * Fija hacia abajo y con 256px se salia de la pantalla cuando el campo caia
+   * en la mitad inferior — y eso depende del alto del navegador, no del
+   * diseno: la misma pantalla se rompe o no segun el zoom y la resolucion. Se
+   * mide al abrir y se decide entonces.
+   */
+  const [despliegue, setDespliegue] = useState({ arriba: false, alto: 256 });
+  /**
    * Se guarda con la consulta a la que responde. De ahi sale "cargando" sin
    * necesidad de un estado aparte: si lo guardado no corresponde a lo que se
    * esta buscando ahora, es que aun no ha llegado. Ademas cubre gratis la
@@ -116,6 +125,22 @@ export function SelectorBuscable<T = undefined>({
     return () => document.removeEventListener("mousedown", fuera);
   }, [abierto]);
 
+  function abrir() {
+    const caja = contenedor.current?.getBoundingClientRect();
+    if (caja) {
+      const debajo = window.innerHeight - caja.bottom - 12;
+      const encima = caja.top - 12;
+      // Solo se voltea si arriba hay sitio de verdad y abajo no: dar la vuelta
+      // por unos pocos pixeles desorienta mas de lo que arregla.
+      const arriba = debajo < 200 && encima > debajo;
+      setDespliegue({
+        arriba,
+        alto: Math.max(140, Math.min(256, arriba ? encima : debajo)),
+      });
+    }
+    setAbierto(true);
+  }
+
   function cerrar() {
     setAbierto(false);
     setConsulta("");
@@ -134,7 +159,7 @@ export function SelectorBuscable<T = undefined>({
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
       if (!abierto) {
-        setAbierto(true);
+        abrir();
         return;
       }
       const paso = e.key === "ArrowDown" ? 1 : -1;
@@ -191,9 +216,9 @@ export function SelectorBuscable<T = undefined>({
           value={abierto ? consulta : (textoSeleccionado ?? "")}
           onChange={(e) => {
             setConsulta(e.target.value);
-            if (!abierto) setAbierto(true);
+            if (!abierto) abrir();
           }}
-          onFocus={() => setAbierto(true)}
+          onFocus={abrir}
           onKeyDown={alTeclear}
           className={clasesControl("w-full pr-9")}
         />
@@ -227,7 +252,10 @@ export function SelectorBuscable<T = undefined>({
             id={idLista}
             role="listbox"
             aria-label={etiqueta}
-            className="absolute z-30 mt-1 max-h-64 w-full overscroll-contain overflow-y-auto rounded-lg border border-tci-borde bg-white shadow-lg"
+            style={{ maxHeight: despliegue.alto }}
+            className={`absolute z-30 w-full overflow-y-auto overscroll-contain rounded-lg border border-tci-borde bg-white shadow-lg ${
+              despliegue.arriba ? "bottom-full mb-1" : "top-full mt-1"
+            }`}
           >
             {cargando && opciones.length === 0 ? (
               <li className="px-3 py-3 text-sm text-tci-gris">Buscando...</li>
