@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
+import { IconoEditar } from "@/components/iconos";
 import { EncabezadoPagina, clasesControl } from "@/components/ui";
 
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
@@ -305,7 +306,11 @@ function BotonPlantilla({
   const plantilla = plantillas.find((p) => p.evento === evento);
   if (!plantilla) return <span className="text-tci-gris">—</span>;
   return (
-    <BotonFila onClick={() => onEditar(plantilla)}>Editar texto</BotonFila>
+    <BotonFila
+      icono={IconoEditar}
+      etiqueta="Editar texto"
+      onClick={() => onEditar(plantilla)}
+    />
   );
 }
 

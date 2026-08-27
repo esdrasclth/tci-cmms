@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
+import {
+  IconoActivar,
+  IconoBorrar,
+  IconoDesactivar,
+  IconoEditar,
+} from "@/components/iconos";
 import { Boton, EncabezadoPagina, Vacio, clasesControl } from "@/components/ui";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 import { ApiError } from "@/lib/api";
@@ -298,11 +304,15 @@ function Acciones({
 }) {
   return (
     <div className="flex flex-wrap gap-2 md:flex-nowrap">
-      <BotonFila onClick={onEditar}>Editar</BotonFila>
-      <BotonFila onClick={onAlternar}>
-        {tipo.activo ? "Desactivar" : "Activar"}
-      </BotonFila>
+      <BotonFila icono={IconoEditar} etiqueta="Editar" onClick={onEditar} />
       <BotonFila
+        icono={tipo.activo ? IconoDesactivar : IconoActivar}
+        etiqueta={tipo.activo ? "Desactivar" : "Activar"}
+        onClick={onAlternar}
+      />
+      <BotonFila
+        icono={IconoBorrar}
+        etiqueta="Borrar"
         peligro
         onClick={onBorrar}
         disabled={tipo.ordenes > 0}
@@ -311,9 +321,7 @@ function Acciones({
             ? "Se usa en ordenes ya registradas: desactivelo en lugar de borrarlo"
             : undefined
         }
-      >
-        Borrar
-      </BotonFila>
+      />
     </div>
   );
 }

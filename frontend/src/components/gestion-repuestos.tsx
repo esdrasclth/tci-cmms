@@ -5,6 +5,15 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
 import {
+  IconoActivar,
+  IconoBorrar,
+  IconoDesactivar,
+  IconoEditar,
+  IconoEntrada,
+  IconoHistorial,
+  IconoSalida,
+} from "@/components/iconos";
+import {
   Boton,
   EncabezadoPagina,
   Vacio,
@@ -368,23 +377,33 @@ function Acciones({
   return (
     <div className="flex flex-wrap gap-2 md:flex-nowrap">
       <BotonFila
+        icono={IconoEntrada}
+        etiqueta="Registrar entrada"
         onClick={() => setDialogo({ tipo: "entrada", item: repuesto })}
-      >
-        Entrada
-      </BotonFila>
-      <BotonFila onClick={() => setDialogo({ tipo: "salida", item: repuesto })}>
-        Salida
-      </BotonFila>
-      <BotonFila onClick={() => setDialogo({ tipo: "libro", item: repuesto })}>
-        Movimientos
-      </BotonFila>
-      <BotonFila onClick={() => setDialogo({ tipo: "editar", item: repuesto })}>
-        Editar
-      </BotonFila>
-      <BotonFila onClick={onAlternar}>
-        {repuesto.activo ? "Desactivar" : "Activar"}
-      </BotonFila>
+      />
       <BotonFila
+        icono={IconoSalida}
+        etiqueta="Registrar salida"
+        onClick={() => setDialogo({ tipo: "salida", item: repuesto })}
+      />
+      <BotonFila
+        icono={IconoHistorial}
+        etiqueta="Ver movimientos"
+        onClick={() => setDialogo({ tipo: "libro", item: repuesto })}
+      />
+      <BotonFila
+        icono={IconoEditar}
+        etiqueta="Editar"
+        onClick={() => setDialogo({ tipo: "editar", item: repuesto })}
+      />
+      <BotonFila
+        icono={repuesto.activo ? IconoDesactivar : IconoActivar}
+        etiqueta={repuesto.activo ? "Desactivar" : "Activar"}
+        onClick={onAlternar}
+      />
+      <BotonFila
+        icono={IconoBorrar}
+        etiqueta="Borrar"
         peligro
         onClick={() => setDialogo({ tipo: "borrar", item: repuesto })}
         disabled={repuesto.ordenes > 0}
@@ -393,9 +412,7 @@ function Acciones({
             ? "Se imputó a órdenes ya registradas: desactívelo en lugar de borrarlo"
             : undefined
         }
-      >
-        Borrar
-      </BotonFila>
+      />
     </div>
   );
 }

@@ -6,9 +6,9 @@ import type { ReactNode } from "react";
 
 import { CampanaNotificaciones } from "@/components/campana-notificaciones";
 import {
+  IconoCampana,
   IconoClientes,
   IconoEquipos,
-  IconoCampana,
   IconoOrdenes,
   IconoPreventivo,
   IconoReportes,

@@ -5,6 +5,12 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
 import {
+  IconoActivar,
+  IconoBorrar,
+  IconoDesactivar,
+  IconoEditar,
+} from "@/components/iconos";
+import {
   Boton,
   EncabezadoPagina,
   Vacio,
@@ -253,19 +259,21 @@ export function GestionPreventivo() {
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   <BotonFila
+                    icono={IconoEditar}
+                    etiqueta="Editar"
                     onClick={() => setDialogo({ tipo: "editar", item: plan })}
-                  >
-                    Editar
-                  </BotonFila>
-                  <BotonFila onClick={() => void alternarActivo(plan)}>
-                    {plan.activo ? "Desactivar" : "Activar"}
-                  </BotonFila>
+                  />
                   <BotonFila
+                    icono={plan.activo ? IconoDesactivar : IconoActivar}
+                    etiqueta={plan.activo ? "Desactivar" : "Activar"}
+                    onClick={() => void alternarActivo(plan)}
+                  />
+                  <BotonFila
+                    icono={IconoBorrar}
+                    etiqueta="Borrar"
                     peligro
                     onClick={() => setDialogo({ tipo: "borrar", item: plan })}
-                  >
-                    Borrar
-                  </BotonFila>
+                  />
                 </div>
               </li>
             ))}

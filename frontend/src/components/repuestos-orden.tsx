@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta } from "@/components/form";
+import { IconoEditar, IconoQuitar } from "@/components/iconos";
 import { Boton } from "@/components/ui";
 import { BotonFila } from "@/components/modal";
 import { ApiError } from "@/lib/api";
@@ -222,12 +223,17 @@ function Linea({
 
       {puedeEditar && !corrigiendo && (
         <div className="mt-2 flex flex-wrap gap-2">
-          <BotonFila onClick={() => setCorrigiendo(true)}>
-            Corregir cantidad
-          </BotonFila>
-          <BotonFila peligro onClick={() => void onRetirar()}>
-            Retirar
-          </BotonFila>
+          <BotonFila
+            icono={IconoEditar}
+            etiqueta="Corregir cantidad"
+            onClick={() => setCorrigiendo(true)}
+          />
+          <BotonFila
+            icono={IconoQuitar}
+            etiqueta="Retirar de la orden"
+            peligro
+            onClick={() => void onRetirar()}
+          />
         </div>
       )}
 

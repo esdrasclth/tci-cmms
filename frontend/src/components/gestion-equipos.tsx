@@ -4,6 +4,12 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
+import {
+  IconoActivar,
+  IconoBorrar,
+  IconoDesactivar,
+  IconoEditar,
+} from "@/components/iconos";
 import { Boton, EncabezadoPagina, Vacio, clasesControl } from "@/components/ui";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 
@@ -409,13 +415,19 @@ function Acciones({
 }) {
   return (
     <div className="flex flex-wrap gap-2 md:flex-nowrap">
-      <BotonFila onClick={() => setDialogo({ tipo: "editar", equipo })}>
-        Editar
-      </BotonFila>
-      <BotonFila onClick={onAlternar}>
-        {equipo.activo ? "Desactivar" : "Activar"}
-      </BotonFila>
       <BotonFila
+        icono={IconoEditar}
+        etiqueta="Editar"
+        onClick={() => setDialogo({ tipo: "editar", equipo })}
+      />
+      <BotonFila
+        icono={equipo.activo ? IconoDesactivar : IconoActivar}
+        etiqueta={equipo.activo ? "Desactivar" : "Activar"}
+        onClick={onAlternar}
+      />
+      <BotonFila
+        icono={IconoBorrar}
+        etiqueta="Borrar"
         peligro
         onClick={() => setDialogo({ tipo: "borrar", equipo })}
         disabled={equipo._count.ordenes > 0}
@@ -424,9 +436,7 @@ function Acciones({
             ? "Tiene ordenes en su historial: desactivelo en lugar de borrarlo"
             : undefined
         }
-      >
-        Borrar
-      </BotonFila>
+      />
     </div>
   );
 }

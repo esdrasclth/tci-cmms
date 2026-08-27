@@ -35,6 +35,8 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
  * usan `sm`, que si respeta el minimo tactil.
  */
 const ALTURAS = {
+  // Cuadrado y sin padding lateral: para botones que solo llevan icono.
+  icono: "h-8 w-8 md:h-7 md:w-7",
   xs: "h-8 px-2.5 text-xs md:h-7",
   sm: "h-9 px-3 text-xs md:h-8",
   md: "h-11 px-3.5 text-sm md:h-9",

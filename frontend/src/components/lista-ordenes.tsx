@@ -167,10 +167,19 @@ export function ListaOrdenes({ esAdmin }: { esAdmin: boolean }) {
                     <th className="px-4 py-3 font-bold">Cliente</th>
                     <th className="px-4 py-3 font-bold">Estado</th>
                     <th className="px-4 py-3 font-bold">Prioridad</th>
+                    {/* Tecnico y Programada solo desde `xl`. El area de
+                        contenido es MAS estrecha en `lg` que en `md`, porque en
+                        `lg` aparece la barra lateral y se lleva 256px: es justo
+                        ahi donde la tabla desbordaba y cortaba columnas. Lo que
+                        se oculta no se pierde, baja a la celda de la orden. */}
                     {esAdmin && (
-                      <th className="px-4 py-3 font-bold">Técnico</th>
+                      <th className="hidden px-4 py-3 font-bold xl:table-cell">
+                        Técnico
+                      </th>
                     )}
-                    <th className="px-4 py-3 font-bold">Programada</th>
+                    <th className="hidden px-4 py-3 font-bold xl:table-cell">
+                      Programada
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -193,6 +202,12 @@ export function ListaOrdenes({ esAdmin }: { esAdmin: boolean }) {
                           {orden.tipoMantenimiento.nombre}
                           {orden.equipo && ` · ${orden.equipo.codigo}`}
                         </p>
+                        {/* Solo mientras sus columnas estan ocultas. */}
+                        <p className="text-xs text-tci-gris xl:hidden">
+                          {formatearFecha(orden.fechaProgramada)}
+                          {esAdmin &&
+                            ` · ${orden.tecnico?.name ?? "Sin asignar"}`}
+                        </p>
                       </td>
                       <td className="px-4 py-3 text-tci-grafito">
                         {orden.cliente.nombre}
@@ -211,13 +226,13 @@ export function ListaOrdenes({ esAdmin }: { esAdmin: boolean }) {
                         {ETIQUETA_PRIORIDAD[orden.prioridad]}
                       </td>
                       {esAdmin && (
-                        <td className="px-4 py-3 text-tci-grafito">
+                        <td className="hidden px-4 py-3 text-tci-grafito xl:table-cell">
                           {orden.tecnico?.name ?? (
                             <span className="text-tci-gris">Sin asignar</span>
                           )}
                         </td>
                       )}
-                      <td className="px-4 py-3 whitespace-nowrap text-tci-grafito">
+                      <td className="hidden px-4 py-3 whitespace-nowrap text-tci-grafito xl:table-cell">
                         {formatearFecha(orden.fechaProgramada)}
                       </td>
                     </tr>

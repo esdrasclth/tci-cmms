@@ -84,29 +84,43 @@ export function BotonesDialogo({
   );
 }
 
-/** Boton pequeno de las columnas de acciones. */
+/**
+ * Accion de una fila de tabla, solo icono.
+ *
+ * Con texto, tres acciones por fila desbordaban la columna y "Borrar" saltaba
+ * de linea en todas: cada fila crecia ~30% sin necesidad. En icono ocupan un
+ * tercio y la fila queda a su altura natural.
+ *
+ * `etiqueta` es obligatoria y no decorativa: es el nombre accesible del boton
+ * —el icono va `aria-hidden`— y ademas el tooltip para quien no reconozca el
+ * simbolo. Sin ella el control seria mudo para un lector de pantalla.
+ */
 export function BotonFila({
-  children,
+  icono: Icono,
+  etiqueta,
   onClick,
   disabled,
   titulo,
   peligro = false,
 }: {
-  children: ReactNode;
+  icono: (props: { className?: string }) => ReactNode;
+  etiqueta: string;
   onClick: () => void;
   disabled?: boolean;
+  /** Motivo cuando esta deshabilitado. Sustituye al tooltip por defecto. */
   titulo?: string;
   peligro?: boolean;
 }) {
   return (
     <Boton
-      tamano="xs"
+      tamano="icono"
       variante={peligro ? "peligro" : "secundario"}
       onClick={onClick}
       disabled={disabled}
-      title={titulo}
+      aria-label={etiqueta}
+      title={titulo ?? etiqueta}
     >
-      {children}
+      <Icono className="h-4 w-4" />
     </Boton>
   );
 }

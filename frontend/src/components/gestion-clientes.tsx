@@ -4,6 +4,13 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
 import {
+  IconoActivar,
+  IconoBorrar,
+  IconoDesactivar,
+  IconoEditar,
+  IconoSede,
+} from "@/components/iconos";
+import {
   Boton,
   EncabezadoPagina,
   Vacio,
@@ -327,16 +334,24 @@ function Acciones({
 }) {
   return (
     <div className="flex flex-wrap gap-2 md:flex-nowrap">
-      <BotonFila onClick={() => setDialogo({ tipo: "editar", cliente })}>
-        Editar
-      </BotonFila>
-      <BotonFila onClick={() => setDialogo({ tipo: "sedes", cliente })}>
-        Sedes ({cliente.sedes.length})
-      </BotonFila>
-      <BotonFila onClick={onAlternar}>
-        {cliente.activo ? "Desactivar" : "Activar"}
-      </BotonFila>
       <BotonFila
+        icono={IconoEditar}
+        etiqueta="Editar"
+        onClick={() => setDialogo({ tipo: "editar", cliente })}
+      />
+      <BotonFila
+        icono={IconoSede}
+        etiqueta={`Sedes (${cliente.sedes.length})`}
+        onClick={() => setDialogo({ tipo: "sedes", cliente })}
+      />
+      <BotonFila
+        icono={cliente.activo ? IconoDesactivar : IconoActivar}
+        etiqueta={cliente.activo ? "Desactivar" : "Activar"}
+        onClick={onAlternar}
+      />
+      <BotonFila
+        icono={IconoBorrar}
+        etiqueta="Borrar"
         peligro
         onClick={() => setDialogo({ tipo: "borrar", cliente })}
         disabled={cliente._count.ordenes > 0}
@@ -345,9 +360,7 @@ function Acciones({
             ? "Tiene ordenes registradas: desactivelo en lugar de borrarlo"
             : undefined
         }
-      >
-        Borrar
-      </BotonFila>
+      />
     </div>
   );
 }
@@ -530,12 +543,17 @@ function DialogoSedes({
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-2">
-                  <BotonFila onClick={() => setEditando(sede)}>
-                    Editar
-                  </BotonFila>
-                  <BotonFila peligro onClick={() => void borrar(sede)}>
-                    Borrar
-                  </BotonFila>
+                  <BotonFila
+                    icono={IconoEditar}
+                    etiqueta="Editar"
+                    onClick={() => setEditando(sede)}
+                  />
+                  <BotonFila
+                    icono={IconoBorrar}
+                    etiqueta="Borrar"
+                    peligro
+                    onClick={() => void borrar(sede)}
+                  />
                 </div>
               </li>
             ))}
