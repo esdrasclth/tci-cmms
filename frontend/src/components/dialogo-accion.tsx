@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Alerta, BotonPrimario, Campo } from "@/components/form";
-import { Boton } from "@/components/ui";
+import { Boton, clasesArea } from "@/components/ui";
 import { CONFIG_ACCION, type Accion, type Tecnico } from "@/lib/ordenes";
 
 /**
@@ -223,7 +223,7 @@ function AreaTexto({
         rows={3}
         required={requerido}
         aria-describedby={ayuda ? `${nombre}-ayuda` : undefined}
-        className="w-full rounded-lg border border-tci-borde px-4 py-3 text-sm text-tci-negro placeholder:text-tci-gris/70 hover:border-tci-gris/60 focus:border-tci-rojo focus:outline-none"
+        className={clasesArea()}
       />
       {ayuda && (
         <p id={`${nombre}-ayuda`} className="mt-1 text-xs text-tci-gris">

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
-import { IconoBorrar, IconoEditar } from "@/components/iconos";
 import {
   Boton,
   EncabezadoPagina,
@@ -12,6 +11,7 @@ import {
   clasesBoton,
   clasesControl,
 } from "@/components/ui";
+import { IconoBorrar, IconoEditar } from "@/components/iconos";
 
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 import { ApiError } from "@/lib/api";

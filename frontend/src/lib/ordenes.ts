@@ -231,7 +231,10 @@ export function formatearFechaHora(iso: string): string {
   });
 }
 
-export function formatearDinero(valor: string | number, moneda = "HNL"): string {
+export function formatearDinero(
+  valor: string | number,
+  moneda = "HNL",
+): string {
   return new Intl.NumberFormat("es-HN", {
     style: "currency",
     currency: moneda,
@@ -291,7 +294,10 @@ export function crearOrden(datos: DatosOrden) {
 }
 
 /** El cliente no se puede cambiar: mover una orden invalidaria su historial. */
-export function actualizarOrden(id: string, datos: Omit<DatosOrden, "clienteId">) {
+export function actualizarOrden(
+  id: string,
+  datos: Omit<DatosOrden, "clienteId">,
+) {
   return apiPatch<OrdenDetalle>(`/ordenes/${id}`, datos);
 }
 

@@ -17,7 +17,12 @@ export interface ResumenReportes {
   abiertas: number;
   porEstado: Partial<Record<Estado, number>>;
   porPrioridad: Partial<Record<Prioridad, number>>;
-  porTipo: { id: string; nombre: string; color: string | null; ordenes: number }[];
+  porTipo: {
+    id: string;
+    nombre: string;
+    color: string | null;
+    ordenes: number;
+  }[];
   horasTotales: Decimal | null;
   costos: { manoObra: Decimal; repuestos: Decimal; total: Decimal };
   /** Media de días entre el alta y el cierre. `null` si no hay cerradas. */

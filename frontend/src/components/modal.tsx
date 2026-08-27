@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
+import { useBloqueoScroll } from "@/lib/hooks";
 import { Boton } from "@/components/ui";
 
 /**
@@ -21,6 +22,10 @@ export function Modal({
   /** Mientras se guarda, no se deja cerrar por Escape ni por el fondo. */
   bloqueado?: boolean;
 }) {
+  // Sin esto la pagina de detras se desplaza bajo el dialogo, y al cerrarlo
+  // aparece en otro sitio del que estaba.
+  useBloqueoScroll(true);
+
   useEffect(() => {
     const alPulsar = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !bloqueado) onCerrar();
@@ -40,7 +45,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
-        className="max-h-full w-full overflow-y-auto rounded-t-2xl bg-white p-6 sm:max-w-lg sm:rounded-2xl"
+        className="max-h-full w-full overscroll-contain overflow-y-auto rounded-t-2xl bg-white p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:max-w-lg sm:rounded-2xl sm:pb-6"
       >
         <h2 className="tci-display text-xl font-semibold text-tci-negro">
           {titulo}

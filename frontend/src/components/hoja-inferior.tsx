@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { useBloqueoScroll } from "@/lib/hooks";
+
 /**
  * Hoja que sube desde el borde inferior. Solo se usa en movil.
  *
@@ -32,6 +34,9 @@ export function HojaInferior({
   children: ReactNode;
 }) {
   const [arrastre, setArrastre] = useState(0);
+
+  // `overflow: hidden` en el body no basta: Safari de iOS lo ignora.
+  useBloqueoScroll(abierta);
   const inicioY = useRef<number | null>(null);
 
   useEffect(() => {
@@ -40,13 +45,8 @@ export function HojaInferior({
       if (e.key === "Escape") onCerrar();
     };
     document.addEventListener("keydown", alPulsar);
-    // Bloquear el scroll del fondo: sin esto, arrastrar sobre la hoja mueve la
-    // pagina de debajo y el gesto se siente roto.
-    const previo = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", alPulsar);
-      document.body.style.overflow = previo;
     };
   }, [abierta, onCerrar]);
 
@@ -89,7 +89,7 @@ export function HojaInferior({
               { transform: `translateY(${arrastre}px)`, transition: "none" }
             : { transition: "transform 200ms ease-out" }
         }
-        className="absolute inset-x-0 bottom-0 max-h-[85vh] animate-[tci-subir_250ms_ease-out] overflow-y-auto rounded-t-2xl bg-tci-negro pb-[env(safe-area-inset-bottom)]"
+        className="absolute inset-x-0 bottom-0 max-h-[85dvh] animate-[tci-subir_250ms_ease-out] overscroll-contain overflow-y-auto rounded-t-2xl bg-tci-negro pb-[env(safe-area-inset-bottom)]"
       >
         {/* El tirador no es decorativo: anuncia que la hoja se puede arrastrar.
             Su zona tactil abarca toda la franja, no solo la barrita. */}

@@ -42,7 +42,8 @@ export function listarEquiposAdmin(filtros: FiltrosEquipos = {}) {
   if (filtros.clienteId) params.set("clienteId", filtros.clienteId);
   if (filtros.sedeId) params.set("sedeId", filtros.sedeId);
   if (filtros.q?.trim()) params.set("q", filtros.q.trim());
-  if (filtros.activo !== undefined) params.set("activo", String(filtros.activo));
+  if (filtros.activo !== undefined)
+    params.set("activo", String(filtros.activo));
   return apiGet<Equipo[]>("/equipos", params);
 }
 

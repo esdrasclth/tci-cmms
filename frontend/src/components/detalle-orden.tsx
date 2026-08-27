@@ -4,7 +4,12 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { DialogoAccion, useDialogoAccion } from "@/components/dialogo-accion";
-import { Boton, EncabezadoPagina, clasesBoton } from "@/components/ui";
+import {
+  Boton,
+  EncabezadoPagina,
+  clasesArea,
+  clasesBoton,
+} from "@/components/ui";
 
 import { EvidenciaOrden } from "@/components/evidencia-orden";
 import { RepuestosOrden } from "@/components/repuestos-orden";
@@ -495,7 +500,7 @@ function CajaComentario({
         rows={2}
         maxLength={1000}
         placeholder="Escriba un comentario para el historial..."
-        className="w-full rounded-lg border border-tci-borde px-4 py-3 text-sm text-tci-negro placeholder:text-tci-gris/70 hover:border-tci-gris/60 focus:border-tci-rojo focus:outline-none"
+        className={clasesArea()}
       />
       {error && <p className="mt-1 text-xs text-tci-rojo">{error}</p>}
       <div className="mt-2 flex justify-end">

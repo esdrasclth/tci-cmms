@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 
 import "./globals.css";
@@ -20,6 +20,23 @@ const poppins = Poppins({
   variable: "--font-poppins",
   display: "swap",
 });
+
+/**
+ * `viewportFit: "cover"` extiende la pagina bajo el notch y la barra de gestos
+ * del telefono, que es lo que hace que `env(safe-area-inset-*)` devuelva algo
+ * distinto de cero. Sin esto, el relleno inferior de la hoja movil no existe y
+ * el ultimo boton queda debajo de la barra de gestos.
+ *
+ * No se toca `maximumScale` ni `userScalable`: quitarle el pellizco para
+ * ampliar a quien lo necesita para leer no es una forma aceptable de evitar el
+ * zoom al enfocar. Eso se resuelve con 16px en los campos (ver `form.tsx`).
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#000000",
+};
 
 export const metadata: Metadata = {
   title: {

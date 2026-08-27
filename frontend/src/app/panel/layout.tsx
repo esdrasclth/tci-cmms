@@ -43,7 +43,7 @@ export default function PanelLayout({ children }: LayoutProps<"/panel">) {
 
   if (isPending || !sesion) {
     return (
-      <main className="grid min-h-screen place-items-center bg-tci-humo">
+      <main className="grid min-h-dvh place-items-center bg-tci-humo">
         <p className="text-sm text-tci-gris">Cargando...</p>
       </main>
     );
@@ -65,7 +65,7 @@ export default function PanelLayout({ children }: LayoutProps<"/panel">) {
   }
 
   return (
-    <div className="min-h-screen bg-tci-humo">
+    <div className="min-h-dvh bg-tci-humo">
       {/* Escritorio: columna fija. `fixed` y no una celda de rejilla para que
           la barra no se desplace al hacer scroll en listados largos. */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 lg:block">

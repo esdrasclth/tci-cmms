@@ -19,3 +19,44 @@ export function useDebounce<T>(valor: T, ms = 300): T {
 
   return diferido;
 }
+
+/**
+ * Congela el desplazamiento de la pagina mientras hay una capa encima.
+ *
+ * No basta con `overflow: hidden` en el `body`: **Safari de iOS lo ignora** y
+ * la pagina de detras se sigue moviendo bajo el dialogo. Lo que si respeta es
+ * sacar el `body` del flujo con `position: fixed`, y eso obliga a guardar la
+ * posicion y devolverla al cerrar, porque fijar el body la pierde —el salto al
+ * cerrar un dialogo viene justo de no hacerlo—.
+ *
+ * `scrollRestoration` se desactiva un instante para que el navegador no intente
+ * ademas restaurar la suya y peleen las dos.
+ */
+export function useBloqueoScroll(activo: boolean) {
+  useEffect(() => {
+    if (!activo) return;
+
+    const y = window.scrollY;
+    const { body } = document;
+    const previo = {
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+      overflow: body.style.overflow,
+    };
+
+    body.style.position = "fixed";
+    body.style.top = `-${y}px`;
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+
+    return () => {
+      body.style.position = previo.position;
+      body.style.top = previo.top;
+      body.style.width = previo.width;
+      body.style.overflow = previo.overflow;
+      // `instant`: con desplazamiento suave se ve volar la pagina al cerrar.
+      window.scrollTo({ top: y, behavior: "instant" });
+    };
+  }, [activo]);
+}

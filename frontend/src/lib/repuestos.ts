@@ -108,7 +108,8 @@ export function listarRepuestosAdmin(
 ) {
   const params = new URLSearchParams();
   if (filtros.q?.trim()) params.set("q", filtros.q.trim());
-  if (filtros.activo !== undefined) params.set("activo", String(filtros.activo));
+  if (filtros.activo !== undefined)
+    params.set("activo", String(filtros.activo));
   if (filtros.bajoMinimo) params.set("bajoMinimo", "true");
   return apiGet<Repuesto[]>("/repuestos/admin", params);
 }

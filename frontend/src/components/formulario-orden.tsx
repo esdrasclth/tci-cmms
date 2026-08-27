@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, BotonPrimario, Campo } from "@/components/form";
-import { EncabezadoPagina } from "@/components/ui";
+import { EncabezadoPagina, clasesArea } from "@/components/ui";
 import { ApiError } from "@/lib/api";
 import {
   ETIQUETA_PRIORIDAD,
@@ -224,7 +224,7 @@ export function FormularioOrden({ id }: { id?: string }) {
             defaultValue={orden?.descripcionProblema}
             placeholder="Que reporta el cliente, con el detalle que haga falta."
             required
-            className="w-full rounded-lg border border-tci-borde px-4 py-3 text-sm text-tci-negro placeholder:text-tci-gris/70 hover:border-tci-gris/60 focus:border-tci-rojo focus:outline-none"
+            className={clasesArea()}
           />
         </div>
 

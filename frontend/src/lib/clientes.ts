@@ -35,7 +35,8 @@ export function listarClientesAdmin(
 ) {
   const params = new URLSearchParams();
   if (filtros.q?.trim()) params.set("q", filtros.q.trim());
-  if (filtros.activo !== undefined) params.set("activo", String(filtros.activo));
+  if (filtros.activo !== undefined)
+    params.set("activo", String(filtros.activo));
   return apiGet<Cliente[]>("/clientes", params);
 }
 

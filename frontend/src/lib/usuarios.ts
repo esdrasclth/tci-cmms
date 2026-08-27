@@ -20,7 +20,8 @@ export interface FiltrosUsuarios {
 export function listarUsuarios(filtros: FiltrosUsuarios = {}) {
   const params = new URLSearchParams();
   if (filtros.rol) params.set("rol", filtros.rol);
-  if (filtros.activo !== undefined) params.set("activo", String(filtros.activo));
+  if (filtros.activo !== undefined)
+    params.set("activo", String(filtros.activo));
   if (filtros.q?.trim()) params.set("q", filtros.q.trim());
   return apiGet<Usuario[]>("/usuarios", params);
 }
@@ -37,7 +38,9 @@ export function crearUsuario(datos: {
 
 export function actualizarUsuario(
   id: string,
-  datos: Partial<Pick<Usuario, "name" | "rol" | "activo"> & { telefono: string }>,
+  datos: Partial<
+    Pick<Usuario, "name" | "rol" | "activo"> & { telefono: string }
+  >,
 ) {
   return apiPatch<Usuario>(`/usuarios/${id}`, datos);
 }

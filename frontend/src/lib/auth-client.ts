@@ -1,5 +1,5 @@
-import { inferAdditionalFields } from 'better-auth/client/plugins';
-import { createAuthClient } from 'better-auth/react';
+import { inferAdditionalFields } from "better-auth/client/plugins";
+import { createAuthClient } from "better-auth/react";
 
 /**
  * Cliente de Better Auth contra el backend NestJS (TCI-31).
@@ -9,10 +9,10 @@ import { createAuthClient } from 'better-auth/react';
  * El origen del frontend tiene que estar en CORS_ORIGIN del backend.
  */
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001',
-  basePath: '/api/auth',
+  baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001",
+  basePath: "/api/auth",
   fetchOptions: {
-    credentials: 'include',
+    credentials: "include",
   },
   plugins: [
     // `rol`, `activo` y `telefono` son additionalFields del backend
@@ -23,9 +23,9 @@ export const authClient = createAuthClient({
     // daria de alta como ADMIN). Sin esta linea el tipo de signUp los exige.
     inferAdditionalFields({
       user: {
-        rol: { type: 'string', input: false },
-        activo: { type: 'boolean', input: false },
-        telefono: { type: 'string', required: false },
+        rol: { type: "string", input: false },
+        activo: { type: "boolean", input: false },
+        telefono: { type: "string", required: false },
       },
     }),
   ],
@@ -45,4 +45,4 @@ export const { signIn, signUp, signOut, useSession } = authClient;
  */
 export const { requestPasswordReset, resetPassword } = authClient;
 
-export type Rol = 'ADMIN' | 'TECNICO';
+export type Rol = "ADMIN" | "TECNICO";

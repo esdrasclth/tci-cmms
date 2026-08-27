@@ -22,9 +22,19 @@ import { Boton } from "@/components/ui";
  * Ver el cabezal de `ui.tsx` para por que las alturas son explicitas.
  */
 
+/**
+ * `text-base` en movil y `text-sm` desde `md`. No es una decision tipografica:
+ * **Safari de iOS hace zoom al enfocar cualquier campo de menos de 16px**, y
+ * despues deja la pagina ampliada. 16px en el telefono lo evita, y en
+ * escritorio se vuelve a 14px, que es la escala del resto de la interfaz.
+ *
+ * La alternativa, `maximum-scale=1` en el viewport, tambien quita el zoom pero
+ * de paso le quita el pellizco para ampliar a quien lo necesita para leer. No
+ * se hace.
+ */
 const ALTURA_CAMPO = {
-  md: "h-11 px-3.5 text-sm md:h-9",
-  lg: "h-12 px-4 text-[0.9375rem]",
+  md: "h-11 px-3.5 text-base md:h-9 md:text-sm",
+  lg: "h-12 px-4 text-base md:text-[0.9375rem]",
 } as const;
 
 type Tamano = keyof typeof ALTURA_CAMPO;

@@ -78,7 +78,9 @@ export function listarPreferencias() {
 }
 
 export function cambiarPreferencia(id: string, activo: boolean) {
-  return apiPatch<Preferencia>(`/notificaciones/preferencias/${id}`, { activo });
+  return apiPatch<Preferencia>(`/notificaciones/preferencias/${id}`, {
+    activo,
+  });
 }
 
 export function listarPlantillas() {

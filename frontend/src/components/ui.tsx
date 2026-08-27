@@ -39,7 +39,8 @@ const ALTURAS = {
   icono: "h-8 w-8 md:h-7 md:w-7",
   xs: "h-8 px-2.5 text-xs md:h-7",
   sm: "h-9 px-3 text-xs md:h-8",
-  md: "h-11 px-3.5 text-sm md:h-9",
+  // `text-base` en movil evita el zoom de iOS al enfocar. Ver `form.tsx`.
+  md: "h-11 px-3.5 text-base md:h-9 md:text-sm",
   lg: "h-12 px-4 text-sm",
 } as const;
 
@@ -94,6 +95,22 @@ export function clasesControl(className = "") {
     "hover:border-tci-gris/60 focus:border-tci-rojo focus:outline-none " +
     "disabled:cursor-not-allowed disabled:bg-tci-humo " +
     `${ALTURAS.md} ${className}`
+  );
+}
+
+/**
+ * Como `clasesControl` pero sin altura fija: un `<textarea>` la toma de `rows`
+ * y fijarsela lo aplastaria a una linea. Mantiene el resto —borde, foco y los
+ * 16px en movil que evitan el zoom de iOS— para que no se despegue del resto
+ * de campos.
+ */
+export function clasesArea(className = "") {
+  return (
+    "w-full rounded-lg border border-tci-borde bg-white px-3.5 py-2.5 " +
+    "text-base text-tci-negro placeholder:text-tci-gris/70 transition-colors " +
+    "hover:border-tci-gris/60 focus:border-tci-rojo focus:outline-none " +
+    "disabled:cursor-not-allowed disabled:bg-tci-humo " +
+    `md:text-sm ${className}`
   );
 }
 

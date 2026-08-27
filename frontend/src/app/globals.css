@@ -81,3 +81,42 @@ body {
     animation: none;
   }
 }
+
+/*
+ * Sensacion tactil en movil.
+ *
+ * `touch-action: manipulation` es el que mas se nota: sin el, el navegador
+ * espera ~300ms tras cada toque por si viene un segundo toque que signifique
+ * "ampliar". Declarandolo, el toque se resuelve al instante y la aplicacion
+ * deja de sentirse lenta sin que nada haya cambiado de velocidad.
+ *
+ * El resaltado gris de Android sobra porque cada control ya tiene su estado
+ * `active:` propio, que ademas respeta la marca. Y sin `user-select: none` un
+ * toque mantenido sobre un boton selecciona su texto y saca el menu de copiar,
+ * que con guantes pasa mas de lo que parece.
+ */
+button,
+a,
+[role="button"],
+label,
+summary {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+[role="button"] {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/*
+ * Los campos si conservan la seleccion: ahi el usuario si quiere copiar y
+ * pegar, y es justo lo que hace con un numero de serie largo.
+ */
+input,
+textarea,
+select {
+  -webkit-user-select: auto;
+  user-select: auto;
+}

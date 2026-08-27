@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { Alerta, Campo } from "@/components/form";
+import { EncabezadoPagina, clasesArea } from "@/components/ui";
 import { IconoEditar } from "@/components/iconos";
-import { EncabezadoPagina, clasesControl } from "@/components/ui";
 
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
 import { ApiError } from "@/lib/api";
@@ -381,7 +381,7 @@ function DialogoPlantilla({
             rows={4}
             maxLength={2000}
             required
-            className={clasesControl("w-full")}
+            className={clasesArea()}
           />
         </div>
 

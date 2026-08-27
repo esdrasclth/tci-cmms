@@ -23,10 +23,10 @@ export function AuthShell({
   children: ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen bg-tci-negro">
+    <div className="relative min-h-dvh bg-tci-negro">
       <FondoLogin />
 
-      <div className="relative flex min-h-screen flex-col lg:flex-row">
+      <div className="relative flex min-h-dvh flex-col lg:flex-row">
         {/* Columna de marca */}
         <div className="flex flex-col justify-between gap-10 px-6 pt-8 pb-4 lg:w-[54%] lg:px-12 lg:pt-10 lg:pb-14">
           <div className="flex items-center justify-between gap-4">
