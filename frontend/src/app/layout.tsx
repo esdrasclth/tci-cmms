@@ -39,12 +39,60 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  /*
+   * El titulo por defecto lleva el nombre completo porque es lo que se ve en
+   * la pestana y en el marcador, donde "CMMS TCI" a secas no dice de quien es.
+   * Las paginas internas usan la plantilla, que antepone su propio nombre y
+   * deja la marca detras: "Ordenes de trabajo · CMMS TCI".
+   */
   title: {
-    default: "CMMS TCI",
+    default: "CMMS · Técnicos de Control Industrial",
     template: "%s · CMMS TCI",
   },
   description:
     "Sistema de órdenes de trabajo y mantenimiento de TCI — Técnicos de Control Industrial.",
+  applicationName: "CMMS TCI",
+
+  /*
+   * **Se pide explicitamente que no se indexe.**
+   *
+   * Esto no es un sitio publico: es una herramienta interna con el registro
+   * cerrado, y lo que hay dentro son datos de los clientes de TCI. Que
+   * aparezca en un buscador no aporta nada y expone la superficie de acceso.
+   * `nocache` e `imageindex` cierran ademas la copia en cache y la busqueda de
+   * imagenes, que es por donde se cuelan las capturas.
+   */
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: { index: false, follow: false, noimageindex: true },
+  },
+
+  /*
+   * Vista previa al compartir el enlace por mensajeria, que es como circula
+   * de verdad dentro del equipo. Sin esto WhatsApp muestra la URL pelada.
+   * La imagen la sirve `opengraph-image.png` por convencion de nombre.
+   */
+  openGraph: {
+    type: "website",
+    siteName: "CMMS TCI",
+    title: "CMMS · Técnicos de Control Industrial",
+    description:
+      "Órdenes de trabajo, equipos y mantenimiento preventivo de TCI.",
+    locale: "es_HN",
+  },
+
+  /* Al anadirlo a la pantalla de inicio en iOS. */
+  appleWebApp: {
+    capable: true,
+    title: "CMMS TCI",
+    statusBarStyle: "black-translucent",
+  },
+
+  /* El navegador no debe convertir los correos y telefonos en enlaces: los
+     hay por toda la ficha de cliente y los repinta de azul. */
+  formatDetection: { telephone: false, address: false, email: false },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

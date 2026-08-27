@@ -1,9 +1,9 @@
-"use client";
+import type { Metadata } from "next";
 
-import Link from "next/link";
-
+import { SoloAdmin } from "@/components/solo-admin";
 import { GestionNotificaciones } from "@/components/gestion-notificaciones";
-import { useSession } from "@/lib/auth-client";
+
+export const metadata: Metadata = { title: "Notificaciones" };
 
 /**
  * TCI-54, TCI-55 y TCI-56 — configuracion de notificaciones.
@@ -11,25 +11,10 @@ import { useSession } from "@/lib/auth-client";
  * Solo administradores: decidir que se avisa y a quien es una regla del
  * sistema, no una preferencia personal. El corte real lo hace el backend.
  */
-export default function NotificacionesPage() {
-  const { data: sesion } = useSession();
-  if (!sesion) return null;
-
-  if (sesion.user.rol !== "ADMIN") {
-    return (
-      <div className="rounded-xl border border-dashed border-tci-borde bg-white p-8 text-center">
-        <p className="text-sm text-tci-grafito">
-          Esta sección es solo para administradores.
-        </p>
-        <Link
-          href="/panel"
-          className="mt-3 inline-block text-sm font-bold text-tci-negro underline-offset-2 hover:text-tci-rojo hover:underline"
-        >
-          &larr; Volver a mis órdenes
-        </Link>
-      </div>
-    );
-  }
-
-  return <GestionNotificaciones />;
+export default function Pagina() {
+  return (
+    <SoloAdmin>
+      <GestionNotificaciones />
+    </SoloAdmin>
+  );
 }
