@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { useBloqueoScroll } from "@/lib/hooks";
+import { useBloqueoScroll, useTrampaFoco } from "@/lib/hooks";
 
 /**
  * Hoja que sube desde el borde inferior. Solo se usa en movil.
@@ -37,6 +37,7 @@ export function HojaInferior({
 
   // `overflow: hidden` en el body no basta: Safari de iOS lo ignora.
   useBloqueoScroll(abierta);
+  const panel = useTrampaFoco<HTMLDivElement>(abierta);
   const inicioY = useRef<number | null>(null);
 
   useEffect(() => {
@@ -79,9 +80,11 @@ export function HojaInferior({
       />
 
       <div
+        ref={panel}
         role="dialog"
         aria-modal="true"
         aria-label={etiqueta}
+        tabIndex={-1}
         style={
           arrastre
             ? // Mientras el dedo manda no hay transicion, o la hoja va por

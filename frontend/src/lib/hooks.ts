@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 
 /**
  * Difiere un valor hasta que deja de cambiar durante `ms`.
@@ -95,4 +95,92 @@ export function useClienteConSedes<T extends { id: string }>(
   }, [clienteId, obtener]);
 
   return cargado?.id === clienteId ? cargado : null;
+}
+
+/** Lo que el navegador considera alcanzable con el tabulador. */
+const ENFOCABLES = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
+
+/**
+ * Encierra el tabulador dentro de una capa y devuelve el foco al salir.
+ *
+ * `aria-modal="true"` le dice al lector de pantalla que lo de detras no
+ * existe, pero **no impide tabular hasta ahi**: sin esto, tres pulsaciones de
+ * Tab sacaban el foco del dialogo y lo dejaban recorriendo una pagina que
+ * sigue viva debajo del velo. Quien navega con teclado acaba escribiendo en un
+ * formulario que no ve.
+ *
+ * Al cerrar devuelve el foco a lo que abrio la capa. Sin eso el foco vuelve al
+ * principio del documento y hay que recorrer el menu entero para retomar donde
+ * se estaba.
+ *
+ * @param activo  Si la capa esta abierta.
+ * @param inicial Que enfocar al abrir. Por defecto, lo primero enfocable; se
+ *                pasa cuando el primer control no es donde se quiere empezar
+ *                —un boton de cerrar antes del campo, por ejemplo—.
+ */
+export function useTrampaFoco<T extends HTMLElement>(
+  activo: boolean,
+  inicial?: RefObject<HTMLElement | null>,
+) {
+  const contenedor = useRef<T>(null);
+
+  useEffect(() => {
+    if (!activo) return;
+    const nodo = contenedor.current;
+    if (!nodo) return;
+
+    const previo = document.activeElement as HTMLElement | null;
+
+    // Se recalcula en cada Tab y no una sola vez: dentro de un dialogo
+    // aparecen y desaparecen controles —el boton de guardar se deshabilita
+    // mientras guarda, la lista del buscador se abre— y una lista congelada
+    // mandaria el foco a un elemento que ya no acepta.
+    const enfocables = () =>
+      Array.from(nodo.querySelectorAll<HTMLElement>(ENFOCABLES)).filter(
+        (el) => el.offsetParent !== null || el === document.activeElement,
+      );
+
+    const alAbrir = requestAnimationFrame(() => {
+      (inicial?.current ?? enfocables()[0] ?? nodo).focus();
+    });
+
+    const alTeclear = (evento: KeyboardEvent) => {
+      if (evento.key !== "Tab") return;
+      const lista = enfocables();
+      if (lista.length === 0) {
+        evento.preventDefault();
+        return;
+      }
+      const primero = lista[0];
+      const ultimo = lista[lista.length - 1];
+      const foco = document.activeElement;
+      const fuera = !nodo.contains(foco);
+
+      if (evento.shiftKey && (foco === primero || fuera)) {
+        evento.preventDefault();
+        ultimo.focus();
+      } else if (!evento.shiftKey && (foco === ultimo || fuera)) {
+        evento.preventDefault();
+        primero.focus();
+      }
+    };
+
+    // En captura: si un control de dentro para la propagacion del keydown, el
+    // ciclo se romperia en fase de burbuja.
+    document.addEventListener("keydown", alTeclear, true);
+    return () => {
+      cancelAnimationFrame(alAbrir);
+      document.removeEventListener("keydown", alTeclear, true);
+      previo?.focus?.();
+    };
+  }, [activo, inicial]);
+
+  return contenedor;
 }

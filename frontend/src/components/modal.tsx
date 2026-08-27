@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { useBloqueoScroll } from "@/lib/hooks";
+import { useBloqueoScroll, useTrampaFoco } from "@/lib/hooks";
 import { Boton } from "@/components/ui";
 
 /**
@@ -25,6 +25,7 @@ export function Modal({
   // Sin esto la pagina de detras se desplaza bajo el dialogo, y al cerrarlo
   // aparece en otro sitio del que estaba.
   useBloqueoScroll(true);
+  const panel = useTrampaFoco<HTMLDivElement>(true);
 
   useEffect(() => {
     const alPulsar = (e: KeyboardEvent) => {
@@ -42,9 +43,13 @@ export function Modal({
       }}
     >
       <div
+        ref={panel}
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
+        // Enfocable por codigo: es el destino de reserva cuando el dialogo
+        // todavia no tiene ningun control dentro.
+        tabIndex={-1}
         className="max-h-full w-full overscroll-contain overflow-y-auto rounded-t-2xl bg-white p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:max-w-lg sm:rounded-2xl sm:pb-6"
       >
         <h2 className="tci-display text-xl font-semibold text-tci-negro">

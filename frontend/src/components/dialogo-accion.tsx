@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Alerta, BotonPrimario, Campo } from "@/components/form";
 import { Boton, clasesArea } from "@/components/ui";
 import { CONFIG_ACCION, type Accion, type Tecnico } from "@/lib/ordenes";
+import { useTrampaFoco } from "@/lib/hooks";
 
 /**
  * Formulario de una transicion (TCI-42).
@@ -32,10 +33,9 @@ export function DialogoAccion({
 }) {
   const config = CONFIG_ACCION[accion];
   const primerCampo = useRef<HTMLTextAreaElement | HTMLSelectElement>(null);
-
-  useEffect(() => {
-    primerCampo.current?.focus();
-  }, []);
+  // La trampa enfoca el primer campo al abrir y devuelve el foco al cerrar.
+  // Antes solo hacia lo primero, y con Tab se salia del dialogo.
+  const panel = useTrampaFoco<HTMLDivElement>(true, primerCampo);
 
   useEffect(() => {
     const alPulsar = (e: KeyboardEvent) => {
@@ -81,8 +81,10 @@ export function DialogoAccion({
       }}
     >
       <div
+        ref={panel}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
         aria-labelledby="titulo-dialogo"
         className="max-h-full w-full overflow-y-auto rounded-t-2xl bg-white p-6 sm:max-w-lg sm:rounded-2xl"
       >

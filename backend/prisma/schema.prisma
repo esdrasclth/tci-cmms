@@ -100,6 +100,27 @@ model Account {
   @@map("accounts")
 }
 
+/**
+ * Contadores del limitador de peticiones de Better Auth.
+ *
+ * Su almacenamiento por defecto es la memoria del proceso, que se vacia en
+ * cada reinicio: bastaba con esperar a un redespliegue —o provocarlo— para que
+ * el contador de intentos volviera a cero. En base sobrevive al reinicio y
+ * seguiria valiendo si algun dia corre mas de una instancia.
+ *
+ * Los nombres de campo los fija Better Auth (`key`, `count`, `lastRequest`);
+ * no son elegibles.
+ */
+model RateLimit {
+  id          String @id @default(cuid())
+  key         String @unique
+  count       Int
+  /// Marca de tiempo en milisegundos. Better Auth la maneja como numero.
+  lastRequest BigInt @map("last_request")
+
+  @@map("rate_limits")
+}
+
 model Verification {
   id         String   @id @default(cuid())
   identifier String

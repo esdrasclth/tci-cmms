@@ -69,6 +69,42 @@ export function createAuth(prisma: PrismaClient, correo?: CorreoService) {
     baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3001',
     basePath: '/api/auth',
 
+    /*
+     * Limite de peticiones.
+     *
+     * Better Auth ya lo activa solo en produccion, con 3 intentos por cada 10
+     * segundos en /sign-in. Aqui se endurece en dos puntos:
+     *
+     * 1. **Se guarda en base y no en memoria.** El almacenamiento por defecto
+     *    vive en el proceso, asi que se vaciaba en cada reinicio: bastaba con
+     *    esperar a un redespliegue para que el contador volviera a cero.
+     *
+     * 2. **La ventana del login pasa de 10 segundos a 15 minutos.** El limite
+     *    de fabrica frena las rafagas pero no el goteo: 3 cada 10 segundos son
+     *    unos mil intentos por hora, que contra un puñado de cuentas conocidas
+     *    es tiempo de sobra. Diez cada quince minutos deja trabajar a quien se
+     *    equivoca de contraseña y cierra la puerta a probarlas en masa.
+     *
+     * `enabled` se declara explicito en vez de heredar el valor implicito de
+     * NODE_ENV: que una proteccion dependa de una variable de entorno sin
+     * decirlo es como se apaga sin que nadie se entere. En desarrollo sigue
+     * apagado, o probar el login seria un suplicio.
+     */
+    rateLimit: {
+      enabled: process.env.NODE_ENV === 'production',
+      storage: 'database',
+      window: 60,
+      max: 120,
+      customRules: {
+        // Los nombres son los de las rutas reales, que se comparan exactas.
+        // `/forget-password` es la ruta antigua y aqui no se usa: el cliente
+        // llama a `requestPasswordReset` (ver frontend/src/lib/auth-client.ts).
+        '/sign-in/email': { window: 900, max: 10 },
+        '/request-password-reset': { window: 900, max: 5 },
+        '/reset-password': { window: 900, max: 10 },
+      },
+    },
+
     emailAndPassword: {
       enabled: true,
       minPasswordLength: 8,
