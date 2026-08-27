@@ -1,18 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Alerta } from "@/components/form";
 import { Boton, EncabezadoPagina, Vacio, clasesBoton } from "@/components/ui";
+import { SelectorBuscable } from "@/components/selector-buscable";
 import { ApiError } from "@/lib/api";
 import {
+  buscarRepuestos,
   formatearCantidad,
   listarLibro,
-  listarRepuestosAdmin,
   type FiltrosLibro,
   type MovimientoInventario,
-  type Repuesto,
 } from "@/lib/repuestos";
 
 const POR_PAGINA = 50;
@@ -34,15 +34,19 @@ export function LibroInventario() {
     data: MovimientoInventario[];
     meta: { total: number; page: number; totalPages: number };
   } | null>(null);
-  const [repuestos, setRepuestos] = useState<Repuesto[]>([]);
+  // El nombre del repuesto filtrado: ya no hay catalogo en memoria.
+  const [repuestoTexto, setRepuestoTexto] = useState("");
+
+  const buscarOpciones = useCallback(
+    async (consulta: string) =>
+      (await buscarRepuestos(consulta)).map((r) => ({
+        valor: r.id,
+        texto: `${r.codigo} — ${r.nombre}`,
+      })),
+    [],
+  );
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    listarRepuestosAdmin({ perPage: 100 })
-      .then((r) => setRepuestos(r.data))
-      .catch(() => setRepuestos([]));
-  }, []);
 
   useEffect(() => {
     let cancelado = false;
@@ -142,27 +146,18 @@ export function LibroInventario() {
           </select>
         </div>
         <div className="min-w-52">
-          <label
-            htmlFor="repuesto"
-            className="mb-1 block text-xs text-tci-gris"
-          >
-            Repuesto
-          </label>
-          <select
+          <SelectorBuscable
             id="repuesto"
-            value={filtros.repuestoId ?? ""}
-            onChange={(e) =>
-              cambiar({ repuestoId: e.target.value || undefined })
-            }
-            className="w-full rounded-lg border border-tci-borde bg-white px-3 py-2 text-sm text-tci-negro"
-          >
-            <option value="">Todos</option>
-            {repuestos.map((repuesto) => (
-              <option key={repuesto.id} value={repuesto.id}>
-                {repuesto.codigo} — {repuesto.nombre}
-              </option>
-            ))}
-          </select>
+            etiqueta="Repuesto"
+            valor={filtros.repuestoId ?? ""}
+            textoSeleccionado={repuestoTexto}
+            onCambio={(v, texto) => {
+              setRepuestoTexto(texto);
+              cambiar({ repuestoId: v || undefined });
+            }}
+            buscar={buscarOpciones}
+            placeholder="Todos"
+          />
         </div>
         <label className="flex cursor-pointer items-center gap-2 py-2 text-sm text-tci-grafito">
           <input

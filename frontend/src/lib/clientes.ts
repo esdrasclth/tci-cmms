@@ -30,6 +30,31 @@ export type DatosCliente = {
   email?: string;
 };
 
+/** Un cliente con sus sedes. Se pide al elegirlo, no antes. */
+export function obtenerClienteAdmin(id: string) {
+  return apiGet<Cliente>(`/clientes/${id}`);
+}
+
+/**
+ * Primeras coincidencias para un selector con buscador. Devuelve la lista
+ * pelada porque quien lo llama no pagina: muestra veinte y a otra cosa.
+ */
+export async function buscarClientesAdmin(q: string, soloActivos = false) {
+  const params = new URLSearchParams({ perPage: "20" });
+  if (q.trim()) params.set("q", q.trim());
+  if (soloActivos) params.set("activo", "true");
+  return (await apiGet<Pagina<Cliente>>("/clientes", params)).data;
+}
+
+/**
+ * Cuantos clientes activos hay, sin traer ninguno. Sirve para saber si tiene
+ * sentido ofrecer "Nuevo equipo": sin clientes no hay donde ponerlo.
+ */
+export async function contarClientesActivos() {
+  const params = new URLSearchParams({ activo: "true", perPage: "1" });
+  return (await apiGet<Pagina<Cliente>>("/clientes", params)).meta.total;
+}
+
 export function listarClientesAdmin(
   filtros: {
     q?: string;

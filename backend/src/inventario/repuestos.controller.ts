@@ -38,8 +38,8 @@ export class RepuestosController {
 
   /** Lo que se puede imputar hoy: activos y con existencia. */
   @Get()
-  disponibles() {
-    return this.inventario.disponibles();
+  disponibles(@Query('q') q?: string) {
+    return this.inventario.disponibles(q);
   }
 
   /**

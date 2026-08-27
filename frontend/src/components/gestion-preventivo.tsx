@@ -13,8 +13,9 @@ import {
 } from "@/components/ui";
 import { IconoBorrar, IconoEditar } from "@/components/iconos";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
+import { SelectorBuscable } from "@/components/selector-buscable";
 import { ApiError } from "@/lib/api";
-import { listarClientesAdmin, type Cliente } from "@/lib/clientes";
+import { buscarClientesAdmin } from "@/lib/clientes";
 import { ETIQUETA_PRIORIDAD, type Prioridad } from "@/lib/ordenes";
 import {
   UNIDADES,
@@ -440,17 +441,24 @@ function DialogoPlan({
   const [tiposMantenimiento, setTiposMantenimiento] = useState<TipoActivo[]>(
     [],
   );
-  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [clienteId, setClienteId] = useState(existente?.cliente?.id ?? "");
+  const [clienteTexto, setClienteTexto] = useState(
+    existente?.cliente?.nombre ?? "",
+  );
+
+  const buscarOpcionesCliente = useCallback(
+    async (consulta: string) =>
+      (await buscarClientesAdmin(consulta, true)).map((c) => ({
+        valor: c.id,
+        texto: c.nombre,
+        detalle: c.rtn ? `RTN ${c.rtn}` : undefined,
+      })),
+    [],
+  );
 
   useEffect(() => {
-    Promise.all([
-      listarTiposActivos(),
-      listarClientesAdmin({ activo: true, perPage: 100 }),
-    ])
-      .then(([tipos, clientes]) => {
-        setTiposMantenimiento(tipos);
-        setClientes(clientes.data);
-      })
+    listarTiposActivos()
+      .then(setTiposMantenimiento)
       .catch(() => setError("No se pudieron cargar los catálogos."));
   }, []);
 
@@ -601,25 +609,19 @@ function DialogoPlan({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label
-              htmlFor="clienteId"
-              className="mb-1.5 block text-sm font-semibold text-tci-negro"
-            >
-              Cliente
-            </label>
-            <select
+            {/* El selector pinta su propia etiqueta. */}
+            <SelectorBuscable
               id="clienteId"
-              name="clienteId"
-              defaultValue={existente?.cliente?.id ?? ""}
-              className={clasesControl("w-full")}
-            >
-              <option value="">Todos los clientes</option>
-              {clientes.map((cliente) => (
-                <option key={cliente.id} value={cliente.id}>
-                  {cliente.nombre}
-                </option>
-              ))}
-            </select>
+              etiqueta="Cliente"
+              valor={clienteId}
+              textoSeleccionado={clienteTexto}
+              onCambio={(v, texto) => {
+                setClienteId(v);
+                setClienteTexto(texto);
+              }}
+              buscar={buscarOpcionesCliente}
+              placeholder="Todos los clientes"
+            />
           </div>
           <div>
             <label

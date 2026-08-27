@@ -24,9 +24,19 @@ import { clasesControl } from "@/components/ui";
  * la orden en una mano.
  */
 
-export type Opcion = { valor: string; texto: string; detalle?: string };
+/**
+ * `datos` deja colgar el registro completo de la opcion. Sin eso, quien elige
+ * solo recibe un id y tendria que volver a buscarlo para saber, por ejemplo,
+ * cuantas existencias tiene el repuesto que acaba de escoger.
+ */
+export type Opcion<T = undefined> = {
+  valor: string;
+  texto: string;
+  detalle?: string;
+  datos?: T;
+};
 
-export function SelectorBuscable({
+export function SelectorBuscable<T = undefined>({
   id,
   etiqueta,
   valor,
@@ -36,6 +46,7 @@ export function SelectorBuscable({
   placeholder,
   deshabilitado = false,
   ayuda,
+  etiquetaOculta = false,
 }: {
   id: string;
   etiqueta: string;
@@ -43,11 +54,14 @@ export function SelectorBuscable({
   /** Texto de lo ya elegido. El componente no lo sabe: puede venir de una
    *  orden que se esta editando, sin que se haya buscado nada. */
   textoSeleccionado?: string;
-  onCambio: (valor: string, texto: string) => void;
-  buscar: (consulta: string) => Promise<Opcion[]>;
+  onCambio: (valor: string, texto: string, datos?: T) => void;
+  buscar: (consulta: string) => Promise<Opcion<T>[]>;
   placeholder: string;
   deshabilitado?: boolean;
   ayuda?: string;
+  /** En las barras de filtro la etiqueta sobra a la vista, pero no al oido:
+   *  se oculta con `sr-only` en vez de quitarla. */
+  etiquetaOculta?: boolean;
 }) {
   const idLista = useId();
   const contenedor = useRef<HTMLDivElement>(null);
@@ -65,7 +79,7 @@ export function SelectorBuscable({
    */
   const [resultado, setResultado] = useState<{
     consulta: string;
-    opciones: Opcion[];
+    opciones: Opcion<T>[];
   } | null>(null);
 
   const consultaDiferida = useDebounce(consulta);
@@ -110,8 +124,8 @@ export function SelectorBuscable({
     setResultado(null);
   }
 
-  function elegir(o: Opcion) {
-    onCambio(o.valor, o.texto);
+  function elegir(o: Opcion<T>) {
+    onCambio(o.valor, o.texto, o.datos);
     cerrar();
     campo.current?.blur();
   }
@@ -143,10 +157,20 @@ export function SelectorBuscable({
     <div>
       <label
         htmlFor={id}
-        className="mb-1.5 block text-sm font-semibold tracking-[-0.01em] text-tci-negro"
+        className={
+          etiquetaOculta
+            ? "sr-only"
+            : "mb-1.5 block text-sm font-semibold tracking-[-0.01em] text-tci-negro"
+        }
       >
         {etiqueta}
       </label>
+
+      {/* El campo visible no lleva `name`: mientras se escribe contiene la
+          consulta, no el valor. El que viaja en el formulario es este, que
+          siempre tiene el id elegido — asi los formularios que leen con
+          `FormData` siguen funcionando sin cambiar nada. */}
+      <input type="hidden" name={id} value={valor} />
 
       <div ref={contenedor} className="relative">
         <input

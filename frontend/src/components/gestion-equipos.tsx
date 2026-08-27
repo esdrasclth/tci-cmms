@@ -13,14 +13,19 @@ import {
 } from "@/components/ui";
 import { IconoBorrar, IconoEditar } from "@/components/iconos";
 import { BotonFila, BotonesDialogo, Modal } from "@/components/modal";
+import { SelectorBuscable } from "@/components/selector-buscable";
 
 import { ApiError, type Pagina } from "@/lib/api";
 import {
   listarTiposEquipoActivos,
   type TipoEquipoActivo,
 } from "@/lib/preventivo";
-import { useDebounce } from "@/lib/hooks";
-import { listarClientesAdmin, type Cliente } from "@/lib/clientes";
+import { useClienteConSedes, useDebounce } from "@/lib/hooks";
+import {
+  buscarClientesAdmin,
+  contarClientesActivos,
+  obtenerClienteAdmin,
+} from "@/lib/clientes";
 import {
   actualizarEquipo,
   crearEquipo,
@@ -46,8 +51,11 @@ export function GestionEquipos() {
   const [equipos, setEquipos] = useState<Equipo[]>([]);
   const [meta, setMeta] = useState<Pagina<Equipo>["meta"] | null>(null);
   const [page, setPage] = useState(1);
-  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [filtroCliente, setFiltroCliente] = useState("");
+  // El nombre del cliente del filtro: sin catalogo en memoria no hay de donde
+  // sacarlo para pintarlo en el campo.
+  const [filtroClienteTexto, setFiltroClienteTexto] = useState("");
+  const [hayClientesActivos, setHayClientesActivos] = useState(true);
   const [filtroSede, setFiltroSede] = useState("");
   const [filtroActivo, setFiltroActivo] = useState<"" | "true" | "false">("");
   const [busqueda, setBusqueda] = useState("");
@@ -56,14 +64,17 @@ export function GestionEquipos() {
   const [intento, setIntento] = useState(0);
   const [dialogo, setDialogo] = useState<Dialogo>(null);
 
+  // No se descarga el catalogo de clientes: solo se pregunta si hay alguno
+  // activo, que es lo unico que se necesita saber de antemano —sin clientes no
+  // tiene sentido ofrecer "Nuevo equipo"—.
   useEffect(() => {
     let cancelado = false;
-    listarClientesAdmin({ perPage: 100 })
-      .then((r) => {
-        if (!cancelado) setClientes(r.data);
+    contarClientesActivos()
+      .then((n) => {
+        if (!cancelado) setHayClientesActivos(n > 0);
       })
       .catch(() => {
-        if (!cancelado) setClientes([]);
+        if (!cancelado) setHayClientesActivos(true);
       });
     return () => {
       cancelado = true;
@@ -127,9 +138,24 @@ export function GestionEquipos() {
     }
   }
 
-  const clientesActivos = clientes.filter((c) => c.activo);
-  const sedesDelFiltro =
-    clientes.find((c) => c.id === filtroCliente)?.sedes ?? [];
+  // Las sedes del filtro cuelgan del cliente elegido, asi que se pide al
+  // elegirlo. Con el catalogo en memoria salia gratis; ahora cuesta una
+  // peticion, y es la que evita descargar mil clientes en cada carga.
+  const buscarOpcionesCliente = useCallback(
+    async (consulta: string) =>
+      (await buscarClientesAdmin(consulta)).map((c) => ({
+        valor: c.id,
+        texto: c.nombre,
+        detalle: c.rtn ? `RTN ${c.rtn}` : undefined,
+      })),
+    [],
+  );
+
+  const clienteDelFiltro = useClienteConSedes(
+    filtroCliente,
+    obtenerClienteAdmin,
+  );
+  const sedesDelFiltro = clienteDelFiltro?.sedes ?? [];
 
   return (
     <section>
@@ -139,9 +165,9 @@ export function GestionEquipos() {
         acciones={
           <Boton
             onClick={() => setDialogo({ tipo: "nuevo" })}
-            disabled={clientesActivos.length === 0}
+            disabled={!hayClientesActivos}
             title={
-              clientesActivos.length === 0
+              !hayClientesActivos
                 ? "Registre primero un cliente activo"
                 : undefined
             }
@@ -152,27 +178,24 @@ export function GestionEquipos() {
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <label htmlFor="filtro-cliente" className="sr-only">
-          Filtrar por cliente
-        </label>
-        <select
-          id="filtro-cliente"
-          value={filtroCliente}
-          onChange={(e) => {
-            setFiltroCliente(e.target.value);
-            // La sede elegida es de otro cliente: deja de tener sentido.
-            setFiltroSede("");
-            setPage(1);
-          }}
-          className={clasesControl()}
-        >
-          <option value="">Todos los clientes</option>
-          {clientes.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.nombre}
-            </option>
-          ))}
-        </select>
+        <div className="w-full sm:w-64">
+          <SelectorBuscable
+            id="filtro-cliente"
+            etiqueta="Filtrar por cliente"
+            etiquetaOculta
+            valor={filtroCliente}
+            textoSeleccionado={filtroClienteTexto}
+            onCambio={(v, texto) => {
+              setFiltroCliente(v);
+              setFiltroClienteTexto(texto);
+              // La sede elegida es de otro cliente: deja de tener sentido.
+              setFiltroSede("");
+              setPage(1);
+            }}
+            buscar={buscarOpcionesCliente}
+            placeholder="Todos los clientes"
+          />
+        </div>
 
         <label htmlFor="filtro-sede" className="sr-only">
           Filtrar por sede
@@ -349,7 +372,6 @@ export function GestionEquipos() {
       {dialogo?.tipo === "nuevo" && (
         <DialogoEquipo
           titulo="Nuevo equipo"
-          clientes={clientesActivos}
           onCerrar={() => setDialogo(null)}
           onGuardado={() => {
             setDialogo(null);
@@ -361,7 +383,6 @@ export function GestionEquipos() {
         <DialogoEquipo
           titulo="Editar equipo"
           equipo={dialogo.equipo}
-          clientes={clientes}
           onCerrar={() => setDialogo(null)}
           onGuardado={() => {
             setDialogo(null);
@@ -471,17 +492,18 @@ function Acciones({
 function DialogoEquipo({
   titulo,
   equipo,
-  clientes,
   onCerrar,
   onGuardado,
 }: {
   titulo: string;
   equipo?: Equipo;
-  clientes: Cliente[];
   onCerrar: () => void;
   onGuardado: () => void;
 }) {
   const [clienteId, setClienteId] = useState(equipo?.cliente.id ?? "");
+  const [clienteTexto, setClienteTexto] = useState(
+    equipo?.cliente.nombre ?? "",
+  );
   const [sedeId, setSedeId] = useState(equipo?.sede?.id ?? "");
   const [tiposEquipo, setTiposEquipo] = useState<TipoEquipoActivo[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -495,9 +517,18 @@ function DialogoEquipo({
       .catch(() => setTiposEquipo([]));
   }, []);
 
-  const sedes =
-    clientes.find((c) => c.id === clienteId)?.sedes.filter((s) => s.activo) ??
-    [];
+  const buscarOpcionesClienteActivo = useCallback(
+    async (consulta: string) =>
+      (await buscarClientesAdmin(consulta, true)).map((c) => ({
+        valor: c.id,
+        texto: c.nombre,
+        detalle: c.rtn ? `RTN ${c.rtn}` : undefined,
+      })),
+    [],
+  );
+
+  const cliente = useClienteConSedes(clienteId, obtenerClienteAdmin);
+  const sedes = cliente?.sedes.filter((s) => s.activo) ?? [];
 
   async function alEnviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -586,32 +617,22 @@ function DialogoEquipo({
         />
 
         <div>
-          <label
-            htmlFor="clienteId"
-            className="mb-1.5 block text-sm font-bold text-tci-negro"
-          >
-            Cliente
-          </label>
-          <select
+          <SelectorBuscable
             id="clienteId"
-            value={clienteId}
-            onChange={(e) => {
-              setClienteId(e.target.value);
+            etiqueta="Cliente"
+            valor={clienteId}
+            textoSeleccionado={clienteTexto}
+            onCambio={(v, texto) => {
+              setClienteId(v);
+              setClienteTexto(texto);
               setSedeId("");
             }}
             // El equipo pertenece a quien lo tiene: cambiarlo de cliente
             // desligaria su historial de ordenes.
-            disabled={equipo !== undefined}
-            required
-            className="w-full rounded-lg border border-tci-borde bg-white px-4 py-3 text-sm text-tci-negro disabled:bg-tci-humo disabled:text-tci-gris"
-          >
-            <option value="">Elija un cliente</option>
-            {clientes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
+            deshabilitado={equipo !== undefined}
+            buscar={buscarOpcionesClienteActivo}
+            placeholder="Busque por nombre, RTN o contacto..."
+          />
           {equipo && (
             <p className="mt-1 text-xs text-tci-gris">
               El cliente no se puede cambiar.

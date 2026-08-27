@@ -66,9 +66,29 @@ export class InventarioService {
    * en los tipos de mantenimiento (TCI-30): ofrecer algo que el backend va a
    * rechazar despues es peor que no ofrecerlo.
    */
-  disponibles() {
+  /**
+   * Repuestos que se pueden imputar a una orden: activos y con existencias.
+   *
+   * Acepta busqueda y tope porque alimenta un selector con buscador. Sigue
+   * devolviendo una lista pelada y no un sobre paginado: quien la usa muestra
+   * las primeras coincidencias, no navega paginas.
+   */
+  disponibles(q?: string, limite = 20) {
+    const where: Prisma.RepuestoWhereInput = {
+      activo: true,
+      stockActual: { gt: 0 },
+    };
+    if (q?.trim()) {
+      const texto = q.trim();
+      where.OR = [
+        { codigo: { contains: texto, mode: 'insensitive' } },
+        { nombre: { contains: texto, mode: 'insensitive' } },
+      ];
+    }
+
     return this.prisma.repuesto.findMany({
-      where: { activo: true, stockActual: { gt: 0 } },
+      where,
+      take: Math.min(limite, 100),
       select: {
         id: true,
         codigo: true,

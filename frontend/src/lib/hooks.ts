@@ -60,3 +60,39 @@ export function useBloqueoScroll(activo: boolean) {
     };
   }, [activo]);
 }
+
+/**
+ * Trae un cliente por id, con sus sedes.
+ *
+ * Lo usan las pantallas que dejaron de descargar el catalogo entero: al elegir
+ * cliente en un selector con buscador solo se conoce su id, y las sedes cuelgan
+ * de el. Devuelve `null` mientras no haya id o mientras viaja la peticion.
+ *
+ * Se compara el id guardado con el pedido en vez de limpiar el estado al
+ * cambiar: asi no hay un `setState` sincrono en el efecto —lo que desaconseja
+ * `react-hooks/set-state-in-effect`— y de paso nunca se ven un instante las
+ * sedes del cliente anterior.
+ */
+export function useClienteConSedes<T extends { id: string }>(
+  clienteId: string,
+  obtener: (id: string) => Promise<T>,
+): T | null {
+  const [cargado, setCargado] = useState<T | null>(null);
+
+  useEffect(() => {
+    if (!clienteId) return;
+    let cancelado = false;
+    obtener(clienteId)
+      .then((c) => {
+        if (!cancelado) setCargado(c);
+      })
+      .catch(() => {
+        if (!cancelado) setCargado(null);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [clienteId, obtener]);
+
+  return cargado?.id === clienteId ? cargado : null;
+}

@@ -6,14 +6,15 @@ import { Alerta } from "@/components/form";
 import { Boton } from "@/components/ui";
 import { IconoEditar } from "@/components/iconos";
 import { BotonFila } from "@/components/modal";
+import { SelectorBuscable } from "@/components/selector-buscable";
 import { ApiError } from "@/lib/api";
 import {
+  buscarDisponibles,
   corregirConsumo,
   formatearCantidad,
   formatearMoneda,
   imputarRepuesto,
   listarConsumo,
-  listarDisponibles,
   retirarConsumo,
   type LineaConsumo,
   type RepuestoDisponible,
@@ -44,7 +45,6 @@ export function RepuestosOrden({
   onCambio: () => void | Promise<void>;
 }) {
   const [lineas, setLineas] = useState<LineaConsumo[]>([]);
-  const [disponibles, setDisponibles] = useState<RepuestoDisponible[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
@@ -56,11 +56,10 @@ export function RepuestosOrden({
 
   useEffect(() => {
     let cancelado = false;
-    Promise.all([listarConsumo(ordenId), listarDisponibles()])
-      .then(([consumo, catalogo]) => {
+    listarConsumo(ordenId)
+      .then((consumo) => {
         if (cancelado) return;
         setLineas(consumo);
-        setDisponibles(catalogo);
         setError(null);
       })
       .catch((e: unknown) => {
@@ -87,9 +86,9 @@ export function RepuestosOrden({
     try {
       await accion();
       await releer();
-      // El catalogo tambien cambia: lo que se acaba de gastar baja de saldo y
-      // puede desaparecer de las opciones si llego a cero.
-      setDisponibles(await listarDisponibles());
+      // El catalogo ya no se guarda: cada busqueda lo pide al servidor, asi
+      // que el saldo que se acaba de gastar ya sale actualizado en la
+      // siguiente busqueda sin recargar nada.
       await onCambio();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : fallo);
@@ -156,7 +155,6 @@ export function RepuestosOrden({
 
       {puedeEditar && (
         <FormularioImputar
-          disponibles={disponibles}
           ocupado={ocupado}
           onImputar={(repuestoId, cantidad) =>
             operar(
@@ -279,34 +277,38 @@ function Linea({
 }
 
 function FormularioImputar({
-  disponibles,
   ocupado,
   onImputar,
 }: {
-  disponibles: RepuestoDisponible[];
   ocupado: boolean;
   onImputar: (repuestoId: string, cantidad: number) => Promise<void>;
 }) {
-  const [repuestoId, setRepuestoId] = useState("");
-  const [cantidad, setCantidad] = useState("1");
+  // Se guarda el repuesto entero y no solo su id: con el catalogo fuera de
+  // memoria, las existencias y la unidad tienen que venir de la propia opcion.
+  const [elegido, setElegido] = useState<RepuestoDisponible | null>(null);
+  const [repuestoTexto, setRepuestoTexto] = useState("");
+  const repuestoId = elegido?.id ?? "";
 
-  const elegido = disponibles.find((r) => r.id === repuestoId);
+  const buscarOpciones = useCallback(
+    async (consulta: string) =>
+      (await buscarDisponibles(consulta)).map((r) => ({
+        valor: r.id,
+        texto: r.nombre,
+        detalle: `${r.codigo} · ${formatearCantidad(r.stockActual)} ${r.unidadMedida} disponibles`,
+        datos: r,
+      })),
+    [],
+  );
+  const [cantidad, setCantidad] = useState("1");
 
   function alEnviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     if (!repuestoId) return;
     void onImputar(repuestoId, Number(cantidad)).then(() => {
-      setRepuestoId("");
+      setElegido(null);
+      setRepuestoTexto("");
       setCantidad("1");
     });
-  }
-
-  if (disponibles.length === 0) {
-    return (
-      <p className="mt-4 rounded-lg bg-tci-humo px-4 py-3 text-sm text-tci-gris">
-        No hay repuestos con existencia en almacén.
-      </p>
-    );
   }
 
   return (
@@ -315,26 +317,18 @@ function FormularioImputar({
       className="mt-4 flex flex-wrap items-end gap-2 border-t border-tci-borde pt-4"
     >
       <div className="min-w-0 flex-1">
-        <label
-          htmlFor="repuesto-a-imputar"
-          className="mb-1 block text-xs text-tci-gris"
-        >
-          Repuesto usado
-        </label>
-        <select
+        <SelectorBuscable
           id="repuesto-a-imputar"
-          value={repuestoId}
-          onChange={(e) => setRepuestoId(e.target.value)}
-          className="w-full rounded-lg border border-tci-borde bg-white px-3 py-2 text-sm text-tci-negro"
-        >
-          <option value="">Elija un repuesto...</option>
-          {disponibles.map((repuesto) => (
-            <option key={repuesto.id} value={repuesto.id}>
-              {repuesto.nombre} ({formatearCantidad(repuesto.stockActual)}{" "}
-              {repuesto.unidadMedida} disponibles)
-            </option>
-          ))}
-        </select>
+          etiqueta="Repuesto usado"
+          valor={repuestoId}
+          textoSeleccionado={repuestoTexto}
+          onCambio={(_v, texto, datos) => {
+            setElegido(datos ?? null);
+            setRepuestoTexto(texto);
+          }}
+          buscar={buscarOpciones}
+          placeholder="Busque por codigo o nombre..."
+        />
       </div>
 
       <div>

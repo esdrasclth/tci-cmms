@@ -99,6 +99,20 @@ export type DatosRepuesto = {
 // Catálogo (TCI-45)
 // ---------------------------------------------------------------------------
 
+/** Primeras coincidencias entre los repuestos imputables a una orden. */
+export function buscarDisponibles(q: string) {
+  const params = new URLSearchParams();
+  if (q.trim()) params.set("q", q.trim());
+  return apiGet<RepuestoDisponible[]>("/repuestos", params);
+}
+
+/** Primeras coincidencias del catalogo completo, para filtros. */
+export async function buscarRepuestos(q: string) {
+  const params = new URLSearchParams({ perPage: "20" });
+  if (q.trim()) params.set("q", q.trim());
+  return (await apiGet<Pagina<Repuesto>>("/repuestos/admin", params)).data;
+}
+
 export function listarDisponibles() {
   // `GET /repuestos` sirve `disponibles()`, que no esta paginado: es la lista
   // corta para imputar consumo a una orden, no el catalogo de administracion.
