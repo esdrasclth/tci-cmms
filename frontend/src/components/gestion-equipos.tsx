@@ -436,6 +436,20 @@ function Identidad({ equipo }: { equipo: Equipo }) {
           equipo.tipo ||
           "Sin detalle"}
       </p>
+      {/*
+        Un equipo sin tipo queda fuera de TODOS los planes preventivos —un plan
+        solo alcanza a los equipos de su tipo— y hasta ahora eso no se veia por
+        ningun lado: la consecuencia aparecia mucho despues, como un calendario
+        vacio que nadie sabia explicar.
+      */}
+      {!equipo.tipoEquipo && (
+        <p
+          className="mt-0.5 text-xs text-tci-rojo"
+          title="Sin tipo asignado no entra en ningún plan de mantenimiento preventivo"
+        >
+          Sin tipo de equipo
+        </p>
+      )}
     </div>
   );
 }

@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { Alerta } from "@/components/form";
-import { Boton, EncabezadoPagina, Vacio } from "@/components/ui";
+import { Boton, EncabezadoPagina, Vacio, clasesBoton } from "@/components/ui";
 import { DIAS_SEMANA, celdasDelMes, claveDia } from "@/lib/calendario";
 import { ApiError } from "@/lib/api";
 import { ETIQUETA_ESTADO } from "@/lib/ordenes";
 import {
   limitesDelMes,
+  listarPlanes,
   obtenerCalendario,
   type EventoCalendario,
 } from "@/lib/preventivo";
@@ -34,10 +35,33 @@ export function CalendarioPreventivo() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [diaAbierto, setDiaAbierto] = useState<string | null>(null);
+  /**
+   * Cuantos planes activos no alcanzan a ningun equipo.
+   *
+   * Un calendario vacio tiene dos causas muy distintas —no toca nada este mes,
+   * o hay planes que no cubren nada— y decir solo "no hay mantenimientos" deja
+   * al usuario buscando un fallo donde no lo hay. Un plan solo alcanza a los
+   * equipos de su tipo, asi que si ningun equipo lo tiene asignado el plan
+   * queda vivo pero inerte.
+   */
+  const [planesInertes, setPlanesInertes] = useState(0);
 
   useEffect(() => {
     let cancelado = false;
     const { desde, hasta } = limitesDelMes(mes);
+
+    // Solo para poder explicar un calendario vacio. Es una consulta pequena y
+    // se lanza en paralelo, asi que no retrasa la rejilla.
+    listarPlanes({ activo: true })
+      .then((planes) => {
+        if (!cancelado) {
+          setPlanesInertes(planes.filter((p) => p.equipos === 0).length);
+        }
+      })
+      .catch(() => {
+        if (!cancelado) setPlanesInertes(0);
+      });
+
     obtenerCalendario(desde, hasta)
       .then((datos) => {
         if (cancelado) return;
@@ -191,7 +215,9 @@ export function CalendarioPreventivo() {
       {/* Movil: la misma informacion en lista cronologica. */}
       <div className={`mt-5 md:hidden ${cargando ? "opacity-50" : ""}`}>
         {eventos.length === 0 && !cargando ? (
-          <Vacio>No hay mantenimientos programados este mes.</Vacio>
+          <Vacio accion={planesInertes > 0 ? <EnlacePlanes /> : undefined}>
+            {textoVacio(planesInertes)}
+          </Vacio>
         ) : (
           <ul className="space-y-3">
             {eventos.map((evento, i) => (
@@ -216,9 +242,11 @@ export function CalendarioPreventivo() {
       </div>
 
       {eventos.length === 0 && !cargando && (
-        <p className="mt-4 hidden text-sm text-tci-gris md:block">
-          No hay mantenimientos programados este mes.
-        </p>
+        <div className="mt-4 hidden md:block">
+          <Vacio accion={planesInertes > 0 ? <EnlacePlanes /> : undefined}>
+            {textoVacio(planesInertes)}
+          </Vacio>
+        </div>
       )}
     </section>
   );
@@ -366,3 +394,31 @@ function Detalle({ evento }: { evento: EventoCalendario }) {
  * Las celdas del mes, completando la primera y la ultima semana con los dias
  * vecinos. La semana empieza en lunes, que es como se planifica el trabajo.
  */
+
+/**
+ * Por que esta vacio el mes.
+ *
+ * Distinguir las dos causas es la diferencia entre "todo en orden" y "hay algo
+ * mal configurado", y desde el calendario no se ve cual de las dos es.
+ */
+function textoVacio(planesInertes: number): string {
+  if (planesInertes === 0) {
+    return "No hay mantenimientos programados este mes.";
+  }
+  const plural = planesInertes === 1;
+  return (
+    `No hay mantenimientos programados este mes, y ${plural ? "hay un plan activo que no alcanza" : `hay ${planesInertes} planes activos que no alcanzan`} ` +
+    "a ningún equipo. Un plan solo cubre los equipos de su tipo: revise que sus equipos tengan asignado el tipo correspondiente."
+  );
+}
+
+function EnlacePlanes() {
+  return (
+    <Link
+      href="/panel/preventivo"
+      className={clasesBoton({ variante: "secundario" })}
+    >
+      Revisar los planes
+    </Link>
+  );
+}

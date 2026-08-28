@@ -245,11 +245,22 @@ export function GestionPreventivo() {
                       Aviso {plan.diasAnticipacion} días antes
                     </p>
                   </div>
+                  {/* Un plan que no alcanza a ningun equipo esta vivo pero
+                      no hace nada, y eso no se puede decir en gris: es la
+                      causa numero uno de "cree un plan y no aparece en el
+                      calendario". */}
                   <Boton
                     onClick={() => setDialogo({ tipo: "alcance", item: plan })}
-                    variante="secundario"
+                    variante={plan.equipos === 0 ? "peligro" : "secundario"}
+                    title={
+                      plan.equipos === 0
+                        ? "Este plan no alcanza a ningún equipo: no generará órdenes ni aparecerá en el calendario"
+                        : undefined
+                    }
                   >
-                    {plan.equipos} {plan.equipos === 1 ? "equipo" : "equipos"}
+                    {plan.equipos === 0
+                      ? "Sin equipos"
+                      : `${plan.equipos} ${plan.equipos === 1 ? "equipo" : "equipos"}`}
                   </Boton>
                 </div>
 
