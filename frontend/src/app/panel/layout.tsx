@@ -32,16 +32,27 @@ import { signOut, useSession } from "@/lib/auth-client";
 export default function PanelLayout({ children }: LayoutProps<"/panel">) {
   const router = useRouter();
   const ruta = usePathname();
-  const { data: sesion, isPending } = useSession();
+  const { data: sesion, isPending, isRefetching } = useSession();
   const [hojaAbierta, setHojaAbierta] = useState(false);
 
+  /*
+   * Segunda linea de defensa contra la misma carrera que arregla el login.
+   *
+   * `isRefetching` importa tanto como `isPending`: mientras una relectura
+   * viaja no se sabe si hay sesion, y rebotar en ese momento es lo que hacia
+   * fallar la entrada a la primera. Solo se redirige cuando la respuesta ya
+   * llego y dice que no hay nadie.
+   */
   useEffect(() => {
-    if (!isPending && !sesion) {
+    if (!isPending && !isRefetching && !sesion) {
       router.replace("/login");
     }
-  }, [isPending, sesion, router]);
+  }, [isPending, isRefetching, sesion, router]);
 
-  if (isPending || !sesion) {
+  // Solo `!sesion`: con sesion en mano el panel se pinta aunque haya una
+  // relectura de fondo en curso. Incluir `isRefetching` aqui reemplazaria toda
+  // la pantalla por "Cargando..." cada vez que la sesion se refresca sola.
+  if (!sesion) {
     return (
       <main className="grid min-h-dvh place-items-center bg-tci-humo">
         <p className="text-sm text-tci-gris">Cargando...</p>

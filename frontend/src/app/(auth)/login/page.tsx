@@ -11,10 +11,11 @@ import {
   Campo,
   CampoContrasena,
 } from "@/components/form";
-import { signIn } from "@/lib/auth-client";
+import { signIn, useSession } from "@/lib/auth-client";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { refetch } = useSession();
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
 
@@ -36,8 +37,25 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/panel");
-    router.refresh();
+    /*
+     * Se espera a que el almacen de sesion tenga el dato ANTES de navegar.
+     *
+     * Sin esto la entrada fallaba a la primera de vez en cuando —parpadeo y
+     * vuelta al login— y funcionaba al segundo intento. El motivo es una
+     * carrera: el atom de sesion es un singleton que sobrevive a las
+     * navegaciones, asi que al llegar por primera vez ya quedo resuelto en
+     * "no hay sesion" con `isPending` en false. `signIn` dispara su relectura,
+     * pero navegar en el mismo instante hace que el panel monte antes de que
+     * esa relectura marque nada: su guarda ve "sin sesion" y rebota.
+     *
+     * `refetch()` devuelve una promesa, asi que esperarla convierte la carrera
+     * en una secuencia.
+     */
+    await refetch();
+
+    // `replace` y no `push`: volver atras desde el panel no debe devolver al
+    // formulario de acceso de una sesion ya iniciada.
+    router.replace("/panel");
   }
 
   return (
