@@ -9,6 +9,8 @@ import {
 
 import { Rol } from '../../generated/prisma/enums';
 
+import { TextoBorrable } from '../../comun/validacion';
+
 /** TCI-35 — alta de usuario por un administrador. */
 export class CrearUsuarioDto {
   @IsString()
@@ -28,8 +30,6 @@ export class CrearUsuarioDto {
   @IsEnum(Rol)
   rol!: Rol;
 
-  @IsOptional()
-  @IsString()
-  @Length(6, 30)
+  @TextoBorrable(6, 30)
   telefono?: string;
 }

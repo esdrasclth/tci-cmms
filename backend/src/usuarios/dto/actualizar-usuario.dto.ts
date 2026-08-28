@@ -9,6 +9,8 @@ import {
 
 import { Rol } from '../../generated/prisma/enums';
 
+import { TextoBorrable } from '../../comun/validacion';
+
 /**
  * TCI-35 — edicion de un usuario por un administrador.
  *
@@ -31,9 +33,7 @@ export class ActualizarUsuarioDto {
   @IsBoolean()
   activo?: boolean;
 
-  @IsOptional()
-  @IsString()
-  @Length(6, 30)
+  @TextoBorrable(6, 30)
   telefono?: string;
 }
 

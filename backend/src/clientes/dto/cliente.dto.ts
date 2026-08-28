@@ -15,6 +15,8 @@ import {
   Min,
 } from 'class-validator';
 
+import { TextoBorrable } from '../../comun/validacion';
+
 /** TCI-36 — alta de cliente. */
 export class CrearClienteDto {
   @IsString()
@@ -29,14 +31,10 @@ export class CrearClienteDto {
   @Matches(/^\d{14}$/, { message: 'El RTN debe tener 14 digitos.' })
   rtn?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(2, 120)
+  @TextoBorrable(2, 120)
   contacto?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(6, 30)
+  @TextoBorrable(6, 30)
   telefono?: string;
 
   @IsOptional()
@@ -55,14 +53,10 @@ export class ActualizarClienteDto {
   @Matches(/^\d{14}$/, { message: 'El RTN debe tener 14 digitos.' })
   rtn?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(2, 120)
+  @TextoBorrable(2, 120)
   contacto?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(6, 30)
+  @TextoBorrable(6, 30)
   telefono?: string;
 
   @IsOptional()
@@ -113,9 +107,7 @@ export class CrearSedeDto {
   @IsNotEmpty()
   direccion?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(2, 120)
+  @TextoBorrable(2, 120)
   ciudad?: string;
 
   @IsOptional()
@@ -134,9 +126,7 @@ export class ActualizarSedeDto {
   @IsString()
   direccion?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(2, 120)
+  @TextoBorrable(2, 120)
   ciudad?: string;
 
   @IsOptional()

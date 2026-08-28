@@ -48,7 +48,8 @@ export class UsuariosService {
         email: dto.email,
         password: dto.password,
         rol: dto.rol,
-        telefono: dto.telefono,
+        // Vacio significa "borra el telefono", no cadena vacia guardada.
+        telefono: dto.telefono?.trim() || null,
       });
 
       return this.prisma.user.findUniqueOrThrow({
@@ -161,7 +162,8 @@ export class UsuariosService {
         name: dto.name,
         rol: dto.rol,
         activo: dto.activo,
-        telefono: dto.telefono,
+        // Vacio significa "borra el telefono", no cadena vacia guardada.
+        telefono: dto.telefono?.trim() || null,
       },
       select: CAMPOS_PUBLICOS,
     });

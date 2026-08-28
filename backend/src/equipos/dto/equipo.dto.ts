@@ -13,6 +13,8 @@ import {
   Min,
 } from 'class-validator';
 
+import { TextoBorrable } from '../../comun/validacion';
+
 /** TCI-37 — alta de equipo. */
 export class CrearEquipoDto {
   /** Codigo interno de TCI, unico en todo el sistema. */
@@ -34,9 +36,7 @@ export class CrearEquipoDto {
   @IsNotEmpty()
   sedeId?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(2, 80)
+  @TextoBorrable(2, 80)
   tipo?: string;
 
   /** TCI-49: el tipo del catalogo. Sustituye al texto libre de arriba. */
@@ -44,24 +44,16 @@ export class CrearEquipoDto {
   @IsString()
   tipoEquipoId?: string | null;
 
-  @IsOptional()
-  @IsString()
-  @Length(1, 80)
+  @TextoBorrable(1, 80)
   marca?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(1, 80)
+  @TextoBorrable(1, 80)
   modelo?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(1, 80)
+  @TextoBorrable(1, 80)
   numeroSerie?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(2, 160)
+  @TextoBorrable(2, 160)
   ubicacionFisica?: string;
 }
 
@@ -81,9 +73,7 @@ export class ActualizarEquipoDto {
   @IsString()
   sedeId?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(2, 80)
+  @TextoBorrable(2, 80)
   tipo?: string;
 
   /** TCI-49: el tipo del catalogo. Sustituye al texto libre de arriba. */
@@ -91,24 +81,16 @@ export class ActualizarEquipoDto {
   @IsString()
   tipoEquipoId?: string | null;
 
-  @IsOptional()
-  @IsString()
-  @Length(1, 80)
+  @TextoBorrable(1, 80)
   marca?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(1, 80)
+  @TextoBorrable(1, 80)
   modelo?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(1, 80)
+  @TextoBorrable(1, 80)
   numeroSerie?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(2, 160)
+  @TextoBorrable(2, 160)
   ubicacionFisica?: string;
 
   @IsOptional()
