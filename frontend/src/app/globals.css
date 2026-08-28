@@ -120,3 +120,17 @@ select {
   -webkit-user-select: auto;
   user-select: auto;
 }
+
+/*
+ * Comportamiento de aplicacion instalada.
+ *
+ * `overscroll-behavior-y: none` quita el rebote elastico del documento
+ * completo. En una pagina web ese rebote es normal; en algo que se abrio desde
+ * la pantalla de inicio, sin barra de direcciones, delata que por debajo hay un
+ * navegador y es lo que mas rompe la ilusion de aplicacion. Las capas que si
+ * se desplazan por dentro —la hoja, los dialogos, la barra lateral— llevan su
+ * propio `overscroll-contain` y no se ven afectadas.
+ */
+body {
+  overscroll-behavior-y: none;
+}

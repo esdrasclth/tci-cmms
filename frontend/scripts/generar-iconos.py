@@ -89,6 +89,30 @@ def apertura() -> Image.Image:
     return lienzo
 
 
+def fondos() -> None:
+    """
+    Versiones del fondo del acceso al ancho que cada pantalla necesita.
+
+    El JPG original son 3195px y 649 KB, y se cargaba igual en un telefono
+    —por CSS, asi que Next no lo optimiza— para acabar bajo un velo negro al
+    55%. La calidad puede bajar mucho justamente por ese velo.
+    """
+    origen = PUBLICO / "background.jpg"
+    if not origen.exists():
+        print("  (sin background.jpg: se omiten los fondos)")
+        return
+    base = Image.open(origen).convert("RGB")
+    for ancho, nombre, calidad in [
+        (760, "fondo-movil.webp", 62),
+        (1600, "fondo.webp", 68),
+    ]:
+        im = base.resize(
+            (ancho, round(base.height * ancho / base.width)), Image.LANCZOS
+        )
+        im.save(PUBLICO / nombre, "WEBP", quality=calidad, method=6)
+        print(f"  {nombre}")
+
+
 def main() -> None:
     APP.mkdir(parents=True, exist_ok=True)
 
@@ -118,6 +142,8 @@ def main() -> None:
 
     apertura().convert("RGB").save(APP / "opengraph-image.png", quality=92)
     print("  opengraph-image.png")
+
+    fondos()
 
 
 if __name__ == "__main__":

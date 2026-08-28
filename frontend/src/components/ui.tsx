@@ -89,7 +89,7 @@ export function EncabezadoPagina({
   encima?: ReactNode;
 }) {
   return (
-    <div className="mb-6">
+    <div className="mb-5 sm:mb-6">
       {volver && (
         <Link
           href={volver.href}
@@ -105,7 +105,10 @@ export function EncabezadoPagina({
           {encima && (
             <p className="font-mono text-xs text-tci-gris">{encima}</p>
           )}
-          <h1 className="tci-display text-2xl font-semibold text-tci-negro">
+          {/* 20px en movil, 24 desde `sm`. En un telefono el titulo compite
+              con los datos por un alto que no sobra, y la seccion ya se sabe
+              por donde se entro. En escritorio recupera su tamano. */}
+          <h1 className="tci-display text-xl font-semibold text-tci-negro sm:text-2xl">
             {titulo}
           </h1>
           {descripcion && (
@@ -157,7 +160,7 @@ export function Vacio({
   accion?: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-tci-borde bg-white p-8 text-center">
+    <div className="rounded-xl border border-dashed border-tci-borde bg-white p-6 text-center sm:p-8">
       <p className="text-sm text-tci-grafito">{children}</p>
       {accion && <div className="mt-4">{accion}</div>}
     </div>

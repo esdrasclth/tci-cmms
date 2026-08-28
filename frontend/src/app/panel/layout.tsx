@@ -91,7 +91,16 @@ export default function PanelLayout({ children }: LayoutProps<"/panel">) {
       {/* Movil: barra superior minima. La campana va aqui y no dentro del
           menu: es lo unico que puede llegar mientras se trabaja, y no debe
           costar un toque de mas. */}
-      <header className="sticky top-0 z-20 flex items-center justify-between gap-2 bg-tci-negro px-4 py-2 lg:hidden">
+      {/*
+        El relleno superior suma el area segura porque la aplicacion se declara
+        `black-translucent`: instalada en la pantalla de inicio, la pagina se
+        extiende POR DEBAJO de la barra de estado. Sin esto el logotipo queda
+        tapado por el reloj y la bateria.
+
+        La barra es negra, asi que extenderla bajo la barra de estado es
+        justamente lo que se quiere: el texto blanco del sistema se lee encima.
+      */}
+      <header className="sticky top-0 z-20 flex items-center justify-between gap-2 bg-tci-negro px-4 pt-[calc(0.5rem+env(safe-area-inset-top))] pb-2 lg:hidden">
         <Link href="/panel" aria-label="Ir al listado de ordenes">
           <Image
             src="/logo-tci.png"
@@ -140,7 +149,15 @@ export default function PanelLayout({ children }: LayoutProps<"/panel">) {
       </HojaInferior>
 
       <div className="lg:pl-64">
-        <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
+        {/*
+          `py-4` en movil y no `py-6`: en una pantalla de telefono, veinticuatro
+          pixeles arriba y abajo antes del primer dato son media orden menos a
+          la vista. En escritorio sobra el espacio y se mantiene holgado.
+
+          El relleno inferior contempla la barra de gestos: sin el, el ultimo
+          elemento de una lista larga queda debajo de ella y no se puede tocar.
+        */}
+        <main className="mx-auto max-w-5xl px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-10 sm:pb-10">
           {children}
         </main>
       </div>

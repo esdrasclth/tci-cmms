@@ -28,7 +28,9 @@ export function AuthShell({
 
       <div className="relative flex min-h-dvh flex-col lg:flex-row">
         {/* Columna de marca */}
-        <div className="flex flex-col justify-between gap-10 px-6 pt-8 pb-4 lg:w-[54%] lg:px-12 lg:pt-10 lg:pb-14">
+        {/* Igual que la barra del panel: instalada, la pagina pasa por debajo
+            de la barra de estado y el logotipo quedaria tapado. */}
+        <div className="flex flex-col justify-between gap-10 px-6 pt-[calc(2rem+env(safe-area-inset-top))] pb-4 lg:w-[54%] lg:px-12 lg:pt-10 lg:pb-14">
           <div className="flex items-center justify-between gap-4">
             <Logo />
             <a
@@ -97,9 +99,25 @@ function FondoLogin() {
       aria-hidden
       className="pointer-events-none absolute inset-0 overflow-hidden"
     >
+      {/*
+        Dos imagenes, no una.
+        
+        El original pesaba 649 KB y se descargaba igual en un telefono, por CSS
+        —asi que Next no lo optimizaba— para acabar tapado por un velo negro al
+        55%. En WebP y al ancho que cada pantalla necesita son 40 KB en movil y
+        117 en escritorio. Es la pantalla de acceso: la primera impresion del
+        sistema y, en campo, con datos moviles.
+
+        Se resuelve con dos divs y no con `image-set()` porque asi la eleccion
+        la hace el mismo sistema de puntos de corte que el resto de la interfaz.
+      */}
       <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/background.jpg')" }}
+        className="absolute inset-0 bg-cover bg-center lg:hidden"
+        style={{ backgroundImage: "url('/fondo-movil.webp')" }}
+      />
+      <div
+        className="absolute inset-0 hidden bg-cover bg-center lg:block"
+        style={{ backgroundImage: "url('/fondo.webp')" }}
       />
       <div className="absolute inset-0 bg-tci-negro/55" />
     </div>
