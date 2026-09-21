@@ -29,3 +29,7 @@ Thumbs.db
 # Skills de agentes que instala 'prisma init' — ruido, no codigo del proyecto
 .claude/skills/
 skills-lock.json
+
+# Cache de Python de los generadores de docs/
+__pycache__/
+*.pyc
